@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        // "outDir": ".",
+        "moduleResolution": "node",
+        "target": "ESNext",
+        "module": "ESNext",
+        // "allowJs": true,
+        "paths": {},
+        "noImplicitAny": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "declaration": true,
+        "emitDeclarationOnly": true,
+        "isolatedModules": true
+    },
+    "exclude": [
+        "node_modules",
+        "index.js"
+    ],
+}
