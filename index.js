@@ -468,6 +468,7 @@ class UEncodedFile {
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "buffer", null);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "offset", 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "contentOffset", 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "version", void 0);
     this.path = path;
   }
   asReadable() {
@@ -552,11 +553,6 @@ class UEncodedFile {
     if (!this.promiseDecoding) await this._doDecode();else await this.promiseDecoding;
     return this;
   }
-
-  // protected async readArrayBuffer(): Promise<ArrayBuffer> {
-  //     throw new Error("Must be implemented by inheriting class.");
-  // }
-
   _doDecode() {
     this.ensureReadable();
     if (this.promiseDecoding) return this.promiseDecoding;
@@ -566,11 +562,12 @@ class UEncodedFile {
       const signature = this.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint32));
       const HEADER_SIZE = 28;
       const HEADER_VER_OFFSET = 22;
-      if (signature.value == 0x0069004C) {
+      if (signature.value === 0x0069004C) {
         this.seek(HEADER_VER_OFFSET, "set");
         const version = new TextDecoder("utf-16").decode(this.read(_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].allocBytes(6)).value);
         this.seek(HEADER_SIZE, "set");
         let tStart;
+        this.version = version;
         if (version.startsWith("1")) {
           const cryptKey = 0xC1 ^ this.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint8)).value;
           this.contentOffset = HEADER_SIZE;

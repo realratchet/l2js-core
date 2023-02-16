@@ -13,6 +13,7 @@ abstract class UEncodedFile {
     protected buffer: ArrayBuffer = null;
     protected offset = 0;
     protected contentOffset = 0;
+    protected version: string;
 
     constructor(path: string) {
         this.path = path;
@@ -150,7 +151,7 @@ abstract class UEncodedFile {
             const HEADER_SIZE = 28;
             const HEADER_VER_OFFSET = 22;
 
-            if (signature.value == 0x0069004C) {
+            if (signature.value === 0x0069004C) {
                 this.seek(HEADER_VER_OFFSET, "set");
 
                 const version = new TextDecoder("utf-16").decode(this.read(BufferValue.allocBytes(6)).value as DataView);
@@ -158,6 +159,8 @@ abstract class UEncodedFile {
                 this.seek(HEADER_SIZE, "set");
 
                 let tStart;
+
+                this.version = version;
 
                 if (version.startsWith("1")) {
 
