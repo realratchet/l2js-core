@@ -830,6 +830,274 @@ var ObjectFlags_T;
 
 /***/ }),
 
+/***/ "../src/unreal/un-object.ts":
+/*!**********************************!*\
+  !*** ../src/unreal/un-object.ts ***!
+  \**********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "EnumeratedValue": () => (/* binding */ EnumeratedValue),
+/* harmony export */   "UObject": () => (/* binding */ UObject),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+/* harmony import */ var _un_object_flags__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./un-object-flags */ "../src/unreal/un-object-flags.ts");
+/* harmony import */ var _un_property_tag__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./un-property-tag */ "../src/unreal/un-property-tag.ts");
+
+
+
+
+class UObject {
+  constructor() {
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isObject", true);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "skipRemaining", false);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "objectName", "Exp_None");
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "exportIndex", null);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "exp", null);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "readHeadOffset", 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "readHead", NaN);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "readStart", NaN);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "readTail", NaN);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isLoading", false);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isReady", false);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "pkg", void 0);
+  }
+  setReadPointers(exp) {
+    this.readStart = this.readHead = exp.offset + this.readHeadOffset;
+    this.readTail = this.readHead + exp.size;
+  }
+  get byteCount() {
+    return this.readTail - this.readStart;
+  }
+  get bytesUnread() {
+    return this.readTail - this.readHead;
+  }
+  get byteOffset() {
+    return this.readHead - this.readStart;
+  }
+  readNamedProps(pkg) {
+    pkg.seek(this.readHead, "set");
+    if (this.readHead < this.readTail) {
+      do {
+        const tag = _un_property_tag__WEBPACK_IMPORTED_MODULE_3__["default"].from(pkg, this.readHead);
+        if (!tag.isValid()) break;
+        this.loadProperty(pkg, tag);
+        this.readHead = pkg.tell();
+      } while (this.readHead < this.readTail);
+    }
+    this.readHead = pkg.tell();
+  }
+  getPropertyVarName(tag) {
+    return tag.name;
+  }
+  isValidProperty(varName) {
+    return true;
+  }
+  setProperty(tag, value) {
+    const varName = this.getPropertyVarName(tag);
+    const {
+      name: propName,
+      arrayIndex
+    } = tag;
+    if (!varName) throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${value === null ? "NULL" : typeof value === "object" ? value.constructor.name : typeof value}'`);
+    if (!this.isValidProperty(varName)) throw new Error(`Cannot map property '${propName}' -> ${varName}`);
+    if (tag.arrayIndex < 0 || tag.arrayIndex > 0 && tag.arrayIndex >= this.getPropCount(tag.name)) throw new Error(`Something went wrong, expected index '${tag.arrayIndex} (max: '${this.getPropCount(tag.name)}')'.`);
+    if (this[varName] instanceof Array) this[varName][arrayIndex] = value;else if (this[varName] instanceof Set) this[varName].add(value);else if (this[varName] instanceof EnumeratedValue) this[varName].value = value;else this[varName] = value;
+
+    // console.log(`Setting '${this.constructor.name}' property: ${propName}[${arrayIndex}] -> ${typeof (value) === "object" && value !== null ? value.constructor.name : value}`);
+
+    return true;
+  }
+  readByteProperty(pkg, tag) {
+    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint8)).value);
+  }
+  readIntProperty(pkg, tag) {
+    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int32)).value);
+  }
+  readFloatProperty(pkg, tag) {
+    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].float)).value);
+  }
+  readBoolProperty(pkg, tag) {
+    this.setProperty(tag, tag.boolValue);
+  }
+  readObjectProperty(pkg, tag) {
+    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value);
+  }
+  readNameProperty(pkg, tag) {
+    this.setProperty(tag, pkg.nameTable[pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value].name);
+  }
+  readStrProperty(pkg, tag) {
+    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].char)).value);
+  }
+  readStringProperty(pkg, tag) {
+    throw new Error("Not yet implemented");
+  } // Never used?
+  readArrayProperty(pkg, tag) {
+    throw new Error("Not yet implemented");
+  }
+  readClassProperty(pkg, tag) {
+    throw new Error("Not yet implemented");
+  } // Never used?
+  readVectorProperty(pkg, tag) {
+    throw new Error("Not yet implemented");
+  } // Never used?
+  readRotatorProperty(pkg, tag) {
+    throw new Error("Not yet implemented");
+  } // Never used?
+  readMapProperty(pkg, tag) {
+    throw new Error("Not yet implemented");
+  } // Never used?
+  readFixedProperty(pkg, tag) {
+    throw new Error("Not yet implemented");
+  } // Never used?
+  readStructProperty(pkg, tag) {
+    throw new Error("Not yet implemented");
+  }
+  loadProperty(pkg, tag) {
+    const offStart = pkg.tell();
+    const offEnd = offStart + tag.dataSize;
+    switch (tag.type) {
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_ByteProperty:
+        this.readByteProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_IntProperty:
+        this.readIntProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_BoolProperty:
+        this.readBoolProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_FloatProperty:
+        this.readFloatProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_ObjectProperty:
+        this.readObjectProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_NameProperty:
+        this.readNameProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_StrProperty:
+        this.readStrProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_StringProperty:
+        this.readStringProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_ArrayProperty:
+        this.readArrayProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_ClassProperty:
+        this.readClassProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_VectorProperty:
+        this.readVectorProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_RotatorProperty:
+        this.readRotatorProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_MapProperty:
+        this.readMapProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_FixedArrayProperty:
+        this.readFixedProperty(pkg, tag);
+        break;
+      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_StructProperty:
+        this.readStructProperty(pkg, tag);
+        break;
+      default:
+        pkg.seek(tag.dataSize);
+        console.warn(`Unknown data type '${tag.type}' for '${tag.name}' skipping ${tag.dataSize} bytes.`);
+        break;
+    }
+    pkg.seek(offEnd, "set");
+    if (pkg.tell() < offEnd) console.warn(`Unread '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
+  }
+  setExport(pkg, exp) {
+    this.objectName = `Exp_${exp.objectName}`;
+    this.exportIndex = exp.index;
+    this.exp = exp;
+    this.pkg = pkg.asReadable();
+  }
+  preLoad(pkg, exp) {
+    const flags = exp.flags;
+    if (!this.exp) this.setExport(pkg, exp);
+    pkg.seek(exp.offset, "set");
+    if (flags & _un_object_flags__WEBPACK_IMPORTED_MODULE_2__["default"].HasStack && exp.size > 0) {
+      const offset = pkg.tell();
+      const compat32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32);
+      const int64 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int64);
+      const int32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int32);
+      const node = pkg.read(compat32).value;
+      /*const stateNode =*/
+      pkg.read(compat32).value;
+      /*const probeMask =*/
+      pkg.read(int64).value;
+      /*const latentAction =*/
+      pkg.read(int32).value;
+      if (node !== 0) {
+        /*const offset =*/pkg.read(compat32).value;
+      }
+      this.readHeadOffset = pkg.tell() - offset;
+    }
+    this.setReadPointers(exp);
+  }
+  load(pkg, exp) {
+    if (this.isLoading || this.isReady) return this;
+    this.isLoading = true;
+
+    // if (exp.objectName === "DefaultTexture")
+    //     debugger;
+
+    this.preLoad(pkg, exp);
+    if (!isFinite(this.readHead)) debugger;
+    if (!isFinite(this.readTail)) debugger;
+    if (this.readTail - this.readHead > 0) {
+      this.doLoad(pkg, exp);
+      this.postLoad(pkg, exp);
+    }
+    this.isLoading = false;
+    this.isReady = true;
+    return this;
+  }
+  doLoad(pkg, exp) {
+    this.readNamedProps(pkg);
+  }
+  postLoad(pkg, exp) {
+    this.readHead = pkg.tell();
+    if (this.skipRemaining) this.readHead = this.readTail;
+    if (this.bytesUnread > 0 && this.bytesUnread !== this.readHeadOffset && this.careUnread) {
+      const constructorName = this.constructor.isDynamicClass ? `${this.constructor.friendlyName}[Dynamic]` : this.constructor.name;
+      console.warn(`Unread '${this.objectName}' (${constructorName}) ${this.bytesUnread} bytes (${(this.bytesUnread / 1024).toFixed(2)} kB) in package '${pkg.path}'`);
+    }
+    if (UObject.CLEANUP_NAMESPACE) {
+      Object.values(this.getPropertyMap()).forEach(propName => {
+        if (this[propName] === undefined) delete this[propName];
+      });
+    }
+  }
+}
+(0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(UObject, "CLEANUP_NAMESPACE", true);
+class EnumeratedValue {
+  constructor(value, enumerations) {
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "value", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "enumerations", void 0);
+    this.value = value;
+    this.enumerations = Object.freeze(enumerations);
+    Object.seal(this);
+  }
+  valueOf() {
+    return this.value;
+  }
+  toString() {
+    return isFinite(this.value) && this.value < this.enumerations.length ? this.enumerations[this.value] : `<invalid '${this.value}'>`;
+  }
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UObject);
+
+
+/***/ }),
+
 /***/ "../src/unreal/un-package.ts":
 /*!***********************************!*\
   !*** ../src/unreal/un-package.ts ***!
@@ -1020,6 +1288,137 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__["default"] 
   }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UPackage);
+
+
+/***/ }),
+
+/***/ "../src/unreal/un-property-tag.ts":
+/*!****************************************!*\
+  !*** ../src/unreal/un-property-tag.ts ***!
+  \****************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "PropertyTag": () => (/* binding */ PropertyTag),
+/* harmony export */   "UNP_PropertyMasks": () => (/* binding */ UNP_PropertyMasks),
+/* harmony export */   "UNP_PropertyTypes": () => (/* binding */ UNP_PropertyTypes),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+
+
+class PropertyTag {
+  constructor() {
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "name", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "type", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "structName", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "arrayIndex", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "dataSize", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "boolValue", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "enumName", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "index", void 0);
+  }
+  static from(pkg, offset) {
+    return new PropertyTag().load(pkg, offset);
+  }
+  isValid() {
+    return !this.name || this.name !== "None";
+  }
+  load(pkg, offset) {
+    pkg.seek(offset, "set");
+    const index = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32));
+    this.index = index.value;
+
+    // if (!pkg.nameTable[index.value as number])
+    //     debugger;
+    const propName = index.value >= 0 && index.value < pkg.nameTable.length ? pkg.nameTable[index.value].name : "None";
+    this.name = propName;
+    if (propName === "None") return this;
+    const info = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8)).value;
+    const isArray = (info & UNP_PropertyMasks.PROPERTY_ARRAY_MASK) !== 0;
+    this.type = info & UNP_PropertyMasks.PROPERTY_TYPE_MASK;
+    if (this.type === UNP_PropertyTypes.UNP_StructProperty) {
+      pkg.read(index);
+      this.structName = pkg.nameTable[index.value].name;
+    }
+
+    // debugger;
+
+    switch (info & UNP_PropertyMasks.PROPERTY_SIZE_MASK) {
+      case 0x00:
+        this.dataSize = 1;
+        break;
+      case 0x10:
+        this.dataSize = 2;
+        break;
+      case 0x20:
+        this.dataSize = 4;
+        break;
+      case 0x30:
+        this.dataSize = 12;
+        break;
+      case 0x40:
+        this.dataSize = 16;
+        break;
+      case 0x50:
+        this.dataSize = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint8)).value;
+        break;
+      case 0x60:
+        this.dataSize = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint16)).value;
+        break;
+      case 0x70:
+        this.dataSize = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint32)).value;
+        break;
+    }
+    this.arrayIndex = 0;
+    if (isArray && this.type !== UNP_PropertyTypes.UNP_BoolProperty) {
+      const b = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8));
+      if (b.value < 128) {
+        this.arrayIndex = b.value;
+      } else {
+        const b2 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8));
+        if (b.value) {
+          // really, (b & 0xC0) == 0xC0
+          const b3 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8));
+          const b4 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8));
+          this.arrayIndex = (b.value << 24 | b2.value << 16 | b3.value << 8 | b4.value) & 0x3FFFFF;
+        } else this.arrayIndex = (b.value << 8 | b2.value) & 0x3FFF;
+      }
+    }
+    this.boolValue = false;
+    if (this.type === UNP_PropertyTypes.UNP_BoolProperty) this.boolValue = isArray;
+    return this;
+  }
+}
+var UNP_PropertyTypes;
+(function (UNP_PropertyTypes) {
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_ByteProperty"] = 1] = "UNP_ByteProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_IntProperty"] = 2] = "UNP_IntProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_BoolProperty"] = 3] = "UNP_BoolProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_FloatProperty"] = 4] = "UNP_FloatProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_ObjectProperty"] = 5] = "UNP_ObjectProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_NameProperty"] = 6] = "UNP_NameProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_StringProperty"] = 7] = "UNP_StringProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_ClassProperty"] = 8] = "UNP_ClassProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_ArrayProperty"] = 9] = "UNP_ArrayProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_StructProperty"] = 10] = "UNP_StructProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_VectorProperty"] = 11] = "UNP_VectorProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_RotatorProperty"] = 12] = "UNP_RotatorProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_StrProperty"] = 13] = "UNP_StrProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_MapProperty"] = 14] = "UNP_MapProperty";
+  UNP_PropertyTypes[UNP_PropertyTypes["UNP_FixedArrayProperty"] = 15] = "UNP_FixedArrayProperty";
+})(UNP_PropertyTypes || (UNP_PropertyTypes = {}));
+;
+var UNP_PropertyMasks;
+(function (UNP_PropertyMasks) {
+  UNP_PropertyMasks[UNP_PropertyMasks["PROPERTY_TYPE_MASK"] = 15] = "PROPERTY_TYPE_MASK";
+  UNP_PropertyMasks[UNP_PropertyMasks["PROPERTY_SIZE_MASK"] = 112] = "PROPERTY_SIZE_MASK";
+  UNP_PropertyMasks[UNP_PropertyMasks["PROPERTY_ARRAY_MASK"] = 128] = "PROPERTY_ARRAY_MASK";
+})(UNP_PropertyMasks || (UNP_PropertyMasks = {}));
+;
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (PropertyTag);
 
 
 /***/ }),
@@ -11621,6 +12020,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "UExport": () => (/* reexport safe */ _unreal_un_export__WEBPACK_IMPORTED_MODULE_5__.UExport),
 /* harmony export */   "UImport": () => (/* reexport safe */ _unreal_un_import__WEBPACK_IMPORTED_MODULE_6__.UImport),
 /* harmony export */   "UName": () => (/* reexport safe */ _unreal_un_name__WEBPACK_IMPORTED_MODULE_4__.UName),
+/* harmony export */   "UObject": () => (/* reexport safe */ _unreal_un_object__WEBPACK_IMPORTED_MODULE_7__.UObject),
 /* harmony export */   "UPackage": () => (/* reexport safe */ _unreal_un_package__WEBPACK_IMPORTED_MODULE_3__.UPackage)
 /* harmony export */ });
 /* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./buffer-value */ "../src/buffer-value.ts");
@@ -11630,6 +12030,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _unreal_un_name__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./unreal/un-name */ "../src/unreal/un-name.ts");
 /* harmony import */ var _unreal_un_export__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./unreal/un-export */ "../src/unreal/un-export.ts");
 /* harmony import */ var _unreal_un_import__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./unreal/un-import */ "../src/unreal/un-import.ts");
+/* harmony import */ var _unreal_un_object__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./unreal/un-object */ "../src/unreal/un-object.ts");
+
 
 
 

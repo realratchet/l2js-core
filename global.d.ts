@@ -8,3 +8,6 @@ type ValidTypes_T<T extends ValueTypeNames_T> = {
 };
 
 type Seek_T = "current" | "set";
+
+type UExport = import("./src/unreal/un-export").UExport;
+type UPackage = import("./src/unreal/un-package").UPackage;
