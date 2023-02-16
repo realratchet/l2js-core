@@ -9,9 +9,8 @@ const bundleConfigs = {
     mode: "development",
     devtool: "source-map",
     minimize: false,
-    dirOutput
+    dirOutput,
+    library: true
 };
-
-console.log(JSON.stringify(createConfigBundle(bundleConfigs)));
 
 module.exports = [createConfigBundle(bundleConfigs)];

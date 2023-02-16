@@ -6,7 +6,7 @@ import UHeader from "./un-header";
 import UImport from "./un-import";
 import UName from "./un-name";
 
-class UPackage extends UEncodedFile {
+abstract class UPackage extends UEncodedFile {
     public exports: UExport[];
     public imports: UImport[];
     public nameTable: UName[];

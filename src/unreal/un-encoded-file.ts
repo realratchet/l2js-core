@@ -4,7 +4,7 @@ import * as _gmp from "gmp-wasm";
 
 let gmp: _gmp.GMPLib = null;
 
-class UEncodedFile {
+abstract class UEncodedFile {
     public readonly path: string;
     public readonly isReadable = false;
 
@@ -134,6 +134,8 @@ class UEncodedFile {
         return this;
     }
 
+    protected abstract readArrayBuffer(): Promise<ArrayBuffer>;
+
     protected _doDecode(): Promise<BufferValue> {
         this.ensureReadable();
 
@@ -142,11 +144,7 @@ class UEncodedFile {
         console.log("Started loading package:", this.path);
 
         return this.handle.promiseDecoding = this.promiseDecoding = new Promise(async resolve => {
-            const response = await fetch(this.path);
-
-            if (!response.ok) throw new Error(response.statusText);
-
-            this.buffer = await response.arrayBuffer();
+            this.buffer = await this.readArrayBuffer();
 
             const signature = this.read(new BufferValue(BufferValue.uint32));
             const HEADER_SIZE = 28;

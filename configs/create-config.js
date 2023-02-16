@@ -2,8 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const { SourceMapDevToolPlugin } = require("webpack");
 
-function createModuleConfig({ name, resolve, entry: _entry, library }) {
-    return function ({ bundleAnalyzer, mode, devtool, minimize, dirOutput, stats }) {
+function createModuleConfig({ name, resolve, entry: _entry }) {
+    return function ({ bundleAnalyzer, mode, devtool, minimize, dirOutput, stats, library }) {
         const plugins = [];
 
         if (devtool) {
@@ -26,9 +26,9 @@ function createModuleConfig({ name, resolve, entry: _entry, library }) {
         };
 
         if (library) {
-            output["library"] = library ? `Module_${name}` : undefined;
-            output["libraryTarget"] = "var";
-            output["libraryExport"] = "default";
+            // output["library"] = library ? `Module_${name}` : undefined;
+            output["libraryTarget"] = "commonjs2";
+            // output["libraryExport"] = "default";
         }
 
         const rules = [];
