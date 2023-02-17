@@ -25,13 +25,36 @@ abstract class UObject {
     protected pkg: UPackage;
 
     protected setReadPointers(exp: UExport) {
-        this.readStart = this.readHead = exp.offset as number + this.readHeadOffset;
-        this.readTail = this.readHead + (exp.size as number);
+        this.readStart = this.readHead = exp.offset + this.readHeadOffset;
+        this.readTail = this.readHead + exp.size;
     }
 
     public get byteCount() { return this.readTail - this.readStart; }
     public get bytesUnread() { return this.readTail - this.readHead; }
     public get byteOffset() { return this.readHead - this.readStart; }
+
+    protected static getConstructorName() {
+        debugger;
+        throw new Error("Must be implemented by inheriting class because JS does not support inheritence chain.");
+    }
+
+    public static get inheritenceChain() {
+        if (this === UObject)
+            return ["Object"]
+
+        let base = this as any;
+        const dependencyChain = new Array<string>();
+
+        do {
+            dependencyChain.push(base.getConstructorName());
+            base = base.__proto__;
+
+        } while (base !== UObject);
+
+        dependencyChain.push("Object");
+
+        return dependencyChain.reverse();
+    }
 
     protected readNamedProps(pkg: UPackage) {
         pkg.seek(this.readHead, "set");
@@ -56,6 +79,8 @@ abstract class UObject {
     protected getPropertyVarName(tag: PropertyTag) { return tag.name; }
     protected isValidProperty(varName: string) { return true; }
 
+    protected getPropertyMap() { return {}; }
+
     protected setProperty(tag: PropertyTag, value: any) {
         const varName = this.getPropertyVarName(tag);
         const { name: propName, arrayIndex } = tag;
@@ -79,22 +104,28 @@ abstract class UObject {
         return true;
     }
 
+    public loadSelf() {
+        if (!this.pkg || !this.pkg)
+            return this;
 
-    protected readByteProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8)).value as number); }
-    protected readIntProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32)).value as number); }
-    protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float)).value as number); }
-    protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, tag.boolValue); }
-    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.compat32)).value as number); }
-    protected readNameProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.nameTable[pkg.read(new BufferValue(BufferValue.compat32)).value as number].name); }
-    protected readStrProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char)).value as number); }
-    protected readStringProperty(pkg: UPackage, tag: PropertyTag) { throw new Error("Not yet implemented"); } // Never used?
-    protected readArrayProperty(pkg: UPackage, tag: PropertyTag) { throw new Error("Not yet implemented"); }
-    protected readClassProperty(pkg: UPackage, tag: PropertyTag) { throw new Error("Not yet implemented"); } // Never used?
-    protected readVectorProperty(pkg: UPackage, tag: PropertyTag) { throw new Error("Not yet implemented"); } // Never used?
-    protected readRotatorProperty(pkg: UPackage, tag: PropertyTag) { throw new Error("Not yet implemented"); } // Never used?
-    protected readMapProperty(pkg: UPackage, tag: PropertyTag) { throw new Error("Not yet implemented"); } // Never used?
-    protected readFixedProperty(pkg: UPackage, tag: PropertyTag) { throw new Error("Not yet implemented"); } // Never used?
-    protected readStructProperty(pkg: UPackage, tag: PropertyTag) { throw new Error("Not yet implemented"); }
+        return this.load(this.pkg, this.exp);
+    }
+
+    protected readByteProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8)).value); }
+    protected readIntProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32)).value); }
+    protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float)).value); }
+    protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, tag.boolValue); }
+    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.compat32)).value); }
+    protected readNameProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.nameTable[pkg.read(new BufferValue(BufferValue.compat32)).value].name); }
+    protected readStrProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char)).value); }
+    protected readStringProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    protected readArrayProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); }
+    protected readClassProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    protected readVectorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    protected readRotatorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    protected readMapProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    protected readFixedProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    protected readStructProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); }
 
     protected loadProperty(pkg: UPackage, tag: PropertyTag) {
         const offStart = pkg.tell();
@@ -136,12 +167,12 @@ abstract class UObject {
     }
 
     protected preLoad(pkg: UPackage, exp: UExport): void {
-        const flags = exp.flags as number;
+        const flags = exp.flags;
 
         if (!this.exp)
             this.setExport(pkg, exp);
 
-        pkg.seek(exp.offset as number, "set");
+        pkg.seek(exp.offset, "set");
 
         if (flags & ObjectFlags_T.HasStack && exp.size > 0) {
             const offset = pkg.tell();
@@ -149,13 +180,13 @@ abstract class UObject {
             const int64 = new BufferValue(BufferValue.int64);
             const int32 = new BufferValue(BufferValue.int32);
 
-            const node = pkg.read(compat32).value as number;
-            /*const stateNode =*/ pkg.read(compat32).value as number;
-            /*const probeMask =*/ pkg.read(int64).value as number;
-            /*const latentAction =*/ pkg.read(int32).value as number;
+            const node = pkg.read(compat32).value;
+            /*const stateNode =*/ pkg.read(compat32).value;
+            /*const probeMask =*/ pkg.read(int64).value;
+            /*const latentAction =*/ pkg.read(int32).value;
 
             if (node !== 0) {
-                /*const offset =*/ pkg.read(compat32).value as number;
+                /*const offset =*/ pkg.read(compat32).value;
             }
 
             this.readHeadOffset = pkg.tell() - offset;

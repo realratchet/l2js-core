@@ -103,11 +103,10 @@ module.exports.createConfigBundle = createModuleConfig({
     resolve: {
         fallback: {
             // "buffer": false,
-            // "path": require.resolve("path-browserify")
+            "path": require.resolve("path-browserify")
         },
-        extensions: [".tsx", ".ts", ".js"],
-        alias: {
-        }
+        extensions: [".ts", ".js"],
+        alias: {}
     },
     entry: "../src/index.ts"
 });

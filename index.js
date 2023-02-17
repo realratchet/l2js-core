@@ -1,6 +1,115 @@
 /******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
+
+/***/ "../src/asset-loader.ts":
+/*!******************************!*\
+  !*** ../src/asset-loader.ts ***!
+  \******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "AssetLoader": () => (/* binding */ AssetLoader),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var path__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! path */ "../node_modules/path-browserify/index.js");
+/* harmony import */ var path__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(path__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _supported_extensions__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./supported-extensions */ "../src/supported-extensions.js");
+/* harmony import */ var _supported_extensions__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_supported_extensions__WEBPACK_IMPORTED_MODULE_2__);
+
+
+
+class AssetLoader {
+  constructor() {
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "packages", new Map());
+  }
+  init(assetList, {
+    UPackage,
+    UNativePackage
+  }) {
+    this.packages.set("native", new Map([["U", this.createNativePackage(UNativePackage)]]));
+    for (let [path, downloadPath] of Object.entries(assetList)) {
+      const [pkgName, pkgExt] = pathToPkgName(path);
+      if (!this.packages.has(pkgName)) this.packages.set(pkgName, new Map());
+      const packages = this.packages.get(pkgName);
+      if (packages.has(pkgExt)) throw new Error(`Package already registered: ${pkgName}`);
+      packages.set(pkgExt, this.createPackage(UPackage, downloadPath));
+    }
+    return this;
+  }
+  getPackage(pkgName, impType) {
+    const pkg = getPackage(this.packages, pkgName, impType);
+    if (pkg === null) throw new Error(`Package '${pkgName}[${impType}]' not found!`);
+    return pkg;
+  }
+  hasPackage(pkgName, impType) {
+    return getPackage(this.packages, pkgName, impType) !== null;
+  }
+  async load(pkg) {
+    const pkgsToLoad = [pkg];
+    while (pkgsToLoad.length > 0) {
+      const pkg = pkgsToLoad.shift();
+      if (pkg.isDecoded()) continue;
+      await pkg.decode();
+      for (const entry of pkg.imports.filter(imp => imp.className !== "Package")) {
+        let entrypackage = pkg.getImportEntry(entry.idPackage);
+        while (entrypackage.idPackage !== 0) entrypackage = pkg.getImportEntry(entrypackage.idPackage);
+        const packageName = entrypackage.objectName;
+        const className = entry.className;
+        if (!this.hasPackage(packageName, className)) throw new Error(`Package '${packageName}' for type '${className}' does not exist.`);
+        const dependency = this.getPackage(packageName, className);
+        if (!dependency) debugger;
+        if (pkgsToLoad.includes(dependency)) continue;
+        pkgsToLoad.push(dependency);
+      }
+    }
+    return pkg;
+  }
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (AssetLoader);
+
+const impProperties = ["ObjectProperty", "StructProperty", "ByteProperty", "BoolProperty", "NameProperty", "FloatProperty", "ArrayProperty", "IntProperty", "ClassProperty", "StrProperty"];
+const packageTypes = new Set(_supported_extensions__WEBPACK_IMPORTED_MODULE_2__.SUPPORTED_EXTENSIONS.slice().concat(["NATIVE"]));
+const extToTypes = new Map([...packageTypes].map(v => {
+  return [v, new Set()];
+}));
+const impToTypes = new Map();
+function addImpExtension(ext, ...classList) {
+  for (const cls of classList) {
+    const impName = cls;
+    extToTypes.get(ext).add(impName);
+    if (!impToTypes.has(impName)) impToTypes.set(impName, new Set());
+    impToTypes.get(impName).add(ext);
+  }
+}
+addImpExtension("UNR", "Level");
+addImpExtension("UTX", "Texture", "TexOscillator", "Shader", "ColorModifier", "FinalBlend", "TexEnvMap", "Combiner", "TexCoordSource", "TexPanner");
+addImpExtension("UAX", "Sound");
+addImpExtension("USX", "StaticMesh");
+addImpExtension("UKX", "Animation", "SkeletalMesh", "VertMesh");
+addImpExtension("USK", "Effect");
+addImpExtension("U", "Script", "State", "Class", "Struct", "Function", "Enum", ...impProperties, "Texture");
+function pathToPkgName(path) {
+  const ext = path__WEBPACK_IMPORTED_MODULE_1__.extname(path);
+  const extUpper = ext.slice(1).toUpperCase();
+  if (!packageTypes.has(extUpper)) throw new Error(`Unsupported package type '${ext}' for package '${path__WEBPACK_IMPORTED_MODULE_1__.basename(path)}'`);
+  return [path__WEBPACK_IMPORTED_MODULE_1__.basename(path, ext), extUpper];
+}
+function getPackage(allPackages, pkgName, impType) {
+  const packages = allPackages.get(pkgName.toLowerCase());
+  const validExts = impToTypes.get(impType);
+  let pkg = null;
+  for (const ext of validExts) {
+    if (!packages.has(ext)) continue;
+    pkg = packages.get(ext);
+    break;
+  }
+  return pkg;
+}
+
+/***/ }),
 
 /***/ "../src/buffer-value.ts":
 /*!******************************!*\
@@ -8,6 +117,7 @@
   \******************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "BufferValue": () => (/* binding */ BufferValue),
@@ -293,6 +403,7 @@ class BufferValue {
   \*************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "decryptModulo": () => (/* reexport safe */ _decrypt_modulo__WEBPACK_IMPORTED_MODULE_1__.decryptModulo),
@@ -316,6 +427,7 @@ const DecodersRSA = Object.freeze({
   \*******************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "decryptModulo": () => (/* binding */ decryptModulo),
@@ -336,6 +448,7 @@ function decryptModulo(array, cryptKey) {
   \****************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "decryptRSA": () => (/* binding */ decryptRSA),
@@ -439,12 +552,411 @@ function decryptRSA(modulus, exponent, gmp, buffer) {
 
 /***/ }),
 
+/***/ "../src/supported-extensions.js":
+/*!**************************************!*\
+  !*** ../src/supported-extensions.js ***!
+  \**************************************/
+/***/ ((module) => {
+
+/**
+ * @type {SupportedExtensions_T[]}
+ */
+const SUPPORTED_EXTENSIONS = ["UNR", "UTX", "USX", "UAX", "U", "UKX", "USK", "U"];
+module.exports = {
+  SUPPORTED_EXTENSIONS
+}; // this is used in some webpack configurations, so just save it plain javascript
+
+/***/ }),
+
+/***/ "../src/unreal/un-array.ts":
+/*!*********************************!*\
+  !*** ../src/unreal/un-array.ts ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "FArray": () => (/* binding */ FArray),
+/* harmony export */   "FIndexArray": () => (/* binding */ FIndexArray),
+/* harmony export */   "FNameArray": () => (/* binding */ FNameArray),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+/* harmony import */ var _un_export__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./un-export */ "../src/unreal/un-export.ts");
+/* harmony import */ var _un_number__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./un-number */ "../src/unreal/un-number.ts");
+
+
+
+
+class FArray extends Array {
+  getElemCount() {
+    return this.length;
+  }
+  getElem(idx) {
+    return this[idx];
+  }
+  constructor(constr) {
+    super();
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "Constructor", void 0);
+    this.Constructor = constr;
+  }
+  map(fnMap) {
+    return [...this].map(fnMap);
+  }
+  load(pkg, tag) {
+    const hasTag = tag !== null && tag !== undefined;
+    const beginIndex = hasTag ? pkg.tell() : null;
+    const count = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value;
+    const headerOffset = hasTag ? pkg.tell() - beginIndex : null;
+    const dataSize = hasTag ? tag.dataSize - headerOffset : null;
+    this.length = count;
+    if (count === 0) return this;
+    const elementSize = hasTag ? dataSize / this.length : null;
+    for (let i = 0, len = this.length; i < len; i++) {
+      const exp = hasTag ? function () {
+        const exp = new _un_export__WEBPACK_IMPORTED_MODULE_2__["default"]();
+        exp.size = elementSize;
+        exp.objectName = `${tag.name}[${i + 1}/${count}]`;
+        exp.offset = pkg.tell();
+        return exp;
+      }() : null;
+      this[i] = new this.Constructor(elementSize).load(pkg, exp);
+    }
+    if (hasTag) console.assert(pkg.tell() - beginIndex - tag.dataSize === 0);
+    return this;
+  }
+  clone(other) {
+    if (!other) return this;
+    this.Constructor = other.Constructor;
+    for (const v of other) this.push(v);
+    return this;
+  }
+}
+class FIndexArray extends FArray {
+  constructor() {
+    super(_un_number__WEBPACK_IMPORTED_MODULE_3__["default"].forType(_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32));
+  }
+}
+class FNameArray extends Array {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "indexArray", new FIndexArray());
+  }
+  load(pkg, tag) {
+    this.indexArray.load(pkg, tag);
+    let i = 0;
+    for (const index of this.indexArray) this[i++] = pkg.nameTable[index.value].name;
+    return this;
+  }
+  loadSelf() {
+    return this;
+  }
+  clone(other) {
+    if (!other) return this;
+    this.indexArray = other.indexArray;
+    for (const v of other) this.push(v);
+    return this;
+  }
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (FArray);
+
+
+/***/ }),
+
+/***/ "../src/unreal/un-class.ts":
+/*!*********************************!*\
+  !*** ../src/unreal/un-class.ts ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "EClassFlags_T": () => (/* binding */ EClassFlags_T),
+/* harmony export */   "UClass": () => (/* binding */ UClass),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _un_state__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./un-state */ "../src/unreal/un-state.ts");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+/* harmony import */ var _utils_flags__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../utils/flags */ "../src/utils/flags.ts");
+/* harmony import */ var _un_array__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./un-array */ "../src/unreal/un-array.ts");
+/* harmony import */ var _un_object__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./un-object */ "../src/unreal/un-object.ts");
+/* harmony import */ var _un_object_flags__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./un-object-flags */ "../src/unreal/un-object-flags.ts");
+/* harmony import */ var _un_properties__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./un-properties */ "../src/unreal/un-properties.ts");
+/* harmony import */ var _un_enum__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./un-enum */ "../src/unreal/un-enum.ts");
+
+
+
+
+
+
+
+
+
+class FDependencies {
+  constructor() {
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "classId", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "scriptTextCRC", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "depth", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "class", void 0);
+  }
+  load(pkg) {
+    const compat32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].compat32);
+    const uint32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].uint32);
+    const int32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].int32);
+    this.classId = pkg.read(compat32).value;
+    this.depth = pkg.read(uint32).value;
+    this.scriptTextCRC = pkg.read(int32).value;
+    return this;
+  }
+}
+class UClass extends _un_state__WEBPACK_IMPORTED_MODULE_1__["default"] {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "flags", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "classFlags", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "classGuid", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "dependencies", new _un_array__WEBPACK_IMPORTED_MODULE_4__.FArray(FDependencies));
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "pkgImportIds", new _un_array__WEBPACK_IMPORTED_MODULE_4__.FIndexArray());
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "pkgImportIds2", new _un_array__WEBPACK_IMPORTED_MODULE_4__.FIndexArray());
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "pkgImports", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "pkgImports2", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "classWithinId", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "classConfigName", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "baseStruct", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "second", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isClass", true);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "defaultsLoading", new Array());
+  }
+  static getConstructorName() {
+    return "Class";
+  }
+  loadDefaults() {
+    const dependencyTree = this.collectDependencies();
+    for (const base of dependencyTree.reverse()) {
+      while (base.defaultsLoading.length > 0) {
+        const fn = base.defaultsLoading.shift();
+        fn();
+      }
+    }
+    return this;
+  }
+  doLoad(pkg, exp) {
+    super.doLoad(pkg, exp);
+    this.readHead = pkg.tell();
+    const verArchive = pkg.header.getArchiveFileVersion();
+    const uint32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].uint32);
+    const compat32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].compat32);
+    if (verArchive <= 61) {
+      debugger;
+    }
+    this.flags = pkg.read(uint32).value;
+    this.classFlags = (0,_utils_flags__WEBPACK_IMPORTED_MODULE_3__.flagBitsToDict)(this.flags, EClassFlags_T);
+    this.classGuid = pkg.read(_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].allocBytes(16)).value;
+    this.dependencies.load(pkg);
+    this.pkgImportIds.load(pkg);
+    if (verArchive >= 0x3e) {
+      this.classWithinId = pkg.read(compat32).value;
+      const nameId = pkg.read(compat32).value;
+      this.classConfigName = pkg.nameTable[nameId].name;
+    }
+    if (verArchive >= 0x63) this.pkgImportIds2.load(pkg);
+    this.readHead = pkg.tell();
+    this.readNamedProps(pkg);
+  }
+  buildClass(pkg) {
+    var _class;
+    if (this.kls) return this.kls;
+    this.loadSelf().loadDefaults();
+    const dependencyTree = this.collectDependencies();
+    if (!this.isReady) debugger;
+    const clsNamedProperties = {};
+    const clsEnumProperties = {};
+    const inheretenceChain = new Array();
+    let lastNative = null;
+    for (const base of dependencyTree.reverse()) {
+      inheretenceChain.push(base.loadDefaults().friendlyName);
+      if (!base.exp || base.exp.anyFlags(_un_object_flags__WEBPACK_IMPORTED_MODULE_6__["default"].Native)) lastNative = base;
+      if (base.constructor !== UClass) debugger;
+      const {
+        childPropFields,
+        defaultProperties
+      } = base;
+      for (const field of childPropFields) {
+        if (!(field instanceof _un_properties__WEBPACK_IMPORTED_MODULE_7__.UProperty)) continue;
+        const propertyName = field.propertyName;
+
+        // if (field.propertyName.includes("Clamp"))
+        //     debugger;
+
+        // if (field.propertyName === "Style" && (this as any)[propertyName] === 8)
+        //     debugger;
+
+        if (field instanceof UArrayProperty) {
+          if (field.arrayDimensions !== 1) debugger;
+          if (defaultProperties.has(propertyName)) debugger;
+          clsNamedProperties[propertyName] = field.dtype.clone(this[propertyName]);
+          continue;
+        }
+        if (field instanceof UByteProperty && field.value) {
+          if (!(field.value instanceof _un_enum__WEBPACK_IMPORTED_MODULE_8__["default"])) debugger;
+          if (field.arrayDimensions !== 1) debugger;
+          clsEnumProperties[propertyName] = {
+            defaultValue: this[propertyName],
+            names: field.value.names
+          };
+          continue;
+        }
+        clsNamedProperties[propertyName] = field.arrayDimensions > 1 ? propertyName in this ? this[propertyName] : new Array(field.arrayDimensions) : this[propertyName];
+      }
+      for (const propertyName of Object.keys(defaultProperties)) clsNamedProperties[propertyName] = this[propertyName];
+    }
+    const friendlyName = this.friendlyName;
+    const hostClass = this;
+    const Constructor = lastNative ? pkg.getConstructor(lastNative.friendlyName) : _un_object__WEBPACK_IMPORTED_MODULE_5__["default"];
+    const cls = {
+      [this.friendlyName]: (_class = class extends Constructor {
+        static getConstructorName() {
+          return friendlyName;
+        }
+        constructor() {
+          super();
+          (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "newProps", {});
+          const oldProps = this.getPropertyMap();
+          const newProps = this.newProps;
+          const missingProps = [];
+          for (const [name, value] of Object.entries(clsNamedProperties)) {
+            const varname = name in oldProps ? oldProps[name] : name;
+            if (!(name in oldProps)) {
+              newProps[varname] = varname;
+              missingProps.push(varname);
+            }
+
+            // if (value === 8 && name === "Style")
+            //     debugger;
+
+            if (value !== undefined || !(varname in this)) this[varname] = value;
+          }
+          for (const [name, {
+            defaultValue,
+            names
+          }] of Object.entries(clsEnumProperties)) {
+            const varname = name in oldProps ? oldProps[name] : name;
+            if (!(name in oldProps)) {
+              newProps[varname] = varname;
+              missingProps.push(varname);
+            }
+
+            // if (defaultValue === 8 && name === "Style")
+            //     debugger;
+
+            const oldValue = varname in this && this[varname] !== undefined ? this[varname] : defaultValue;
+            const value = new _un_object__WEBPACK_IMPORTED_MODULE_5__.EnumeratedValue(oldValue, names);
+            if (varname in this) delete this[varname];
+            this[varname] = value;
+
+            // Object.defineProperty(this, varname, {
+            //     value,
+            //     writable: false
+            // });
+          }
+
+          // debugger;
+
+          if (missingProps.length > 0) console.warn(`Native type '${Constructor.name}' is missing property '${missingProps.join(", ")}'`);
+        }
+        doLoad(pkg, exp) {
+          // if (this.objectName.includes("StaticMeshActor140") || this.objectName.includes("StaticMeshActor141"))
+          //     debugger;
+
+          super.doLoad(pkg, exp);
+
+          // if (this.objectName.includes("StaticMeshActor140") || this.objectName.includes("StaticMeshActor141"))
+          //     debugger;
+        }
+
+        getPropertyMap() {
+          return {
+            ...super.getPropertyMap(),
+            ...this.newProps
+          };
+        }
+        toString() {
+          return `[D]${friendlyName}=(name=${this.objectName})`;
+        }
+      }, (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(_class, "isDynamicClass", true), (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(_class, "friendlyName", friendlyName), (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(_class, "hostClass", hostClass), (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(_class, "nativeClass", lastNative), (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(_class, "inheretenceChain", Object.freeze(inheretenceChain)), _class)
+    }[this.friendlyName];
+    this.kls = cls;
+    return this.kls;
+  }
+}
+var EClassFlags_T;
+(function (EClassFlags_T) {
+  EClassFlags_T[EClassFlags_T["CLASS_Abstract"] = 1] = "CLASS_Abstract";
+  EClassFlags_T[EClassFlags_T["CLASS_Compiled"] = 2] = "CLASS_Compiled";
+  EClassFlags_T[EClassFlags_T["CLASS_Config"] = 4] = "CLASS_Config";
+  EClassFlags_T[EClassFlags_T["CLASS_Transient"] = 8] = "CLASS_Transient";
+  EClassFlags_T[EClassFlags_T["CLASS_Parsed"] = 16] = "CLASS_Parsed";
+  EClassFlags_T[EClassFlags_T["CLASS_Localized"] = 32] = "CLASS_Localized";
+  EClassFlags_T[EClassFlags_T["CLASS_SafeReplace"] = 64] = "CLASS_SafeReplace";
+  EClassFlags_T[EClassFlags_T["CLASS_RuntimeStatic"] = 128] = "CLASS_RuntimeStatic";
+  EClassFlags_T[EClassFlags_T["CLASS_NoExport"] = 256] = "CLASS_NoExport";
+  EClassFlags_T[EClassFlags_T["CLASS_NoUserCreate"] = 512] = "CLASS_NoUserCreate";
+  EClassFlags_T[EClassFlags_T["CLASS_PerObjectConfig"] = 1024] = "CLASS_PerObjectConfig";
+  EClassFlags_T[EClassFlags_T["CLASS_NativeReplication"] = 2048] = "CLASS_NativeReplication";
+  EClassFlags_T[EClassFlags_T["CLASS_Inherit"] = 1260] = "CLASS_Inherit";
+  EClassFlags_T[EClassFlags_T["CLASS_RecompilerClear"] = 3565] = "CLASS_RecompilerClear";
+})(EClassFlags_T || (EClassFlags_T = {}));
+;
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UClass);
+
+
+/***/ }),
+
+/***/ "../src/unreal/un-const.ts":
+/*!*********************************!*\
+  !*** ../src/unreal/un-const.ts ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "UConst": () => (/* binding */ UConst),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _un_field__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./un-field */ "../src/unreal/un-field.ts");
+/* harmony import */ var _un_string__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./un-string */ "../src/unreal/un-string.ts");
+
+
+
+class UConst extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "value", void 0);
+  }
+  doLoad(pkg, exp) {
+    super.doLoad(pkg, exp);
+    this.value = new _un_string__WEBPACK_IMPORTED_MODULE_2__["default"]().load(pkg).value;
+    this.readHead = pkg.tell();
+  }
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UConst);
+
+
+/***/ }),
+
 /***/ "../src/unreal/un-encoded-file.ts":
 /*!****************************************!*\
   !*** ../src/unreal/un-encoded-file.ts ***!
   \****************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "UEncodedFile": () => (/* binding */ UEncodedFile),
@@ -459,6 +971,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let gmp = null;
+;
 class UEncodedFile {
   constructor(path) {
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "path", void 0);
@@ -504,10 +1017,34 @@ class UEncodedFile {
   }
   read(target) {
     this.ensureReadable();
-    const _target = typeof target === "number" ? _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].allocBytes(target) : target;
-    this.offset += _target.readValue(this.buffer, this.offset);
-    return _target;
+    if (typeof target === "number") {
+      const _target = _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].allocBytes(target);
+      this.offset += _target.readValue(this.buffer, this.offset);
+      return _target;
+    } else if (target instanceof _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"]) {
+      this.offset += target.readValue(this.buffer, this.offset);
+      return target;
+    } else {
+      throw new Error("Invalid argument");
+    }
   }
+
+  // public read(target: BufferValue<T> | number) {
+  //     this.ensureReadable();
+
+  //     if (typeof (target) === "number") {
+  //         const _target = BufferValue.allocBytes(target);
+
+  //         this.offset += _target.readValue(this.buffer, this.offset);
+
+  //         return _target;
+  //     } else {
+  //         this.offset += target.readValue(this.buffer, this.offset);
+
+  //         return target;
+  //     }
+  // }
+
   tell() {
     return this.offset - this.contentOffset;
   }
@@ -596,12 +1133,46 @@ class UEncodedFile {
 
 /***/ }),
 
+/***/ "../src/unreal/un-enum.ts":
+/*!********************************!*\
+  !*** ../src/unreal/un-enum.ts ***!
+  \********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "UEnum": () => (/* binding */ UEnum),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _un_field__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./un-field */ "../src/unreal/un-field.ts");
+/* harmony import */ var _un_array__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./un-array */ "../src/unreal/un-array.ts");
+
+
+
+class UEnum extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "names", new _un_array__WEBPACK_IMPORTED_MODULE_2__.FNameArray());
+  }
+  doLoad(pkg, exp) {
+    super.doLoad(pkg, exp);
+    this.names.load(pkg);
+  }
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UEnum);
+
+
+/***/ }),
+
 /***/ "../src/unreal/un-export.ts":
 /*!**********************************!*\
   !*** ../src/unreal/un-export.ts ***!
   \**********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "UExport": () => (/* binding */ UExport),
@@ -625,6 +1196,8 @@ class UExport {
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "objectFlags", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "size", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "offset", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "object", null);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isFake", false);
   }
   allFlags(flags) {
     return _utils_flags__WEBPACK_IMPORTED_MODULE_1__.allFlags(this.flags, flags);
@@ -640,11 +1213,157 @@ class UExport {
     this.objectFlags = Object.freeze(_utils_flags__WEBPACK_IMPORTED_MODULE_1__.flagBitsToDict(flags, _un_object_flags__WEBPACK_IMPORTED_MODULE_2__["default"]));
   }
   toString() {
-    return `Export(id=${this.index + 1}, name=${this.objectName}, flags=[${Object.entries(this.objectFlags).filter(([, v]) => v).map(([k]) => k).join(",")}])`;
+    return `${this.isFake ? '!' : ''}Export(id=${this.index + 1}, name=${this.objectName}, flags=[${Object.entries(this.objectFlags).filter(([, v]) => v).map(([k]) => k).join(",")}])`;
   }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UExport);
 
+
+/***/ }),
+
+/***/ "../src/unreal/un-field.ts":
+/*!*********************************!*\
+  !*** ../src/unreal/un-field.ts ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "UField": () => (/* binding */ UField),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+/* harmony import */ var _un_object__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./un-object */ "../src/unreal/un-object.ts");
+
+
+
+class UField extends _un_object__WEBPACK_IMPORTED_MODULE_2__["default"] {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "superFieldId", 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "nextFieldId", 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "superField", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "nextField", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isField", true);
+  }
+  static getConstructorName() {
+    return "Field";
+  }
+  doLoad(pkg, exp) {
+    if (this.constructor.name !== "UClass") super.doLoad(pkg, exp);
+    const compat32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32);
+    this.superFieldId = pkg.read(compat32).value;
+    this.nextFieldId = pkg.read(compat32).value;
+    this.loadSuperfields();
+  }
+  collectDependencies() {
+    const dependencyTree = [];
+    let base = this;
+    do {
+      dependencyTree.push(base);
+      base = base.superField;
+    } while (base);
+    return dependencyTree;
+  }
+  loadSuperfields() {
+    let lastBase = this.loadSelf();
+    do {
+      var _lastBase;
+      if (this.superFieldId !== 0) this.superField = this.pkg.fetchObject(this.superFieldId);
+      if (this.nextFieldId !== 0) this.nextField = this.pkg.fetchObject(this.nextFieldId);
+      lastBase = (_lastBase = lastBase) === null || _lastBase === void 0 ? void 0 : _lastBase.loadSelf().superField;
+    } while (lastBase);
+    return this;
+  }
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UField);
+
+
+/***/ }),
+
+/***/ "../src/unreal/un-function.ts":
+/*!************************************!*\
+  !*** ../src/unreal/un-function.ts ***!
+  \************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "UFunction": () => (/* binding */ UFunction),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+/* harmony import */ var _un_struct__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./un-struct */ "../src/unreal/un-struct.ts");
+
+
+
+class UFunction extends _un_struct__WEBPACK_IMPORTED_MODULE_2__["default"] {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "paramSize", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "nativeFuncIndex", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "numParams", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "operatorPrecendence", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "returnValueOffset", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "funcFlags", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "replicationOffset", void 0);
+  }
+  static getConstructorName() {
+    return "Function";
+  }
+  doLoad(pkg, exp) {
+    super.doLoad(pkg, exp);
+    this.readHead = pkg.tell();
+    const verArchive = pkg.header.getArchiveFileVersion();
+    const uint8 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint8);
+    const uint16 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint16);
+    const uint32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint32);
+    if (verArchive <= 0x40) this.paramSize = pkg.read(uint16).value;
+    this.nativeFuncIndex = pkg.read(uint16).value;
+    if (verArchive <= 0x40) this.numParams = pkg.read(uint8).value;
+    this.operatorPrecendence = pkg.read(uint8).value;
+    if (verArchive <= 0x40) this.returnValueOffset = pkg.read(uint16).value;
+    this.funcFlags = pkg.read(uint32).value;
+    if (this.allFlags(this.funcFlags, FunctionFlags_T.Net)) this.replicationOffset = pkg.read(uint16).value;
+    this.readHead = pkg.tell();
+
+    // debugger;
+  }
+
+  allFlags(value, flags) {
+    return (value & flags) === flags;
+  }
+  anyFlags(value, flags) {
+    return (value & flags) !== 0;
+  }
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UFunction);
+
+var FunctionFlags_T;
+(function (FunctionFlags_T) {
+  FunctionFlags_T[FunctionFlags_T["Final"] = 1] = "Final";
+  FunctionFlags_T[FunctionFlags_T["Defined"] = 2] = "Defined";
+  FunctionFlags_T[FunctionFlags_T["Iterator"] = 4] = "Iterator";
+  FunctionFlags_T[FunctionFlags_T["Latent"] = 8] = "Latent";
+  FunctionFlags_T[FunctionFlags_T["PreOperator"] = 16] = "PreOperator";
+  FunctionFlags_T[FunctionFlags_T["Singular"] = 32] = "Singular";
+  FunctionFlags_T[FunctionFlags_T["Net"] = 64] = "Net";
+  FunctionFlags_T[FunctionFlags_T["NetReliable"] = 128] = "NetReliable";
+  FunctionFlags_T[FunctionFlags_T["Simulated"] = 256] = "Simulated";
+  FunctionFlags_T[FunctionFlags_T["Exec"] = 512] = "Exec";
+  FunctionFlags_T[FunctionFlags_T["Native"] = 1024] = "Native";
+  FunctionFlags_T[FunctionFlags_T["Event"] = 2048] = "Event";
+  FunctionFlags_T[FunctionFlags_T["Operator"] = 4096] = "Operator";
+  FunctionFlags_T[FunctionFlags_T["Static"] = 8192] = "Static";
+  FunctionFlags_T[FunctionFlags_T["NoExport"] = 16384] = "NoExport";
+  FunctionFlags_T[FunctionFlags_T["Const"] = 32768] = "Const";
+  FunctionFlags_T[FunctionFlags_T["Invariant"] = 65536] = "Invariant";
+})(FunctionFlags_T || (FunctionFlags_T = {}));
+;
 
 /***/ }),
 
@@ -654,6 +1373,7 @@ class UExport {
   \**************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "UGeneration": () => (/* binding */ UGeneration),
@@ -678,6 +1398,7 @@ class UGeneration {
   \**********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "UHeader": () => (/* binding */ UHeader),
@@ -720,6 +1441,7 @@ class UHeader {
   \**********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "UImport": () => (/* binding */ UImport),
@@ -737,9 +1459,10 @@ class UImport {
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "objectName", "None");
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "idClassPackage", 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "classPackage", "None");
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isFake", false);
   }
   toString() {
-    return `Import(id=${-(this.index + 1)}, name=${this.objectName})`;
+    return `${this.isFake ? '!' : ''}Import(id=${-(this.index + 1)}, name=${this.objectName})`;
   }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UImport);
@@ -753,6 +1476,7 @@ class UImport {
   \********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "UName": () => (/* binding */ UName),
@@ -764,9 +1488,53 @@ class UName {
   constructor() {
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "name", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "flags", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isFake", false);
+  }
+  toString() {
+    return `${this.isFake ? '!' : ''}Name(name=${this.name}, flags=${this.flags})`;
   }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UName);
+
+
+/***/ }),
+
+/***/ "../src/unreal/un-number.ts":
+/*!**********************************!*\
+  !*** ../src/unreal/un-number.ts ***!
+  \**********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "FNumber": () => (/* binding */ FNumber),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+
+
+class FNumber {
+  constructor(dtype) {
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "type", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "value", void 0);
+    this.type = dtype;
+  }
+  load(pkg) {
+    this.value = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](this.type)).value;
+    return this;
+  }
+  static forType(dtype) {
+    class FNumberExt extends FNumber {
+      constructor() {
+        super(dtype);
+      }
+    }
+    return FNumberExt;
+  }
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (FNumber);
 
 
 /***/ }),
@@ -777,6 +1545,7 @@ class UName {
   \****************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "ObjectFlags_T": () => (/* binding */ ObjectFlags_T),
@@ -836,6 +1605,7 @@ var ObjectFlags_T;
   \**********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "EnumeratedValue": () => (/* binding */ EnumeratedValue),
@@ -878,6 +1648,21 @@ class UObject {
   get byteOffset() {
     return this.readHead - this.readStart;
   }
+  static getConstructorName() {
+    debugger;
+    throw new Error("Must be implemented by inheriting class because JS does not support inheritence chain.");
+  }
+  static get inheritenceChain() {
+    if (this === UObject) return ["Object"];
+    let base = this;
+    const dependencyChain = new Array();
+    do {
+      dependencyChain.push(base.getConstructorName());
+      base = base.__proto__;
+    } while (base !== UObject);
+    dependencyChain.push("Object");
+    return dependencyChain.reverse();
+  }
   readNamedProps(pkg) {
     pkg.seek(this.readHead, "set");
     if (this.readHead < this.readTail) {
@@ -896,6 +1681,9 @@ class UObject {
   isValidProperty(varName) {
     return true;
   }
+  getPropertyMap() {
+    return {};
+  }
   setProperty(tag, value) {
     const varName = this.getPropertyVarName(tag);
     const {
@@ -911,49 +1699,68 @@ class UObject {
 
     return true;
   }
+  loadSelf() {
+    if (!this.pkg || !this.pkg) return this;
+    return this.load(this.pkg, this.exp);
+  }
   readByteProperty(pkg, tag) {
+    debugger;
     this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint8)).value);
   }
   readIntProperty(pkg, tag) {
+    debugger;
     this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int32)).value);
   }
   readFloatProperty(pkg, tag) {
+    debugger;
     this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].float)).value);
   }
   readBoolProperty(pkg, tag) {
+    debugger;
     this.setProperty(tag, tag.boolValue);
   }
   readObjectProperty(pkg, tag) {
+    debugger;
     this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value);
   }
   readNameProperty(pkg, tag) {
+    debugger;
     this.setProperty(tag, pkg.nameTable[pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value].name);
   }
   readStrProperty(pkg, tag) {
+    debugger;
     this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].char)).value);
   }
   readStringProperty(pkg, tag) {
+    debugger;
     throw new Error("Not yet implemented");
   } // Never used?
   readArrayProperty(pkg, tag) {
+    debugger;
     throw new Error("Not yet implemented");
   }
   readClassProperty(pkg, tag) {
+    debugger;
     throw new Error("Not yet implemented");
   } // Never used?
   readVectorProperty(pkg, tag) {
+    debugger;
     throw new Error("Not yet implemented");
   } // Never used?
   readRotatorProperty(pkg, tag) {
+    debugger;
     throw new Error("Not yet implemented");
   } // Never used?
   readMapProperty(pkg, tag) {
+    debugger;
     throw new Error("Not yet implemented");
   } // Never used?
   readFixedProperty(pkg, tag) {
+    debugger;
     throw new Error("Not yet implemented");
   } // Never used?
   readStructProperty(pkg, tag) {
+    debugger;
     throw new Error("Not yet implemented");
   }
   loadProperty(pkg, tag) {
@@ -1104,19 +1911,28 @@ class EnumeratedValue {
   \***********************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "UNativePackage": () => (/* binding */ UNativePackage),
 /* harmony export */   "UPackage": () => (/* binding */ UPackage),
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
 /* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
-/* harmony import */ var _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./un-encoded-file */ "../src/unreal/un-encoded-file.ts");
-/* harmony import */ var _un_export__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./un-export */ "../src/unreal/un-export.ts");
-/* harmony import */ var _un_generation__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./un-generation */ "../src/unreal/un-generation.ts");
-/* harmony import */ var _un_header__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./un-header */ "../src/unreal/un-header.ts");
-/* harmony import */ var _un_import__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./un-import */ "../src/unreal/un-import.ts");
-/* harmony import */ var _un_name__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./un-name */ "../src/unreal/un-name.ts");
+/* harmony import */ var _un_class__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./un-class */ "../src/unreal/un-class.ts");
+/* harmony import */ var _un_encoded_file__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./un-encoded-file */ "../src/unreal/un-encoded-file.ts");
+/* harmony import */ var _un_enum__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./un-enum */ "../src/unreal/un-enum.ts");
+/* harmony import */ var _un_export__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./un-export */ "../src/unreal/un-export.ts");
+/* harmony import */ var _un_function__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./un-function */ "../src/unreal/un-function.ts");
+/* harmony import */ var _un_generation__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./un-generation */ "../src/unreal/un-generation.ts");
+/* harmony import */ var _un_header__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./un-header */ "../src/unreal/un-header.ts");
+/* harmony import */ var _un_import__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./un-import */ "../src/unreal/un-import.ts");
+/* harmony import */ var _un_name__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./un-name */ "../src/unreal/un-name.ts");
+/* harmony import */ var _un_object_flags__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./un-object-flags */ "../src/unreal/un-object-flags.ts");
+/* harmony import */ var _un_struct__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./un-struct */ "../src/unreal/un-struct.ts");
+/* harmony import */ var _un_properties__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./un-properties */ "../src/unreal/un-properties.ts");
+/* harmony import */ var _un_const__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./un-const */ "../src/unreal/un-const.ts");
 
 
 
@@ -1125,9 +1941,20 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__["default"] {
-  constructor(...args) {
-    super(...args);
+
+
+
+
+
+
+
+class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_3__["default"] {
+  isDecoded() {
+    return !!this.buffer;
+  }
+  constructor(loader, path) {
+    super(path);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "loader", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "exports", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "imports", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "nameTable", void 0);
@@ -1135,9 +1962,12 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__["default"] 
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "exportGroups", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "importGroups", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "nameHash", new Map());
-  }
-  isDecoded() {
-    return !!this.buffer;
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isCore", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isEngine", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isNative", false);
+    this.loader = loader;
+    this.isCore = path.toLocaleLowerCase().endsWith("core.u");
+    this.isEngine = path.toLocaleLowerCase().endsWith("engine.u");
   }
   async decode() {
     if (this.buffer) return this;
@@ -1148,7 +1978,7 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__["default"] 
     const readable = this.asReadable();
     const signature = await readable._doDecode();
     if (signature.value !== 0x9E2A83C1) throw new Error(`Invalid signature: '0x${signature.toString(16).toUpperCase()}' expected '0x9E2A83C1'`);
-    const header = new _un_header__WEBPACK_IMPORTED_MODULE_5__["default"]();
+    const header = new _un_header__WEBPACK_IMPORTED_MODULE_8__["default"]();
     const uint32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint32);
     const int32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint32);
     header.version = readable.read(uint32).value;
@@ -1186,7 +2016,7 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__["default"] 
         console.assert(generationCount === 1);
       }
       for (let i = 0, gc = generationCount; i < gc; i++) {
-        const gen = new _un_generation__WEBPACK_IMPORTED_MODULE_4__["default"]();
+        const gen = new _un_generation__WEBPACK_IMPORTED_MODULE_7__["default"]();
         gen.exportCount = readable.read(uint32).value;
         gen.nameCount = readable.read(uint32).value;
         header.generations.push(gen);
@@ -1200,6 +2030,56 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__["default"] 
     readable.nameTable = nameTable;
     readable.nameHash = nameHash;
     readable.header = header;
+    if (this.isCore) {
+      const nativeIndex = -(imports.length + 1);
+      for (const imp of imports) {
+        if (imp.className === "Package") continue;
+        if (imp.classPackage !== "Core") continue;
+        imp.classPackage = "Native";
+        imp.idPackage = nativeIndex;
+        {
+          const className = imp.objectName;
+          registerNameTable(nameTable, nameHash, className);
+          {
+            const exp = new _un_export__WEBPACK_IMPORTED_MODULE_5__["default"]();
+            exp.index = exports.length;
+            exp.idClass = -(imp.index + 1);
+            exp.idSuper = 0;
+            exp.idPackage = nativeIndex;
+            exp.idObjectName = nameHash.get(className);
+            exp.objectName = className;
+            exp.flags = _un_object_flags__WEBPACK_IMPORTED_MODULE_11__["default"].Native;
+            exp.size = 0;
+            exp.offset = 0;
+            exports.push(exp);
+          }
+        }
+      }
+      addPackageDependendency(nameTable, nameHash, imports, "Native");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "State");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "DelegateProperty");
+    } else if (this.isEngine) {
+      addPackageDependendency(nameTable, nameHash, imports, "Native");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "Font");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "Sound");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "Primitive");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "ConvexVolume");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "Model");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "Mesh");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "StaticMesh");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "MeshInstance");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "LodMeshInstance");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "SkeletalMeshInstance");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "MeshAnimation");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "StaticMeshInstance");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "Viewport");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "Player");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "TerrainSector");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "TerrainPrimitive");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "LevelBase");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "Level");
+      addClassDependency(nameTable, nameHash, imports, exports, "Native", "Client");
+    }
     readable.importGroups = readable.imports.reduce((accum, imp, index) => {
       const impType = imp.className;
       const list = accum[impType] = accum[impType] || [];
@@ -1230,7 +2110,7 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__["default"] 
     const char = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].char);
     const uint32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint32);
     for (let i = 0, nc = header.nameCount; i < nc; i++) {
-      const uname = new _un_name__WEBPACK_IMPORTED_MODULE_7__["default"]();
+      const uname = new _un_name__WEBPACK_IMPORTED_MODULE_10__["default"]();
       uname.name = this.read(char).string;
       uname.flags = this.read(uint32).value;
       nameTable.push(uname);
@@ -1244,7 +2124,7 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__["default"] 
     const compat32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32);
     const uint32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint32);
     for (let i = 0, ec = header.exportCount; i < ec; i++) {
-      const uexport = new _un_export__WEBPACK_IMPORTED_MODULE_3__["default"]();
+      const uexport = new _un_export__WEBPACK_IMPORTED_MODULE_5__["default"]();
       uexport.idClass = this.read(compat32).value;
       uexport.idSuper = this.read(compat32).value;
       uexport.idPackage = this.read(uint32).value;
@@ -1264,7 +2144,7 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__["default"] 
     const index = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32);
     const int32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int32);
     for (let i = 0, ic = header.importCount; i < ic; i++) {
-      const uimport = new _un_import__WEBPACK_IMPORTED_MODULE_6__["default"]();
+      const uimport = new _un_import__WEBPACK_IMPORTED_MODULE_9__["default"]();
       uimport.index = i;
       this.read(index);
       uimport.idClassPackage = index.value;
@@ -1286,9 +2166,475 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__["default"] 
   toString() {
     return `Package=(${this.path}, imports=${this.imports.length}, exports=${this.exports.length})`;
   }
+  getImportEntry(objref) {
+    if (objref === 0) return null;else if (objref > 0) throw Error("Expected an import table entry");
+    const index = -objref - 1;
+    if (index >= this.imports.length) throw Error("Import table entry out of bounds!");
+    return this.imports[index];
+  }
+  loadExportObject(index) {
+    const entry = this.exports[index];
+    const objname = entry.objectName;
+    if (entry.idClass !== 0) {
+      const objclass = this.fetchObject(entry.idClass);
+      if (!objclass) {
+        debugger;
+        throw Error("Could not find the object class for " + objname);
+      }
+      const object = entry.object = this.newObject(objclass);
+      object.setExport(this, entry);
+    } else {
+      let objbase = entry.idSuper === 0 ? null : this.fetchObject(entry.idSuper);
+      let pkg = this;
+      if (!objbase && objname !== "Object") {
+        debugger;
+        pkg = this.loader.getPackage("Core", "Script");
+        if (!pkg.isDecoded()) throw new Error(`Package must be decoded: 'Core'`);
+        objbase = pkg.fetchObjectByType("Class", "Object");
+      }
+      if (!this.exports[index].object) {
+        const obj = new _un_class__WEBPACK_IMPORTED_MODULE_2__["default"]();
+        this.exports[index].object = obj;
+        if (entry.size === 0) {
+          if (entry.flags !== _un_object_flags__WEBPACK_IMPORTED_MODULE_11__["default"].Native) throw new Error("0xdeadbeef");
+          obj.friendlyName = objname;
+        }
+        obj.setExport(pkg, entry);
+      }
+    }
+  }
+  fetchObject(objref) {
+    if (objref > 0) {
+      // Export table object
+      const index = objref - 1;
+      if (index > this.exports.length) throw new Error("Invalid object reference");
+      const entry = this.exports[index];
+      if (!entry.object) this.loadExportObject(index);
+      return entry.object;
+    } else if (objref < 0) {
+      // Import table object
+
+      const entry = this.getImportEntry(objref);
+      let entrypackage = this.getImportEntry(entry.idPackage);
+      let groupName = "None";
+      if (entrypackage.idPackage !== 0) groupName = entrypackage.objectName;
+      while (entrypackage.idPackage !== 0) entrypackage = this.getImportEntry(entrypackage.idPackage);
+      const packageName = entrypackage.objectName;
+      const objectName = entry.objectName;
+      const className = entry.className;
+      const pkg = this.loader.getPackage(packageName, className);
+      if (!pkg.isDecoded()) throw new Error(`Package must be decoded: '${packageName}'`);
+      if (pkg.isNative && className === "State" && objectName === "State" && groupName === "None") {
+        console.log(entry);
+        debugger;
+      }
+      let obj = pkg.fetchObjectByType(className, objectName, groupName);
+      if (obj === null) {
+        console.log(pkg);
+        debugger;
+        throw new Error(`(${packageName}) [${className}, ${objectName}, ${groupName}] should not be null`);
+      }
+      if (!obj && packageName == "UnrealI") throw new Error("Not yet implemented");else if (!obj && packageName == "UnrealShare") throw new Error("Not yet implemented");
+      return obj;
+    }
+    return null;
+  }
+  fetchObjectByType(className, objectName, groupName = "None") {
+    const index = this.findObjectRef(className, objectName, groupName);
+    return this.fetchObject(index);
+  }
+  findObjectRef(className, objectName, groupName = "None") {
+    const isClass = className == "Class";
+    for (const exp of this.exports) {
+      if (exp.objectName !== objectName) continue;
+      if (groupName !== "None") {
+        if (exp.idPackage > 0) {
+          const pkg = this.exports[exp.idPackage - 1];
+          if (pkg && groupName !== pkg.objectName) {
+            continue;
+          }
+        } else if (exp.idPackage < 0) {
+          debugger;
+        } else {
+          debugger;
+        }
+      }
+      if (isClass) {
+        if (exp.idClass > 0) {
+          const other = this.exports[exp.idClass + 1];
+          if (other && className === other.objectName) return exp.index + 1;
+          debugger;
+        } else if (exp.idClass < 0) {
+          const clsImport = this.imports[-exp.idClass - 1];
+          if (clsImport && objectName === clsImport.objectName) {
+            if (clsImport.classPackage === "Native") return -(clsImport.index + 1);
+            return exp.index + 1;
+          }
+        } else if (exp.idClass === 0) return exp.index + 1;
+      } else if (exp.idClass !== 0) {
+        const obj = this.fetchObject(exp.idClass);
+        if (obj) {
+          const inheritenceChain = obj instanceof _un_class__WEBPACK_IMPORTED_MODULE_2__["default"] ? [obj.loadSelf().friendlyName] : obj.inheritenceChain;
+          if (!inheritenceChain) debugger;
+          if (inheritenceChain.includes(className)) return exp.index + 1;
+        }
+      }
+    }
+    return 0;
+  }
+  newObject(objclass) {
+    if (objclass instanceof _un_class__WEBPACK_IMPORTED_MODULE_2__["default"]) {
+      const Constructor = objclass.buildClass(this.loader.getPackage("native", "Script"));
+      return new Constructor();
+    }
+    const obj = new objclass();
+    return obj;
+  }
+}
+class UNativePackage extends UPackage {
+  constructor(loader) {
+    super(loader, "__native__.u");
+  }
+  async decode() {
+    if (this.buffer) return this;
+    const tStart = performance.now();
+    this.imports = [];
+    this.exports = [];
+    this.nameTable = [];
+    this.nameHash = new Map();
+    this.registerNativeClass("Object");
+    this.registerNativeClass("Field", "Object");
+    this.registerNativeClass("Struct", "Field");
+    this.registerNativeClass("State", "Struct");
+    this.registerNativeClass("Class", "State");
+    this.registerNativeClass("Function", "Struct");
+    this.registerNativeClass("Const", "Field");
+    this.registerNativeClass("Enum", "Field");
+    this.registerNativeClass("Property", "Field");
+    // this.registerNativeClass("PointerProperty", "Property");
+    this.registerNativeClass("DelegateProperty", "Property");
+    this.registerNativeClass("ByteProperty", "Property");
+    this.registerNativeClass("ObjectProperty", "Property");
+    this.registerNativeClass("ClassProperty", "ObjectProperty");
+    // this.registerNativeClass("FixedArrayProperty", "Property");
+    this.registerNativeClass("ArrayProperty", "Property");
+    // this.registerNativeClass("MapProperty", "Property");
+    this.registerNativeClass("StructProperty", "Property");
+    this.registerNativeClass("IntProperty", "Property");
+    this.registerNativeClass("BoolProperty", "Property");
+    this.registerNativeClass("FloatProperty", "Property");
+    this.registerNativeClass("NameProperty", "Property");
+    this.registerNativeClass("StrProperty", "Property");
+    // this.registerNativeClass("StringProperty", "Property");
+
+    this.registerNativeClass("Texture", "Object");
+    this.registerNativeClass("Font", "Object");
+    this.registerNativeClass("Sound", "Object");
+    this.registerNativeClass("Primitive", "Object");
+    this.registerNativeClass("Model", "Primitive");
+    this.registerNativeClass("ConvexVolume", "Primitive");
+    this.registerNativeClass("StaticMesh", "Primitive");
+    this.registerNativeClass("Mesh", "Primitive");
+    this.registerNativeClass("MeshInstance", "Primitive");
+    this.registerNativeClass("LodMeshInstance", "MeshInstance");
+    this.registerNativeClass("SkeletalMeshInstance", "LodMeshInstance");
+    this.registerNativeClass("MeshAnimation", "Object");
+    this.registerNativeClass("StaticMeshInstance", "Object");
+    this.registerNativeClass("Player", "Object");
+    this.registerNativeClass("Viewport", "Player");
+    this.registerNativeClass("TerrainSector", "Object");
+    this.registerNativeClass("TerrainPrimitive", "Primitive");
+    this.registerNativeClass("LevelBase", "Object");
+    this.registerNativeClass("Level", "LevelBase");
+    this.registerNativeClass("Client", "Object");
+    this.buffer = new ArrayBuffer(0);
+    console.log(`'${this.path}' loaded in ${performance.now() - tStart} ms`);
+    return this;
+  }
+  getConstructor(constructorName) {
+    let Constructor;
+    switch (constructorName) {
+      case "Class":
+        Constructor = _un_class__WEBPACK_IMPORTED_MODULE_2__["default"];
+        break;
+      case "Struct":
+        Constructor = _un_struct__WEBPACK_IMPORTED_MODULE_12__["default"];
+        break;
+      case "Const":
+        Constructor = _un_const__WEBPACK_IMPORTED_MODULE_14__["default"];
+        break;
+      case "Enum":
+        Constructor = _un_enum__WEBPACK_IMPORTED_MODULE_4__["default"];
+        break;
+      case "Function":
+        Constructor = _un_function__WEBPACK_IMPORTED_MODULE_6__["default"];
+        break;
+      case "FloatProperty":
+        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UFloatProperty;
+        break;
+      case "ByteProperty":
+        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UByteProperty;
+        break;
+      case "StrProperty":
+        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UStrProperty;
+        break;
+      case "IntProperty":
+        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UIntProperty;
+        break;
+      case "BoolProperty":
+        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UBoolProperty;
+        break;
+      case "NameProperty":
+        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UNameProperty;
+        break;
+      case "ClassProperty":
+        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UClassProperty;
+        break;
+      case "ArrayProperty":
+        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UArrayProperty;
+        break;
+      case "StructProperty":
+        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UStructProperty;
+        break;
+      case "ObjectProperty":
+        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UObjectProperty;
+        break;
+      case "DelegateProperty":
+        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UDelegateProperty;
+        break;
+      default:
+        debugger;
+        throw new Error(`Not implemented native class: ${constructorName}`);
+    }
+    return Constructor;
+  }
+  registerNativeClass(className, baseClass = "None") {
+    if (!this.nameHash.has(className)) {
+      const name = new _un_name__WEBPACK_IMPORTED_MODULE_10__["default"]();
+      name.name = className;
+      name.flags = 0;
+      this.nameTable.push(name);
+      this.nameHash.set(className, this.nameTable.length - 1);
+    }
+    const exp = new _un_export__WEBPACK_IMPORTED_MODULE_5__["default"]();
+    exp.index = this.exports.length;
+    exp.idClass = 0;
+    exp.idSuper = baseClass === "None" ? 0 : this.findObjectRef("Class", baseClass);
+    exp.idPackage = 0;
+    exp.idObjectName = this.nameHash.get(className);
+    exp.objectName = className;
+    exp.flags = _un_object_flags__WEBPACK_IMPORTED_MODULE_11__["default"].Native;
+    exp.size = 0;
+    exp.offset = 0;
+    this.exports.push(exp);
+  }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UPackage);
 
+function registerNameTable(nameTable, nameHash, value) {
+  if (nameHash.has(value)) return nameHash.get(value);
+  const name = new _un_name__WEBPACK_IMPORTED_MODULE_10__["default"]();
+  name.name = value;
+  name.flags = 0;
+  name.isFake = true;
+  nameTable.push(name);
+  nameHash.set(value, nameTable.length - 1);
+  return name;
+}
+function addPackageDependendency(nameTable, nameHash, imports, classPackage) {
+  registerNameTable(nameTable, nameHash, "Native");
+  const imp = new _un_import__WEBPACK_IMPORTED_MODULE_9__["default"]();
+  const className = "Package";
+  const idClassName = nameHash.get("Package");
+  const idClassPackage = nameHash.get(classPackage);
+  imp.className = className;
+  imp.classPackage = classPackage;
+  imp.idClassName = idClassName;
+  imp.idClassPackage = idClassPackage;
+  imp.idObjectName = idClassPackage;
+  imp.idPackage = 0;
+  imp.index = imports.length;
+  imp.objectName = classPackage;
+  imp.isFake = true;
+  imports.push(imp);
+}
+function addClassDependency(nameTable, nameHash, imports, exports, classPackage, objectName) {
+  registerNameTable(nameTable, nameHash, objectName);
+  const imp = new _un_import__WEBPACK_IMPORTED_MODULE_9__["default"]();
+  const exp = new _un_export__WEBPACK_IMPORTED_MODULE_5__["default"]();
+  const idObjectName = nameHash.get(objectName);
+  const nativePackage = imports.find(imp => imp.className === "Package" && imp.classPackage === classPackage);
+  const nativeIndex = -(nativePackage.index + 1);
+  imp.className = "Class";
+  imp.classPackage = classPackage;
+  imp.idClassName = nameHash.get("Class");
+  imp.idClassPackage = nameHash.get(classPackage);
+  imp.idObjectName = idObjectName;
+  imp.idPackage = nativeIndex;
+  imp.index = imports.length;
+  imp.objectName = objectName;
+  imp.isFake = true;
+  exp.index = exports.length;
+  exp.idClass = -(imp.index + 1);
+  exp.idSuper = 0;
+  exp.idPackage = nativeIndex;
+  exp.idObjectName = idObjectName;
+  exp.objectName = objectName;
+  exp.flags = _un_object_flags__WEBPACK_IMPORTED_MODULE_11__["default"].Native;
+  exp.size = 0;
+  exp.offset = 0;
+  exp.isFake = true;
+  imports.push(imp);
+  exports.push(exp);
+  return {
+    imp,
+    exp
+  };
+}
+
+/***/ }),
+
+/***/ "../src/unreal/un-properties.ts":
+/*!**************************************!*\
+  !*** ../src/unreal/un-properties.ts ***!
+  \**************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "UArrayProperty": () => (/* binding */ UArrayProperty),
+/* harmony export */   "UBoolProperty": () => (/* binding */ UBoolProperty),
+/* harmony export */   "UByteProperty": () => (/* binding */ UByteProperty),
+/* harmony export */   "UClassProperty": () => (/* binding */ UClassProperty),
+/* harmony export */   "UDelegateProperty": () => (/* binding */ UDelegateProperty),
+/* harmony export */   "UFloatProperty": () => (/* binding */ UFloatProperty),
+/* harmony export */   "UIntProperty": () => (/* binding */ UIntProperty),
+/* harmony export */   "UNameProperty": () => (/* binding */ UNameProperty),
+/* harmony export */   "UObjectProperty": () => (/* binding */ UObjectProperty),
+/* harmony export */   "UProperty": () => (/* binding */ UProperty),
+/* harmony export */   "UStrProperty": () => (/* binding */ UStrProperty),
+/* harmony export */   "UStructProperty": () => (/* binding */ UStructProperty)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+/* harmony import */ var _utils_flags__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/flags */ "../src/utils/flags.ts");
+/* harmony import */ var _un_field__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./un-field */ "../src/unreal/un-field.ts");
+
+
+
+
+class UProperty extends _un_field__WEBPACK_IMPORTED_MODULE_3__["default"] {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "arrayDimensions", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "flags", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "replicationOffset", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "categoryNameId", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "categoryName", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "propertyName", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "propertyFlags", void 0);
+  }
+  preLoad(pkg, exp) {
+    super.preLoad(pkg, exp);
+    this.propertyName = exp.objectName;
+  }
+  doLoad(pkg, exp) {
+    super.doLoad(pkg, exp);
+
+    // debugger;
+
+    this.readHead = pkg.tell();
+    const uint32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint32);
+    const uint16 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint16);
+    const compat32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32);
+    this.arrayDimensions = pkg.read(uint32).value;
+    this.flags = pkg.read(uint32).value;
+    this.propertyFlags = Object.freeze((0,_utils_flags__WEBPACK_IMPORTED_MODULE_2__.flagBitsToDict)(this.flags, PropertyFlags_T));
+    this.categoryNameId = pkg.read(compat32).value;
+    this.categoryName = pkg.nameTable[this.categoryNameId].name;
+    if (this.flags & PropertyFlags_T.Net) this.replicationOffset = pkg.read(uint16).value;
+    this.readHead = pkg.tell();
+  }
+  static readProperty(pkg) {
+    return pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].float)).value;
+  }
+}
+class UBaseExportProperty extends UProperty {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "valueId", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "value", void 0);
+  }
+  doLoad(pkg, exp) {
+    super.doLoad(pkg, exp);
+    const compat32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32);
+    this.valueId = pkg.read(compat32).value;
+    this.readHead = pkg.tell();
+  }
+}
+class UObjectProperty extends UBaseExportProperty {}
+class UClassProperty extends UObjectProperty {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "metaClassId", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "metaClass", void 0);
+  }
+  doLoad(pkg, exp) {
+    super.doLoad(pkg, exp);
+    const compat32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32);
+    this.metaClassId = pkg.read(compat32).value;
+    this.readHead = pkg.tell();
+  }
+}
+class UStructProperty extends UBaseExportProperty {}
+class UFloatProperty extends UProperty {
+  // public static dtype = BufferValue.float;
+
+  // public static readProperty(pkg: UPackage) { return pkg.read(new BufferValue(BufferValue.float)).value; }
+}
+class UIntProperty extends UProperty {
+  // public static dtype = BufferValue.int32;
+
+  // public static readProperty(pkg: UPackage) { return readProperty(pkg, this.dtype); }
+}
+class UStrProperty extends UProperty {}
+(0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(UStrProperty, "dtype", _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].char);
+class UDelegateProperty extends UProperty {}
+class UBoolProperty extends UProperty {}
+class UNameProperty extends UProperty {}
+class UByteProperty extends UBaseExportProperty {}
+class UArrayProperty extends UBaseExportProperty {}
+function readProperty(pkg, dtype) {
+  return pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](dtype)).value;
+}
+
+var PropertyFlags_T;
+(function (PropertyFlags_T) {
+  PropertyFlags_T[PropertyFlags_T["Edit"] = 1] = "Edit";
+  PropertyFlags_T[PropertyFlags_T["Const"] = 2] = "Const";
+  PropertyFlags_T[PropertyFlags_T["Input"] = 4] = "Input";
+  PropertyFlags_T[PropertyFlags_T["ExportObject"] = 8] = "ExportObject";
+  PropertyFlags_T[PropertyFlags_T["OptionalParm"] = 16] = "OptionalParm";
+  PropertyFlags_T[PropertyFlags_T["Net"] = 32] = "Net";
+  PropertyFlags_T[PropertyFlags_T["ConstRef"] = 64] = "ConstRef";
+  PropertyFlags_T[PropertyFlags_T["Parm"] = 128] = "Parm";
+  PropertyFlags_T[PropertyFlags_T["OutParm"] = 256] = "OutParm";
+  PropertyFlags_T[PropertyFlags_T["SkipParm"] = 512] = "SkipParm";
+  PropertyFlags_T[PropertyFlags_T["ReturnParm"] = 1024] = "ReturnParm";
+  PropertyFlags_T[PropertyFlags_T["CoerceParm"] = 2048] = "CoerceParm";
+  PropertyFlags_T[PropertyFlags_T["Native"] = 4096] = "Native";
+  PropertyFlags_T[PropertyFlags_T["Transient"] = 8192] = "Transient";
+  PropertyFlags_T[PropertyFlags_T["Config"] = 16384] = "Config";
+  PropertyFlags_T[PropertyFlags_T["Localized"] = 32768] = "Localized";
+  PropertyFlags_T[PropertyFlags_T["Travel"] = 65536] = "Travel";
+  PropertyFlags_T[PropertyFlags_T["EditConst"] = 131072] = "EditConst";
+  PropertyFlags_T[PropertyFlags_T["GlobalConfig"] = 262144] = "GlobalConfig";
+  PropertyFlags_T[PropertyFlags_T["OnDemand"] = 1048576] = "OnDemand";
+  PropertyFlags_T[PropertyFlags_T["New"] = 2097152] = "New";
+  PropertyFlags_T[PropertyFlags_T["NeedCtorLink"] = 4194304] = "NeedCtorLink";
+})(PropertyFlags_T || (PropertyFlags_T = {}));
+;
 
 /***/ }),
 
@@ -1298,6 +2644,7 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_2__["default"] 
   \****************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "PropertyTag": () => (/* binding */ PropertyTag),
@@ -1331,7 +2678,7 @@ class PropertyTag {
     const index = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32));
     this.index = index.value;
 
-    // if (!pkg.nameTable[index.value as number])
+    // if (!pkg.nameTable[index.value])
     //     debugger;
     const propName = index.value >= 0 && index.value < pkg.nameTable.length ? pkg.nameTable[index.value].name : "None";
     this.name = propName;
@@ -1379,7 +2726,7 @@ class PropertyTag {
         this.arrayIndex = b.value;
       } else {
         const b2 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8));
-        if (b.value) {
+        if (b.value & 0x40) {
           // really, (b & 0xC0) == 0xC0
           const b3 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8));
           const b4 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8));
@@ -1423,12 +2770,209 @@ var UNP_PropertyMasks;
 
 /***/ }),
 
+/***/ "../src/unreal/un-state.ts":
+/*!*********************************!*\
+  !*** ../src/unreal/un-state.ts ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "UState": () => (/* binding */ UState),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _un_struct__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./un-struct */ "../src/unreal/un-struct.ts");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+
+
+
+class UState extends _un_struct__WEBPACK_IMPORTED_MODULE_1__["default"] {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "probeMask", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "ignoreMask", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "stateFlags", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "labelTableOffset", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "probes", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isState", true);
+  }
+  static getConstructorName() {
+    return "State";
+  }
+  doLoad(pkg, exp) {
+    super.doLoad(pkg, exp);
+    this.readHead = pkg.tell();
+    const uint64 = new _buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].uint64);
+    const uint32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].uint32);
+    const uint16 = new _buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].uint16);
+    this.probeMask = pkg.read(uint64).value;
+    this.ignoreMask = pkg.read(uint64).value;
+    this.stateFlags = pkg.read(uint32).value;
+    this.labelTableOffset = pkg.read(uint16).value;
+  }
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UState);
+
+
+/***/ }),
+
+/***/ "../src/unreal/un-string.ts":
+/*!**********************************!*\
+  !*** ../src/unreal/un-string.ts ***!
+  \**********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "FString": () => (/* binding */ FString),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+
+
+class FString {
+  constructor() {
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "value", void 0);
+  }
+  load(pkg) {
+    const bufLen = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value;
+    const buf = pkg.read(_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].allocBytes(bufLen)).value;
+    this.value = new TextDecoder("ascii").decode(buf.buffer.slice(0, -1));
+    return this;
+  }
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (FString);
+
+
+/***/ }),
+
+/***/ "../src/unreal/un-struct.ts":
+/*!**********************************!*\
+  !*** ../src/unreal/un-struct.ts ***!
+  \**********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "UStruct": () => (/* binding */ UStruct),
+/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */ });
+/* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
+/* harmony import */ var _un_field__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./un-field */ "../src/unreal/un-field.ts");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+
+
+
+class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "textBufferId", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "firstChildPropId", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "childPropFields", []);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "friendlyName", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "line", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "textPos", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "unkObjectId", 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "unkObject", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "scriptSize", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "kls", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isStruct", true);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "defaultProperties", new Set());
+  }
+  static getConstructorName() {
+    return "Struct";
+  }
+  readArray(pkg, tag) {
+    let field = this;
+    while (field) {
+      const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
+      if (index === -1) {
+        field = field.superField;
+        continue;
+      }
+      const property = field.childPropFields[index];
+
+      // debugger;
+
+      const constr = property.createObject();
+      const value = constr(pkg, tag);
+      this.setProperty(tag, value);
+      return true;
+    }
+    throw new Error("Broken");
+  }
+  setProperty(tag, value) {
+    let field = this;
+    while (field) {
+      const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
+      if (index === -1) {
+        field = field.superField;
+        continue;
+      }
+      const property = field.childPropFields[index];
+      if (property.arrayDimensions > 1) {
+        this[tag.name] = this[tag.name] || new Array(property.arrayDimensions);
+        if (tag.arrayIndex in this[tag.name]) debugger;
+        this[tag.name][tag.arrayIndex] = value;
+      } else {
+        if (tag.name in this) debugger;
+        this[tag.name] = value;
+      }
+      this.defaultProperties.add(tag.name);
+      return true;
+    }
+    throw new Error("Broken");
+  }
+  doLoad(pkg, exp) {
+    super.doLoad(pkg, exp);
+    this.readHead = pkg.tell();
+    const verArchive = pkg.header.getArchiveFileVersion();
+    const compat32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].compat32);
+    const uint32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].uint32);
+    const int32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_2__["default"].int32);
+    this.textBufferId = pkg.read(compat32).value;
+    this.firstChildPropId = pkg.read(compat32).value;
+    const nameId = pkg.read(compat32).value;
+    this.friendlyName = pkg.nameTable[nameId].name;
+    console.assert(typeof this.friendlyName === "string" && this.friendlyName !== "None", "Must have a friendly name");
+    if (0x77 < verArchive) {
+      this.unkObjectId = pkg.read(compat32).value;
+    }
+    this.line = pkg.read(int32).value;
+    this.textPos = pkg.read(int32).value;
+    this.scriptSize = pkg.read(uint32).value;
+    this.readScript(pkg);
+    this.readHead = pkg.tell();
+    if (this.firstChildPropId !== 0) {
+      let childPropId = this.firstChildPropId;
+      while (Number.isFinite(childPropId) && childPropId !== 0) {
+        const field = pkg.fetchObject(childPropId).loadSelf();
+        this.childPropFields.push(field);
+        childPropId = field.nextFieldId;
+      }
+    }
+  }
+  readScript(pkg) {
+    pkg.seek(this.scriptSize);
+  }
+}
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UStruct);
+
+
+/***/ }),
+
 /***/ "../src/utils/flags.ts":
 /*!*****************************!*\
   !*** ../src/utils/flags.ts ***!
   \*****************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "allFlags": () => (/* binding */ allFlags),
@@ -1458,6 +3002,7 @@ function flagBitsToDict(flags, enum_) {
   \**************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "DivMode": () => (/* binding */ DivMode),
@@ -4953,12 +6498,553 @@ const precisionToBits = (digits) => Math.ceil(digits * 3.3219281); // digits * l
 
 /***/ }),
 
+/***/ "../node_modules/path-browserify/index.js":
+/*!************************************************!*\
+  !*** ../node_modules/path-browserify/index.js ***!
+  \************************************************/
+/***/ ((module) => {
+
+"use strict";
+// 'path' module extracted from Node.js v8.11.1 (only the posix part)
+// transplited with Babel
+
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+
+function assertPath(path) {
+  if (typeof path !== 'string') {
+    throw new TypeError('Path must be a string. Received ' + JSON.stringify(path));
+  }
+}
+
+// Resolves . and .. elements in a path with directory names
+function normalizeStringPosix(path, allowAboveRoot) {
+  var res = '';
+  var lastSegmentLength = 0;
+  var lastSlash = -1;
+  var dots = 0;
+  var code;
+  for (var i = 0; i <= path.length; ++i) {
+    if (i < path.length)
+      code = path.charCodeAt(i);
+    else if (code === 47 /*/*/)
+      break;
+    else
+      code = 47 /*/*/;
+    if (code === 47 /*/*/) {
+      if (lastSlash === i - 1 || dots === 1) {
+        // NOOP
+      } else if (lastSlash !== i - 1 && dots === 2) {
+        if (res.length < 2 || lastSegmentLength !== 2 || res.charCodeAt(res.length - 1) !== 46 /*.*/ || res.charCodeAt(res.length - 2) !== 46 /*.*/) {
+          if (res.length > 2) {
+            var lastSlashIndex = res.lastIndexOf('/');
+            if (lastSlashIndex !== res.length - 1) {
+              if (lastSlashIndex === -1) {
+                res = '';
+                lastSegmentLength = 0;
+              } else {
+                res = res.slice(0, lastSlashIndex);
+                lastSegmentLength = res.length - 1 - res.lastIndexOf('/');
+              }
+              lastSlash = i;
+              dots = 0;
+              continue;
+            }
+          } else if (res.length === 2 || res.length === 1) {
+            res = '';
+            lastSegmentLength = 0;
+            lastSlash = i;
+            dots = 0;
+            continue;
+          }
+        }
+        if (allowAboveRoot) {
+          if (res.length > 0)
+            res += '/..';
+          else
+            res = '..';
+          lastSegmentLength = 2;
+        }
+      } else {
+        if (res.length > 0)
+          res += '/' + path.slice(lastSlash + 1, i);
+        else
+          res = path.slice(lastSlash + 1, i);
+        lastSegmentLength = i - lastSlash - 1;
+      }
+      lastSlash = i;
+      dots = 0;
+    } else if (code === 46 /*.*/ && dots !== -1) {
+      ++dots;
+    } else {
+      dots = -1;
+    }
+  }
+  return res;
+}
+
+function _format(sep, pathObject) {
+  var dir = pathObject.dir || pathObject.root;
+  var base = pathObject.base || (pathObject.name || '') + (pathObject.ext || '');
+  if (!dir) {
+    return base;
+  }
+  if (dir === pathObject.root) {
+    return dir + base;
+  }
+  return dir + sep + base;
+}
+
+var posix = {
+  // path.resolve([from ...], to)
+  resolve: function resolve() {
+    var resolvedPath = '';
+    var resolvedAbsolute = false;
+    var cwd;
+
+    for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
+      var path;
+      if (i >= 0)
+        path = arguments[i];
+      else {
+        if (cwd === undefined)
+          cwd = process.cwd();
+        path = cwd;
+      }
+
+      assertPath(path);
+
+      // Skip empty entries
+      if (path.length === 0) {
+        continue;
+      }
+
+      resolvedPath = path + '/' + resolvedPath;
+      resolvedAbsolute = path.charCodeAt(0) === 47 /*/*/;
+    }
+
+    // At this point the path should be resolved to a full absolute path, but
+    // handle relative paths to be safe (might happen when process.cwd() fails)
+
+    // Normalize the path
+    resolvedPath = normalizeStringPosix(resolvedPath, !resolvedAbsolute);
+
+    if (resolvedAbsolute) {
+      if (resolvedPath.length > 0)
+        return '/' + resolvedPath;
+      else
+        return '/';
+    } else if (resolvedPath.length > 0) {
+      return resolvedPath;
+    } else {
+      return '.';
+    }
+  },
+
+  normalize: function normalize(path) {
+    assertPath(path);
+
+    if (path.length === 0) return '.';
+
+    var isAbsolute = path.charCodeAt(0) === 47 /*/*/;
+    var trailingSeparator = path.charCodeAt(path.length - 1) === 47 /*/*/;
+
+    // Normalize the path
+    path = normalizeStringPosix(path, !isAbsolute);
+
+    if (path.length === 0 && !isAbsolute) path = '.';
+    if (path.length > 0 && trailingSeparator) path += '/';
+
+    if (isAbsolute) return '/' + path;
+    return path;
+  },
+
+  isAbsolute: function isAbsolute(path) {
+    assertPath(path);
+    return path.length > 0 && path.charCodeAt(0) === 47 /*/*/;
+  },
+
+  join: function join() {
+    if (arguments.length === 0)
+      return '.';
+    var joined;
+    for (var i = 0; i < arguments.length; ++i) {
+      var arg = arguments[i];
+      assertPath(arg);
+      if (arg.length > 0) {
+        if (joined === undefined)
+          joined = arg;
+        else
+          joined += '/' + arg;
+      }
+    }
+    if (joined === undefined)
+      return '.';
+    return posix.normalize(joined);
+  },
+
+  relative: function relative(from, to) {
+    assertPath(from);
+    assertPath(to);
+
+    if (from === to) return '';
+
+    from = posix.resolve(from);
+    to = posix.resolve(to);
+
+    if (from === to) return '';
+
+    // Trim any leading backslashes
+    var fromStart = 1;
+    for (; fromStart < from.length; ++fromStart) {
+      if (from.charCodeAt(fromStart) !== 47 /*/*/)
+        break;
+    }
+    var fromEnd = from.length;
+    var fromLen = fromEnd - fromStart;
+
+    // Trim any leading backslashes
+    var toStart = 1;
+    for (; toStart < to.length; ++toStart) {
+      if (to.charCodeAt(toStart) !== 47 /*/*/)
+        break;
+    }
+    var toEnd = to.length;
+    var toLen = toEnd - toStart;
+
+    // Compare paths to find the longest common path from root
+    var length = fromLen < toLen ? fromLen : toLen;
+    var lastCommonSep = -1;
+    var i = 0;
+    for (; i <= length; ++i) {
+      if (i === length) {
+        if (toLen > length) {
+          if (to.charCodeAt(toStart + i) === 47 /*/*/) {
+            // We get here if `from` is the exact base path for `to`.
+            // For example: from='/foo/bar'; to='/foo/bar/baz'
+            return to.slice(toStart + i + 1);
+          } else if (i === 0) {
+            // We get here if `from` is the root
+            // For example: from='/'; to='/foo'
+            return to.slice(toStart + i);
+          }
+        } else if (fromLen > length) {
+          if (from.charCodeAt(fromStart + i) === 47 /*/*/) {
+            // We get here if `to` is the exact base path for `from`.
+            // For example: from='/foo/bar/baz'; to='/foo/bar'
+            lastCommonSep = i;
+          } else if (i === 0) {
+            // We get here if `to` is the root.
+            // For example: from='/foo'; to='/'
+            lastCommonSep = 0;
+          }
+        }
+        break;
+      }
+      var fromCode = from.charCodeAt(fromStart + i);
+      var toCode = to.charCodeAt(toStart + i);
+      if (fromCode !== toCode)
+        break;
+      else if (fromCode === 47 /*/*/)
+        lastCommonSep = i;
+    }
+
+    var out = '';
+    // Generate the relative path based on the path difference between `to`
+    // and `from`
+    for (i = fromStart + lastCommonSep + 1; i <= fromEnd; ++i) {
+      if (i === fromEnd || from.charCodeAt(i) === 47 /*/*/) {
+        if (out.length === 0)
+          out += '..';
+        else
+          out += '/..';
+      }
+    }
+
+    // Lastly, append the rest of the destination (`to`) path that comes after
+    // the common path parts
+    if (out.length > 0)
+      return out + to.slice(toStart + lastCommonSep);
+    else {
+      toStart += lastCommonSep;
+      if (to.charCodeAt(toStart) === 47 /*/*/)
+        ++toStart;
+      return to.slice(toStart);
+    }
+  },
+
+  _makeLong: function _makeLong(path) {
+    return path;
+  },
+
+  dirname: function dirname(path) {
+    assertPath(path);
+    if (path.length === 0) return '.';
+    var code = path.charCodeAt(0);
+    var hasRoot = code === 47 /*/*/;
+    var end = -1;
+    var matchedSlash = true;
+    for (var i = path.length - 1; i >= 1; --i) {
+      code = path.charCodeAt(i);
+      if (code === 47 /*/*/) {
+          if (!matchedSlash) {
+            end = i;
+            break;
+          }
+        } else {
+        // We saw the first non-path separator
+        matchedSlash = false;
+      }
+    }
+
+    if (end === -1) return hasRoot ? '/' : '.';
+    if (hasRoot && end === 1) return '//';
+    return path.slice(0, end);
+  },
+
+  basename: function basename(path, ext) {
+    if (ext !== undefined && typeof ext !== 'string') throw new TypeError('"ext" argument must be a string');
+    assertPath(path);
+
+    var start = 0;
+    var end = -1;
+    var matchedSlash = true;
+    var i;
+
+    if (ext !== undefined && ext.length > 0 && ext.length <= path.length) {
+      if (ext.length === path.length && ext === path) return '';
+      var extIdx = ext.length - 1;
+      var firstNonSlashEnd = -1;
+      for (i = path.length - 1; i >= 0; --i) {
+        var code = path.charCodeAt(i);
+        if (code === 47 /*/*/) {
+            // If we reached a path separator that was not part of a set of path
+            // separators at the end of the string, stop now
+            if (!matchedSlash) {
+              start = i + 1;
+              break;
+            }
+          } else {
+          if (firstNonSlashEnd === -1) {
+            // We saw the first non-path separator, remember this index in case
+            // we need it if the extension ends up not matching
+            matchedSlash = false;
+            firstNonSlashEnd = i + 1;
+          }
+          if (extIdx >= 0) {
+            // Try to match the explicit extension
+            if (code === ext.charCodeAt(extIdx)) {
+              if (--extIdx === -1) {
+                // We matched the extension, so mark this as the end of our path
+                // component
+                end = i;
+              }
+            } else {
+              // Extension does not match, so our result is the entire path
+              // component
+              extIdx = -1;
+              end = firstNonSlashEnd;
+            }
+          }
+        }
+      }
+
+      if (start === end) end = firstNonSlashEnd;else if (end === -1) end = path.length;
+      return path.slice(start, end);
+    } else {
+      for (i = path.length - 1; i >= 0; --i) {
+        if (path.charCodeAt(i) === 47 /*/*/) {
+            // If we reached a path separator that was not part of a set of path
+            // separators at the end of the string, stop now
+            if (!matchedSlash) {
+              start = i + 1;
+              break;
+            }
+          } else if (end === -1) {
+          // We saw the first non-path separator, mark this as the end of our
+          // path component
+          matchedSlash = false;
+          end = i + 1;
+        }
+      }
+
+      if (end === -1) return '';
+      return path.slice(start, end);
+    }
+  },
+
+  extname: function extname(path) {
+    assertPath(path);
+    var startDot = -1;
+    var startPart = 0;
+    var end = -1;
+    var matchedSlash = true;
+    // Track the state of characters (if any) we see before our first dot and
+    // after any path separator we find
+    var preDotState = 0;
+    for (var i = path.length - 1; i >= 0; --i) {
+      var code = path.charCodeAt(i);
+      if (code === 47 /*/*/) {
+          // If we reached a path separator that was not part of a set of path
+          // separators at the end of the string, stop now
+          if (!matchedSlash) {
+            startPart = i + 1;
+            break;
+          }
+          continue;
+        }
+      if (end === -1) {
+        // We saw the first non-path separator, mark this as the end of our
+        // extension
+        matchedSlash = false;
+        end = i + 1;
+      }
+      if (code === 46 /*.*/) {
+          // If this is our first dot, mark it as the start of our extension
+          if (startDot === -1)
+            startDot = i;
+          else if (preDotState !== 1)
+            preDotState = 1;
+      } else if (startDot !== -1) {
+        // We saw a non-dot and non-path separator before our dot, so we should
+        // have a good chance at having a non-empty extension
+        preDotState = -1;
+      }
+    }
+
+    if (startDot === -1 || end === -1 ||
+        // We saw a non-dot character immediately before the dot
+        preDotState === 0 ||
+        // The (right-most) trimmed path component is exactly '..'
+        preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
+      return '';
+    }
+    return path.slice(startDot, end);
+  },
+
+  format: function format(pathObject) {
+    if (pathObject === null || typeof pathObject !== 'object') {
+      throw new TypeError('The "pathObject" argument must be of type Object. Received type ' + typeof pathObject);
+    }
+    return _format('/', pathObject);
+  },
+
+  parse: function parse(path) {
+    assertPath(path);
+
+    var ret = { root: '', dir: '', base: '', ext: '', name: '' };
+    if (path.length === 0) return ret;
+    var code = path.charCodeAt(0);
+    var isAbsolute = code === 47 /*/*/;
+    var start;
+    if (isAbsolute) {
+      ret.root = '/';
+      start = 1;
+    } else {
+      start = 0;
+    }
+    var startDot = -1;
+    var startPart = 0;
+    var end = -1;
+    var matchedSlash = true;
+    var i = path.length - 1;
+
+    // Track the state of characters (if any) we see before our first dot and
+    // after any path separator we find
+    var preDotState = 0;
+
+    // Get non-dir info
+    for (; i >= start; --i) {
+      code = path.charCodeAt(i);
+      if (code === 47 /*/*/) {
+          // If we reached a path separator that was not part of a set of path
+          // separators at the end of the string, stop now
+          if (!matchedSlash) {
+            startPart = i + 1;
+            break;
+          }
+          continue;
+        }
+      if (end === -1) {
+        // We saw the first non-path separator, mark this as the end of our
+        // extension
+        matchedSlash = false;
+        end = i + 1;
+      }
+      if (code === 46 /*.*/) {
+          // If this is our first dot, mark it as the start of our extension
+          if (startDot === -1) startDot = i;else if (preDotState !== 1) preDotState = 1;
+        } else if (startDot !== -1) {
+        // We saw a non-dot and non-path separator before our dot, so we should
+        // have a good chance at having a non-empty extension
+        preDotState = -1;
+      }
+    }
+
+    if (startDot === -1 || end === -1 ||
+    // We saw a non-dot character immediately before the dot
+    preDotState === 0 ||
+    // The (right-most) trimmed path component is exactly '..'
+    preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
+      if (end !== -1) {
+        if (startPart === 0 && isAbsolute) ret.base = ret.name = path.slice(1, end);else ret.base = ret.name = path.slice(startPart, end);
+      }
+    } else {
+      if (startPart === 0 && isAbsolute) {
+        ret.name = path.slice(1, startDot);
+        ret.base = path.slice(1, end);
+      } else {
+        ret.name = path.slice(startPart, startDot);
+        ret.base = path.slice(startPart, end);
+      }
+      ret.ext = path.slice(startDot, end);
+    }
+
+    if (startPart > 0) ret.dir = path.slice(0, startPart - 1);else if (isAbsolute) ret.dir = '/';
+
+    return ret;
+  },
+
+  sep: '/',
+  delimiter: ':',
+  win32: null,
+  posix: null
+};
+
+posix.posix = posix;
+
+module.exports = posix;
+
+
+/***/ }),
+
 /***/ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js":
 /*!********************************************************************!*\
   !*** ../node_modules/@babel/runtime/helpers/esm/defineProperty.js ***!
   \********************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ _defineProperty)
@@ -4988,6 +7074,7 @@ function _defineProperty(obj, key, value) {
   \*****************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ _toPrimitive)
@@ -5013,6 +7100,7 @@ function _toPrimitive(input, hint) {
   \*******************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ _toPropertyKey)
@@ -5034,6 +7122,7 @@ function _toPropertyKey(arg) {
   \************************************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ _typeof)
@@ -5056,6 +7145,7 @@ function _typeof(obj) {
   \**********************************************/
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
 
+"use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "Deflate": () => (/* binding */ Deflate_1),
@@ -11977,6 +14067,18 @@ var pako = {
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__webpack_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__webpack_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/define property getters */
 /******/ 	(() => {
 /******/ 		// define getter functions for harmony exports
@@ -12007,30 +14109,35 @@ var pako = {
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
 (() => {
+"use strict";
 /*!***********************!*\
   !*** ../src/index.ts ***!
   \***********************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "BufferValue": () => (/* reexport safe */ _buffer_value__WEBPACK_IMPORTED_MODULE_0__.BufferValue),
-/* harmony export */   "ObjectFlags_T": () => (/* reexport safe */ _unreal_un_object_flags__WEBPACK_IMPORTED_MODULE_2__.ObjectFlags_T),
-/* harmony export */   "UEncodedFile": () => (/* reexport safe */ _unreal_un_encoded_file__WEBPACK_IMPORTED_MODULE_1__.UEncodedFile),
-/* harmony export */   "UExport": () => (/* reexport safe */ _unreal_un_export__WEBPACK_IMPORTED_MODULE_5__.UExport),
-/* harmony export */   "UImport": () => (/* reexport safe */ _unreal_un_import__WEBPACK_IMPORTED_MODULE_6__.UImport),
-/* harmony export */   "UName": () => (/* reexport safe */ _unreal_un_name__WEBPACK_IMPORTED_MODULE_4__.UName),
-/* harmony export */   "UObject": () => (/* reexport safe */ _unreal_un_object__WEBPACK_IMPORTED_MODULE_7__.UObject),
-/* harmony export */   "UPackage": () => (/* reexport safe */ _unreal_un_package__WEBPACK_IMPORTED_MODULE_3__.UPackage)
+/* harmony export */   "AssetLoader": () => (/* reexport safe */ _asset_loader__WEBPACK_IMPORTED_MODULE_0__.AssetLoader),
+/* harmony export */   "BufferValue": () => (/* reexport safe */ _buffer_value__WEBPACK_IMPORTED_MODULE_1__.BufferValue),
+/* harmony export */   "ObjectFlags_T": () => (/* reexport safe */ _unreal_un_object_flags__WEBPACK_IMPORTED_MODULE_3__.ObjectFlags_T),
+/* harmony export */   "UEncodedFile": () => (/* reexport safe */ _unreal_un_encoded_file__WEBPACK_IMPORTED_MODULE_2__.UEncodedFile),
+/* harmony export */   "UExport": () => (/* reexport safe */ _unreal_un_export__WEBPACK_IMPORTED_MODULE_6__.UExport),
+/* harmony export */   "UImport": () => (/* reexport safe */ _unreal_un_import__WEBPACK_IMPORTED_MODULE_7__.UImport),
+/* harmony export */   "UName": () => (/* reexport safe */ _unreal_un_name__WEBPACK_IMPORTED_MODULE_5__.UName),
+/* harmony export */   "UNativePackage": () => (/* reexport safe */ _unreal_un_package__WEBPACK_IMPORTED_MODULE_4__.UNativePackage),
+/* harmony export */   "UObject": () => (/* reexport safe */ _unreal_un_object__WEBPACK_IMPORTED_MODULE_8__.UObject),
+/* harmony export */   "UPackage": () => (/* reexport safe */ _unreal_un_package__WEBPACK_IMPORTED_MODULE_4__.UPackage)
 /* harmony export */ });
-/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./buffer-value */ "../src/buffer-value.ts");
-/* harmony import */ var _unreal_un_encoded_file__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./unreal/un-encoded-file */ "../src/unreal/un-encoded-file.ts");
-/* harmony import */ var _unreal_un_object_flags__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./unreal/un-object-flags */ "../src/unreal/un-object-flags.ts");
-/* harmony import */ var _unreal_un_package__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./unreal/un-package */ "../src/unreal/un-package.ts");
-/* harmony import */ var _unreal_un_name__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./unreal/un-name */ "../src/unreal/un-name.ts");
-/* harmony import */ var _unreal_un_export__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./unreal/un-export */ "../src/unreal/un-export.ts");
-/* harmony import */ var _unreal_un_import__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./unreal/un-import */ "../src/unreal/un-import.ts");
-/* harmony import */ var _unreal_un_object__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./unreal/un-object */ "../src/unreal/un-object.ts");
+/* harmony import */ var _asset_loader__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./asset-loader */ "../src/asset-loader.ts");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./buffer-value */ "../src/buffer-value.ts");
+/* harmony import */ var _unreal_un_encoded_file__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./unreal/un-encoded-file */ "../src/unreal/un-encoded-file.ts");
+/* harmony import */ var _unreal_un_object_flags__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./unreal/un-object-flags */ "../src/unreal/un-object-flags.ts");
+/* harmony import */ var _unreal_un_package__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./unreal/un-package */ "../src/unreal/un-package.ts");
+/* harmony import */ var _unreal_un_name__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./unreal/un-name */ "../src/unreal/un-name.ts");
+/* harmony import */ var _unreal_un_export__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./unreal/un-export */ "../src/unreal/un-export.ts");
+/* harmony import */ var _unreal_un_import__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./unreal/un-import */ "../src/unreal/un-import.ts");
+/* harmony import */ var _unreal_un_object__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./unreal/un-object */ "../src/unreal/un-object.ts");
+
 
 
 

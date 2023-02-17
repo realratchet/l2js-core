@@ -20,45 +20,101 @@ abstract class UProperty extends UField {
     protected doLoad(pkg: UPackage, exp: UExport): void {
         super.doLoad(pkg, exp);
 
+        // debugger;
+
         this.readHead = pkg.tell();
 
         const uint32 = new BufferValue(BufferValue.uint32);
         const uint16 = new BufferValue(BufferValue.uint16);
         const compat32 = new BufferValue(BufferValue.compat32);
 
-        this.arrayDimensions = pkg.read(uint32).value as number;
-        this.flags = pkg.read(uint32).value as number;
+        this.arrayDimensions = pkg.read(uint32).value;
+        this.flags = pkg.read(uint32).value;
         this.propertyFlags = Object.freeze(flagBitsToDict(this.flags, PropertyFlags_T as any));
 
-        this.categoryNameId = pkg.read(compat32).value as number;
+        this.categoryNameId = pkg.read(compat32).value;
         this.categoryName = pkg.nameTable[this.categoryNameId].name as string;
 
         if (this.flags & PropertyFlags_T.Net)
-            this.replicationOffset = pkg.read(uint16).value as number;
+            this.replicationOffset = pkg.read(uint16).value;
 
         this.readHead = pkg.tell();
     }
 
-    public static readProperty(pkg: UPackage) { return pkg.read(new BufferValue(BufferValue.float)).value as number; }
+    public static readProperty(pkg: UPackage) { return pkg.read(new BufferValue(BufferValue.float)).value; }
+}
+
+abstract class UBaseExportProperty<T extends UField> extends UProperty {
+    protected valueId: number;
+    protected value: T;
+
+    protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
+        super.doLoad(pkg, exp);
+
+        const compat32 = new BufferValue(BufferValue.compat32);
+
+        this.valueId = pkg.read(compat32).value;
+        this.readHead = pkg.tell();
+    }
+}
+
+class UObjectProperty extends UBaseExportProperty<UClass> {
+}
+
+class UClassProperty extends UObjectProperty {
+    protected metaClassId: number;
+    protected metaClass: UClass;
+
+    protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
+        super.doLoad(pkg, exp);
+
+        const compat32 = new BufferValue(BufferValue.compat32);
+
+        this.metaClassId = pkg.read(compat32).value;
+        this.readHead = pkg.tell();
+    }
+}
+
+class UStructProperty extends UBaseExportProperty<UClass> {
 }
 
 class UFloatProperty extends UProperty {
-    public static dtype = BufferValue.float;
+    // public static dtype = BufferValue.float;
 
-    public static readProperty(pkg: UPackage) { return pkg.read(new BufferValue(BufferValue.float)).value as number; }
+    // public static readProperty(pkg: UPackage) { return pkg.read(new BufferValue(BufferValue.float)).value; }
 }
 
 class UIntProperty extends UProperty {
-    public static dtype = BufferValue.int32;
+    // public static dtype = BufferValue.int32;
 
-    public static readProperty(pkg: UPackage) { return readProperty(pkg, this.dtype); }
+    // public static readProperty(pkg: UPackage) { return readProperty(pkg, this.dtype); }
+}
+
+class UStrProperty extends UProperty {
+    public static dtype = BufferValue.char;
+}
+
+class UDelegateProperty extends UProperty {
+
+}
+
+class UBoolProperty extends UProperty {
+}
+
+class UNameProperty extends UProperty {
+}
+
+class UByteProperty extends UBaseExportProperty<UEnum> {
+}
+
+class UArrayProperty extends UBaseExportProperty<UProperty> {
 }
 
 function readProperty(pkg: UPackage, dtype: ValidTypes_T<any>) {
-    return pkg.read(new BufferValue(dtype)).value as number;
+    return pkg.read(new BufferValue(dtype)).value;
 }
 
-export { UProperty, UFloatProperty, UIntProperty };
+export { UProperty, UFloatProperty, UIntProperty, UStrProperty, UDelegateProperty, UBoolProperty, UNameProperty, UObjectProperty, UClassProperty, UStructProperty, UByteProperty, UArrayProperty };
 
 enum PropertyFlags_T {
     Edit = 0x00000001,          // Property is user - settable in the editor.

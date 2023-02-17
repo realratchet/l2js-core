@@ -1,7 +1,7 @@
 import * as FlagUtils from "../utils/flags";
 import ObjectFlags_T from "./un-object-flags";
 
-class UExport {
+class UExport<T extends UObject = UObject> {
     public index: number;
 
     public idClass: number;
@@ -17,6 +17,9 @@ class UExport {
     public size: number;
     public offset: number;
 
+    public object: T = null;
+    public isFake = false;
+
     public allFlags(flags: ObjectFlags_T): boolean { return FlagUtils.allFlags(this.flags, flags); }
     public anyFlags(flags: ObjectFlags_T): boolean { return FlagUtils.anyFlags(this.flags, flags); }
 
@@ -26,7 +29,7 @@ class UExport {
         this.objectFlags = Object.freeze(FlagUtils.flagBitsToDict(flags, ObjectFlags_T as any));
     }
 
-    public toString() { return `Export(id=${this.index + 1}, name=${this.objectName}, flags=[${Object.entries(this.objectFlags).filter(([, v]) => v).map(([k,]) => k).join(",")}])`; }
+    public toString() { return `${this.isFake ? '!' : ''}Export(id=${this.index + 1}, name=${this.objectName}, flags=[${Object.entries(this.objectFlags).filter(([, v]) => v).map(([k,]) => k).join(",")}])`; }
 }
 
 export default UExport;

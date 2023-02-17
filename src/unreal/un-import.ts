@@ -11,7 +11,9 @@ class UImport {
     public idClassPackage = 0;
     public classPackage = "None";
 
-    public toString() { return `Import(id=${-(this.index + 1)}, name=${this.objectName})`; }
+    public isFake = false;
+
+    public toString() { return `${this.isFake ? '!' : ''}Import(id=${-(this.index + 1)}, name=${this.objectName})`; }
 }
 
 export default UImport;

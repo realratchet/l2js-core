@@ -15,6 +15,7 @@ const utf16: ValidTypes_T<"utf16"> = { bytes: NaN, signed: true, name: "utf16" }
 
 const decoderUTF16 = new TextDecoder("utf-16");
 
+
 class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
     public static readonly uint64 = uint64;
     public static readonly int64 = int64;
@@ -62,10 +63,10 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
 
             length.readValue(buffer, offset);
 
-            byteOffset = length.value as number > 0 ? length.type.bytes + 1 : 1;
+            byteOffset = length.value > 0 ? length.type.bytes + 1 : 1;
             offset = offset + byteOffset - 1;
 
-            this.type.bytes = length.value as number - 1;
+            this.type.bytes = length.value - 1;
 
         } else if (this.type.name === "compat32") {
             const byte = new BufferValue(uint8);
@@ -102,7 +103,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
             byteOffset = length.type.bytes + 1;
             offset = offset + byteOffset - 1;
 
-            this.type.bytes = length.value as number;
+            this.type.bytes = length.value;
 
             this.type.bytes = this.type.bytes;
             byteOffset = byteOffset - 1;
@@ -152,7 +153,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
         else throw new Error("Invalid action.");
     }
 
-    public get value(): BigInt | number | string | DataView {
+    public get value(): ReturnType<T> {
         const buffer = this.bytes;
         let funName: GetValueFun_T = null;
 
@@ -176,11 +177,11 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
             default: throw new Error(`Unknown type: ${this.type.name}`);
         }
 
-        if (funName) return buffer[funName](buffer.byteOffset, this.endianess === "little");
-        else if (this.type.name === "guid") return this.bytes;
-        else if (this.type.name === "char" || this.type.name === "utf16") return this.string;
+        if (funName) return buffer[funName](buffer.byteOffset, this.endianess === "little") as ReturnType<T>;
+        else if (this.type.name === "guid") return this.bytes as DataView as ReturnType<T>;
+        else if (this.type.name === "char" || this.type.name === "utf16") return this.string as ReturnType<T>;
 
-        return this.bytes;
+        return this.bytes as ReturnType<T>;
     }
 
     public get hex(): string {
@@ -213,3 +214,6 @@ export { BufferValue };
 
 type SetValueFun_T = "setBigInt64" | "setBigUint64" | "setInt32" | "setFloat32" | "setUint32" | "setInt16" | "setUint16" | "setInt8" | "setUint8";
 type GetValueFun_T = "getBigInt64" | "getBigUint64" | "getFloat32" | "getUint32" | "getInt32" | "getInt8" | "getUint8" | "getInt16" | "getUint16";
+type ReturnType<T extends ValueTypeNames_T> = T extends NumberTypes_T
+    ? T extends BigNumberTypes_T ? bigint : number
+    : T extends StringTypes_T ? string : DataView;

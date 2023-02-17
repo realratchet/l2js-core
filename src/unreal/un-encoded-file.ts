@@ -4,7 +4,12 @@ import * as _gmp from "gmp-wasm";
 
 let gmp: _gmp.GMPLib = null;
 
-abstract class UEncodedFile {
+interface IEncodedFile {
+    read(target: number): BufferValue<"buffer">;
+    read<T extends ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
+};
+
+abstract class UEncodedFile implements IEncodedFile {
     public readonly path: string;
     public readonly isReadable = false;
 
@@ -51,15 +56,42 @@ abstract class UEncodedFile {
         return new DataView(this.buffer, byteOffset + this.contentOffset, byteLength)
     }
 
-    public read<T extends ValueTypeNames_T>(target: BufferValue<T> | number) {
+    read(target: number): BufferValue<"buffer">;
+    read<T extends ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
+
+    public read(target: any) {
         this.ensureReadable();
 
-        const _target = typeof (target) === "number" ? BufferValue.allocBytes(target) : target as BufferValue<T>;
+        if (typeof target === "number") {
+            const _target = BufferValue.allocBytes(target);
 
-        this.offset += _target.readValue(this.buffer, this.offset);
+            this.offset += _target.readValue(this.buffer, this.offset);
 
-        return _target;
+            return _target;
+        } else if (target instanceof BufferValue) {
+            this.offset += target.readValue(this.buffer, this.offset);
+
+            return target;
+        } else {
+            throw new Error("Invalid argument");
+        }
     }
+
+    // public read(target: BufferValue<T> | number) {
+    //     this.ensureReadable();
+
+    //     if (typeof (target) === "number") {
+    //         const _target = BufferValue.allocBytes(target);
+
+    //         this.offset += _target.readValue(this.buffer, this.offset);
+
+    //         return _target;
+    //     } else {
+    //         this.offset += target.readValue(this.buffer, this.offset);
+
+    //         return target;
+    //     }
+    // }
 
     public tell() { return this.offset - this.contentOffset; }
 
@@ -154,7 +186,7 @@ abstract class UEncodedFile {
             if (signature.value === 0x0069004C) {
                 this.seek(HEADER_VER_OFFSET, "set");
 
-                const version = new TextDecoder("utf-16").decode(this.read(BufferValue.allocBytes(6)).value as DataView);
+                const version = new TextDecoder("utf-16").decode(this.read(BufferValue.allocBytes(6)).value);
 
                 this.seek(HEADER_SIZE, "set");
 
@@ -164,7 +196,7 @@ abstract class UEncodedFile {
 
                 if (version.startsWith("1")) {
 
-                    const cryptKey = 0xC1 ^ this.read(new BufferValue(BufferValue.uint8)).value as number;
+                    const cryptKey = 0xC1 ^ this.read(new BufferValue(BufferValue.uint8)).value;
 
                     this.contentOffset = HEADER_SIZE;
                     this.seek(0, "set");
