@@ -25,8 +25,6 @@ class PropertyTag {
 
         this.index = index.value;
 
-        // if (!pkg.nameTable[index.value])
-        //     debugger;
         const propName = index.value >= 0 && index.value < pkg.nameTable.length
             ? pkg.nameTable[index.value].name
             : "None";
@@ -44,56 +42,36 @@ class PropertyTag {
             this.structName = pkg.nameTable[index.value].name;
         }
 
-        // debugger;
-
         switch (info & UNP_PropertyMasks.PROPERTY_SIZE_MASK) {
             case 0x00: this.dataSize = 1; break;
             case 0x10: this.dataSize = 2; break;
             case 0x20: this.dataSize = 4; break;
             case 0x30: this.dataSize = 12; break;
             case 0x40: this.dataSize = 16; break;
-            case 0x50:
-                this.dataSize = pkg
-                    .read(new BufferValue(BufferValue.uint8))
-                    .value;
-                break;
-            case 0x60:
-                this.dataSize = pkg
-                    .read(new BufferValue(BufferValue.uint16))
-                    .value;
-                break;
-            case 0x70:
-                this.dataSize = pkg
-                    .read(new BufferValue(BufferValue.uint32))
-                    .value;
-                break;
+            case 0x50: this.dataSize = pkg.read(new BufferValue(BufferValue.uint8)).value; break;
+            case 0x60: this.dataSize = pkg.read(new BufferValue(BufferValue.uint16)).value; break;
+            case 0x70: this.dataSize = pkg.read(new BufferValue(BufferValue.uint32)).value; break;
         }
 
         this.arrayIndex = 0;
+
         if (isArray && this.type !== UNP_PropertyTypes.UNP_BoolProperty) {
-            const b = pkg.read(new BufferValue(BufferValue.int8));
+            const b = pkg.read(new BufferValue(BufferValue.int8)).value;
 
-            if (b.value < 128) {
-                this.arrayIndex = b.value;
+            if (b < 0x80) {
+                this.arrayIndex = b;
             } else {
-                const b2 = pkg.read(new BufferValue(BufferValue.int8));
+                const b2 = pkg.read(new BufferValue(BufferValue.int8)).value;
 
-                if (b.value & 0x40) { // really, (b & 0xC0) == 0xC0
-                    const b3 = pkg.read(new BufferValue(BufferValue.int8));
-                    const b4 = pkg.read(new BufferValue(BufferValue.int8));
-                    this.arrayIndex = (
-                        (b.value << 24) |
-                        (b2.value << 16) |
-                        (b3.value << 8) |
-                        b4.value
-                    ) & 0x3FFFFF;
-                } else this.arrayIndex = ((b.value << 8) | b2.value) & 0x3FFF;
+                if (b & 0x40) { // really, (b & 0xC0) == 0xC0
+                    const b3 = pkg.read(new BufferValue(BufferValue.int8)).value;
+                    const b4 = pkg.read(new BufferValue(BufferValue.int8)).value;
+                    this.arrayIndex = ((b << 24) | (b2 << 16) | (b3 << 8) | b4) & 0x3FFFFF;
+                } else this.arrayIndex = ((b << 8) | b2) & 0x3FFF;
             }
         }
 
-        this.boolValue = false;
-        if (this.type === UNP_PropertyTypes.UNP_BoolProperty)
-            this.boolValue = isArray;
+        this.boolValue = this.type === UNP_PropertyTypes.UNP_BoolProperty ? isArray : false;
 
         return this;
     }

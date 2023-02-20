@@ -1,18 +1,9 @@
 const fs = require("fs");
 const path = require("path");
-const { SourceMapDevToolPlugin } = require("webpack");
 
-function createModuleConfig({ name, resolve, entry: _entry }) {
-    return function ({ bundleAnalyzer, mode, devtool, minimize, dirOutput, stats, library }) {
+function createModuleConfig({ resolve, entry: _entry }) {
+    return function ({ name, bundleAnalyzer, mode, devtool, minimize, dirOutput, stats, library }) {
         const plugins = [];
-
-        if (devtool) {
-            // plugins.unshift(new SourceMapDevToolPlugin({
-            //     filename: "[name].chunk.js.map[query]",
-            //     sourceRoot: "/",
-            //     exclude: ["libs/", /\.(sa|sc|c)ss$/]
-            // }));
-        }
 
         if (bundleAnalyzer) plugins.push(new BundleAnalyzerPlugin());
 
@@ -21,7 +12,7 @@ function createModuleConfig({ name, resolve, entry: _entry }) {
 
         const output = {
             filename: "[name].js",
-            path: dirOutput ? dirOutput : path.resolve(__dirname, "../."),
+            path: fs.realpathSync(dirOutput ? dirOutput : path.resolve(__dirname, "../.")),
             chunkFilename: "[name].chunk.js"
         };
 
@@ -93,20 +84,19 @@ function createModuleConfig({ name, resolve, entry: _entry }) {
             plugins,
             output,
             devtool,
-            context: __dirname
+            context: fs.realpathSync(__dirname)
         };
     }
 }
 
 module.exports.createConfigBundle = createModuleConfig({
-    name: "index",
     resolve: {
         fallback: {
             // "buffer": false,
-            "path": require.resolve("path-browserify")
+            "path": fs.realpathSync(require.resolve("path-browserify"))
         },
         extensions: [".ts", ".js"],
         alias: {}
     },
-    entry: "../src/index.ts"
+    entry: fs.realpathSync(path.resolve(__dirname, "../src/index.ts"))
 });

@@ -729,6 +729,7 @@ class UClass extends _un_state__WEBPACK_IMPORTED_MODULE_1__["default"] {
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "baseStruct", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "second", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isClass", true);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "defaultProperties", new Set());
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "defaultsLoading", new Array());
   }
   static getConstructorName() {
@@ -825,6 +826,7 @@ class UClass extends _un_state__WEBPACK_IMPORTED_MODULE_1__["default"] {
         constructor() {
           super();
           (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "newProps", {});
+          if (friendlyName === "Actor") debugger;
           const oldProps = this.getPropertyMap();
           const newProps = this.newProps;
           const missingProps = [];
@@ -834,10 +836,6 @@ class UClass extends _un_state__WEBPACK_IMPORTED_MODULE_1__["default"] {
               newProps[varname] = varname;
               missingProps.push(varname);
             }
-
-            // if (value === 8 && name === "Style")
-            //     debugger;
-
             if (value !== undefined || !(varname in this)) this[varname] = value;
           }
           for (const [name, {
@@ -849,10 +847,6 @@ class UClass extends _un_state__WEBPACK_IMPORTED_MODULE_1__["default"] {
               newProps[varname] = varname;
               missingProps.push(varname);
             }
-
-            // if (defaultValue === 8 && name === "Style")
-            //     debugger;
-
             const oldValue = varname in this && this[varname] !== undefined ? this[varname] : defaultValue;
             const value = new _un_object__WEBPACK_IMPORTED_MODULE_5__.EnumeratedValue(oldValue, names);
             if (varname in this) delete this[varname];
@@ -878,6 +872,29 @@ class UClass extends _un_state__WEBPACK_IMPORTED_MODULE_1__["default"] {
           //     debugger;
         }
 
+        setProperty(tag, value) {
+          debugger;
+          let field = this;
+          while (field) {
+            const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
+            if (index === -1) {
+              field = field.superField;
+              continue;
+            }
+            const property = field.childPropFields[index];
+            if (property.arrayDimensions > 1) {
+              this[tag.name] = this[tag.name] || new Array(property.arrayDimensions);
+              if (tag.arrayIndex in this[tag.name]) debugger;
+              this[tag.name][tag.arrayIndex] = value;
+            } else {
+              if (tag.name in this) debugger;
+              this[tag.name] = value;
+            }
+            this.defaultProperties.add(tag.name);
+            return true;
+          }
+          throw new Error("Broken");
+        }
         getPropertyMap() {
           return {
             ...super.getPropertyMap(),
@@ -1685,6 +1702,7 @@ class UObject {
     return {};
   }
   setProperty(tag, value) {
+    debugger;
     const varName = this.getPropertyVarName(tag);
     const {
       name: propName,
@@ -1704,32 +1722,25 @@ class UObject {
     return this.load(this.pkg, this.exp);
   }
   readByteProperty(pkg, tag) {
-    debugger;
-    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint8)).value);
+    /*debugger;*/this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint8)).value);
   }
   readIntProperty(pkg, tag) {
-    debugger;
-    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int32)).value);
+    /*debugger;*/this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int32)).value);
   }
   readFloatProperty(pkg, tag) {
-    debugger;
-    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].float)).value);
+    /*debugger;*/this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].float)).value);
   }
   readBoolProperty(pkg, tag) {
-    debugger;
-    this.setProperty(tag, tag.boolValue);
+    /*debugger;*/this.setProperty(tag, tag.boolValue);
   }
   readObjectProperty(pkg, tag) {
-    debugger;
-    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value);
+    /*debugger;*/this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value);
   }
   readNameProperty(pkg, tag) {
-    debugger;
-    this.setProperty(tag, pkg.nameTable[pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value].name);
+    /*debugger;*/this.setProperty(tag, pkg.nameTable[pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value].name);
   }
   readStrProperty(pkg, tag) {
-    debugger;
-    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].char)).value);
+    /*debugger;*/this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].char)).value);
   }
   readStringProperty(pkg, tag) {
     debugger;
@@ -2677,9 +2688,6 @@ class PropertyTag {
     pkg.seek(offset, "set");
     const index = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32));
     this.index = index.value;
-
-    // if (!pkg.nameTable[index.value])
-    //     debugger;
     const propName = index.value >= 0 && index.value < pkg.nameTable.length ? pkg.nameTable[index.value].name : "None";
     this.name = propName;
     if (propName === "None") return this;
@@ -2690,9 +2698,6 @@ class PropertyTag {
       pkg.read(index);
       this.structName = pkg.nameTable[index.value].name;
     }
-
-    // debugger;
-
     switch (info & UNP_PropertyMasks.PROPERTY_SIZE_MASK) {
       case 0x00:
         this.dataSize = 1;
@@ -2721,21 +2726,20 @@ class PropertyTag {
     }
     this.arrayIndex = 0;
     if (isArray && this.type !== UNP_PropertyTypes.UNP_BoolProperty) {
-      const b = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8));
-      if (b.value < 128) {
-        this.arrayIndex = b.value;
+      const b = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8)).value;
+      if (b < 0x80) {
+        this.arrayIndex = b;
       } else {
-        const b2 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8));
-        if (b.value & 0x40) {
+        const b2 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8)).value;
+        if (b & 0x40) {
           // really, (b & 0xC0) == 0xC0
-          const b3 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8));
-          const b4 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8));
-          this.arrayIndex = (b.value << 24 | b2.value << 16 | b3.value << 8 | b4.value) & 0x3FFFFF;
-        } else this.arrayIndex = (b.value << 8 | b2.value) & 0x3FFF;
+          const b3 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8)).value;
+          const b4 = pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int8)).value;
+          this.arrayIndex = (b << 24 | b2 << 16 | b3 << 8 | b4) & 0x3FFFFF;
+        } else this.arrayIndex = (b << 8 | b2) & 0x3FFF;
       }
     }
-    this.boolValue = false;
-    if (this.type === UNP_PropertyTypes.UNP_BoolProperty) this.boolValue = isArray;
+    this.boolValue = this.type === UNP_PropertyTypes.UNP_BoolProperty ? isArray : false;
     return this;
   }
 }
@@ -2907,6 +2911,7 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
     throw new Error("Broken");
   }
   setProperty(tag, value) {
+    // debugger;
     let field = this;
     while (field) {
       const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);

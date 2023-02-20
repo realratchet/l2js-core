@@ -82,6 +82,7 @@ abstract class UObject {
     protected getPropertyMap() { return {}; }
 
     protected setProperty(tag: PropertyTag, value: any) {
+        debugger;
         const varName = this.getPropertyVarName(tag);
         const { name: propName, arrayIndex } = tag;
 
@@ -111,13 +112,13 @@ abstract class UObject {
         return this.load(this.pkg, this.exp);
     }
 
-    protected readByteProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8)).value); }
-    protected readIntProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32)).value); }
-    protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float)).value); }
-    protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, tag.boolValue); }
-    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.compat32)).value); }
-    protected readNameProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.nameTable[pkg.read(new BufferValue(BufferValue.compat32)).value].name); }
-    protected readStrProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char)).value); }
+    protected readByteProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8)).value); }
+    protected readIntProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32)).value); }
+    protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float)).value); }
+    protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, tag.boolValue); }
+    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.read(new BufferValue(BufferValue.compat32)).value); }
+    protected readNameProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.nameTable[pkg.read(new BufferValue(BufferValue.compat32)).value].name); }
+    protected readStrProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char)).value); }
     protected readStringProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
     protected readArrayProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); }
     protected readClassProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?

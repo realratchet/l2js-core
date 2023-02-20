@@ -45,6 +45,7 @@ class UClass extends UState {
 
     public readonly isClass = true;
     protected static getConstructorName() { return "Class"; }
+    protected defaultProperties = new Set<string>();
 
     protected defaultsLoading = new Array<Function>();
 
@@ -199,6 +200,9 @@ class UClass extends UState {
                 constructor() {
                     super();
 
+                    if (friendlyName === "Actor")
+                        debugger;
+
                     const oldProps = this.getPropertyMap();
                     const newProps = this.newProps;
                     const missingProps = [];
@@ -211,9 +215,6 @@ class UClass extends UState {
                             missingProps.push(varname);
                         }
 
-                        // if (value === 8 && name === "Style")
-                        //     debugger;
-
                         if (value !== undefined || !(varname in this))
                             (this as any)[varname] = value;
                     }
@@ -225,9 +226,6 @@ class UClass extends UState {
                             newProps[varname] = varname;
                             missingProps.push(varname);
                         }
-
-                        // if (defaultValue === 8 && name === "Style")
-                        //     debugger;
 
                         const oldValue = varname in this && (this as any)[varname] !== undefined ? (this as any)[varname] : defaultValue;
                         const value = new EnumeratedValue(oldValue, names);
@@ -259,6 +257,44 @@ class UClass extends UState {
                     // if (this.objectName.includes("StaticMeshActor140") || this.objectName.includes("StaticMeshActor141"))
                     //     debugger;
 
+                }
+
+                protected setProperty(tag: PropertyTag, value: any) {
+                    debugger;
+                    let field: UClass = this;
+
+                    while (field) {
+
+                        const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
+
+                        if (index === -1) {
+                            field = field.superField as UClass;
+                            continue;
+                        }
+
+                        const property = field.childPropFields[index];
+
+                        if (property.arrayDimensions > 1) {
+                            (this as any)[tag.name] = (this as any)[tag.name] || new Array(property.arrayDimensions);
+
+                            if (tag.arrayIndex in (this as any)[tag.name])
+                                debugger;
+
+                            (this as any)[tag.name][tag.arrayIndex] = value;
+                        } else {
+                            if (tag.name in (this as any))
+                                debugger;
+
+                            (this as any)[tag.name] = value;
+                        }
+
+                        this.defaultProperties.add(tag.name);
+
+
+                        return true;
+                    }
+
+                    throw new Error("Broken");
                 }
 
                 protected getPropertyMap(): Record<string, string> {

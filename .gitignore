@@ -1,2 +1,4 @@
 node_modules/
 yarn-error.log
+/index.local.js
+/index.local.js.map

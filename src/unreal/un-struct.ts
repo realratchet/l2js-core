@@ -49,6 +49,7 @@ class UStruct extends UField {
     }
 
     protected setProperty(tag: PropertyTag, value: any) {
+        // debugger;
         let field: UStruct = this;
 
         while (field) {
@@ -56,7 +57,7 @@ class UStruct extends UField {
             const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
 
             if (index === -1) {
-                field = field.superField as any as UStruct;
+                field = field.superField as UStruct;
                 continue;
             }
 
