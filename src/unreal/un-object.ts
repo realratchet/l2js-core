@@ -1,8 +1,8 @@
 import BufferValue from "../buffer-value";
 import UExport from "./un-export";
 import ObjectFlags_T from "./un-object-flags";
-import * as UnProperties from "./un-properties";
-import PropertyTag, { UNP_PropertyTypes } from "./un-property-tag";
+import * as UnPropValues from "./un-property/un-property-value";
+import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
 
 abstract class UObject implements ISerializable {
     public static CLEANUP_NAMESPACE = true;
@@ -82,6 +82,9 @@ abstract class UObject implements ISerializable {
 
     protected getPropertyMap() { return {}; }
 
+    protected propertyList = new Array<any>();
+    protected propertyDict = new Map<string, any>();
+
     protected setProperty(tag: PropertyTag, value: any) {
         debugger;
         const varName = this.getPropertyVarName(tag);
@@ -99,7 +102,7 @@ abstract class UObject implements ISerializable {
         if ((this as any)[varName] instanceof Array) ((this as any)[varName] as Array<any>)[arrayIndex] = value;
         else if ((this as any)[varName] instanceof Set) ((this as any)[varName] as Set<any>).add(value);
         else if ((this as any)[varName] instanceof EnumeratedValue) (this as any)[varName].value = value;
-        else (this as any)[varName] = value;
+        else this.propertyDict.set(varName, value);
 
         // console.log(`Setting '${this.constructor.name}' property: ${propName}[${arrayIndex}] -> ${typeof (value) === "object" && value !== null ? value.constructor.name : value}`);
 
@@ -113,13 +116,13 @@ abstract class UObject implements ISerializable {
         return this.load(this.pkg, this.exp);
     }
 
-    protected readByteProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8)).value); }
-    protected readIntProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32)).value); }
-    protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float)).value); }
-    protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, tag.boolValue); }
-    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.read(new BufferValue(BufferValue.compat32)).value); }
-    protected readNameProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.nameTable[pkg.read(new BufferValue(BufferValue.compat32)).value].name); }
-    protected readStrProperty(pkg: UPackage, tag: PropertyTag) { /*debugger;*/ this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char)).value); }
+    protected readByteProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8)).value); }
+    protected readIntProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32)).value); }
+    protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float)).value); }
+    protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, tag.boolValue); }
+    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.compat32)).value); }
+    protected readNameProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.nameTable[pkg.read(new BufferValue(BufferValue.compat32)).value].name); }
+    protected readStrProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char)).value); }
     protected readStringProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
     protected readArrayProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); }
     protected readClassProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?

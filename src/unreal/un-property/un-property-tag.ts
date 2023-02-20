@@ -1,4 +1,4 @@
-import BufferValue from "../buffer-value";
+import BufferValue from "../../buffer-value";
 
 class PropertyTag {
     protected constructor() { }

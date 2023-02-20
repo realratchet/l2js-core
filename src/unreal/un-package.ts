@@ -11,8 +11,8 @@ import UName from "./un-name";
 import UObject from "./un-object";
 import ObjectFlags_T from "./un-object-flags";
 import UStruct from "./un-struct";
-import * as UnProperties from "./un-properties";
 import UConst from "./un-const";
+import * as UnProperties from "./un-property/un-properties";
 
 abstract class UPackage extends UEncodedFile {
     public readonly loader: AssetLoader;

@@ -685,7 +685,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _un_array__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./un-array */ "../src/unreal/un-array.ts");
 /* harmony import */ var _un_object__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./un-object */ "../src/unreal/un-object.ts");
 /* harmony import */ var _un_object_flags__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./un-object-flags */ "../src/unreal/un-object-flags.ts");
-/* harmony import */ var _un_properties__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./un-properties */ "../src/unreal/un-properties.ts");
+/* harmony import */ var _un_property_un_properties__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./un-property/un-properties */ "../src/unreal/un-property/un-properties.ts");
 /* harmony import */ var _un_enum__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./un-enum */ "../src/unreal/un-enum.ts");
 
 
@@ -787,7 +787,7 @@ class UClass extends _un_state__WEBPACK_IMPORTED_MODULE_1__["default"] {
         defaultProperties
       } = base;
       for (const field of childPropFields) {
-        if (!(field instanceof _un_properties__WEBPACK_IMPORTED_MODULE_7__.UProperty)) continue;
+        if (!(field instanceof _un_property_un_properties__WEBPACK_IMPORTED_MODULE_7__.UProperty)) continue;
         const propertyName = field.propertyName;
 
         // if (field.propertyName.includes("Clamp"))
@@ -1631,8 +1631,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
 /* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
-/* harmony import */ var _un_object_flags__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./un-object-flags */ "../src/unreal/un-object-flags.ts");
-/* harmony import */ var _un_property_tag__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./un-property-tag */ "../src/unreal/un-property-tag.ts");
+/* harmony import */ var _un_export__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./un-export */ "../src/unreal/un-export.ts");
+/* harmony import */ var _un_object_flags__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./un-object-flags */ "../src/unreal/un-object-flags.ts");
+/* harmony import */ var _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./un-property/un-property-tag */ "../src/unreal/un-property/un-property-tag.ts");
+
 
 
 
@@ -1651,6 +1653,8 @@ class UObject {
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isLoading", false);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isReady", false);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "pkg", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "propertyList", new Array());
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "propertyDict", new Map());
   }
   setReadPointers(exp) {
     this.readStart = this.readHead = exp.offset + this.readHeadOffset;
@@ -1684,7 +1688,7 @@ class UObject {
     pkg.seek(this.readHead, "set");
     if (this.readHead < this.readTail) {
       do {
-        const tag = _un_property_tag__WEBPACK_IMPORTED_MODULE_3__["default"].from(pkg, this.readHead);
+        const tag = _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__["default"].from(pkg, this.readHead);
         if (!tag.isValid()) break;
         this.loadProperty(pkg, tag);
         this.readHead = pkg.tell();
@@ -1711,7 +1715,7 @@ class UObject {
     if (!varName) throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${value === null ? "NULL" : typeof value === "object" ? value.constructor.name : typeof value}'`);
     if (!this.isValidProperty(varName)) throw new Error(`Cannot map property '${propName}' -> ${varName}`);
     if (tag.arrayIndex < 0 || tag.arrayIndex > 0 && tag.arrayIndex >= this.getPropCount(tag.name)) throw new Error(`Something went wrong, expected index '${tag.arrayIndex} (max: '${this.getPropCount(tag.name)}')'.`);
-    if (this[varName] instanceof Array) this[varName][arrayIndex] = value;else if (this[varName] instanceof Set) this[varName].add(value);else if (this[varName] instanceof EnumeratedValue) this[varName].value = value;else this[varName] = value;
+    if (this[varName] instanceof Array) this[varName][arrayIndex] = value;else if (this[varName] instanceof Set) this[varName].add(value);else if (this[varName] instanceof EnumeratedValue) this[varName].value = value;else this.propertyDict.set(varName, value);
 
     // console.log(`Setting '${this.constructor.name}' property: ${propName}[${arrayIndex}] -> ${typeof (value) === "object" && value !== null ? value.constructor.name : value}`);
 
@@ -1722,25 +1726,25 @@ class UObject {
     return this.load(this.pkg, this.exp);
   }
   readByteProperty(pkg, tag) {
-    /*debugger;*/this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint8)).value);
+    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].uint8)).value);
   }
   readIntProperty(pkg, tag) {
-    /*debugger;*/this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int32)).value);
+    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int32)).value);
   }
   readFloatProperty(pkg, tag) {
-    /*debugger;*/this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].float)).value);
+    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].float)).value);
   }
   readBoolProperty(pkg, tag) {
-    /*debugger;*/this.setProperty(tag, tag.boolValue);
+    this.setProperty(tag, tag.boolValue);
   }
   readObjectProperty(pkg, tag) {
-    /*debugger;*/this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value);
+    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value);
   }
   readNameProperty(pkg, tag) {
-    /*debugger;*/this.setProperty(tag, pkg.nameTable[pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value].name);
+    this.setProperty(tag, pkg.nameTable[pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32)).value].name);
   }
   readStrProperty(pkg, tag) {
-    /*debugger;*/this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].char)).value);
+    this.setProperty(tag, pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].char)).value);
   }
   readStringProperty(pkg, tag) {
     debugger;
@@ -1771,56 +1775,61 @@ class UObject {
     throw new Error("Not yet implemented");
   } // Never used?
   readStructProperty(pkg, tag) {
+    const core = pkg.loader.getPackage("core", "Script");
+    const native = pkg.loader.getPackage("native", "Script");
+    const expStruct = core.fetchObjectByType("Struct", tag.structName);
+    const kls = expStruct.buildClass(native);
     debugger;
+    switch (tag.structName) {}
     throw new Error("Not yet implemented");
   }
   loadProperty(pkg, tag) {
     const offStart = pkg.tell();
     const offEnd = offStart + tag.dataSize;
     switch (tag.type) {
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_ByteProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_ByteProperty:
         this.readByteProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_IntProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_IntProperty:
         this.readIntProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_BoolProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_BoolProperty:
         this.readBoolProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_FloatProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_FloatProperty:
         this.readFloatProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_ObjectProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_ObjectProperty:
         this.readObjectProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_NameProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_NameProperty:
         this.readNameProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_StrProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_StrProperty:
         this.readStrProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_StringProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_StringProperty:
         this.readStringProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_ArrayProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_ArrayProperty:
         this.readArrayProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_ClassProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_ClassProperty:
         this.readClassProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_VectorProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_VectorProperty:
         this.readVectorProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_RotatorProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_RotatorProperty:
         this.readRotatorProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_MapProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_MapProperty:
         this.readMapProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_FixedArrayProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_FixedArrayProperty:
         this.readFixedProperty(pkg, tag);
         break;
-      case _un_property_tag__WEBPACK_IMPORTED_MODULE_3__.UNP_PropertyTypes.UNP_StructProperty:
+      case _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__.UNP_PropertyTypes.UNP_StructProperty:
         this.readStructProperty(pkg, tag);
         break;
       default:
@@ -1841,7 +1850,7 @@ class UObject {
     const flags = exp.flags;
     if (!this.exp) this.setExport(pkg, exp);
     pkg.seek(exp.offset, "set");
-    if (flags & _un_object_flags__WEBPACK_IMPORTED_MODULE_2__["default"].HasStack && exp.size > 0) {
+    if (flags & _un_object_flags__WEBPACK_IMPORTED_MODULE_3__["default"].HasStack && exp.size > 0) {
       const offset = pkg.tell();
       const compat32 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].compat32);
       const int64 = new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](_buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int64);
@@ -1860,7 +1869,20 @@ class UObject {
     }
     this.setReadPointers(exp);
   }
-  load(pkg, exp) {
+  load(pkg, info) {
+    if (info instanceof _un_export__WEBPACK_IMPORTED_MODULE_2__["default"]) return this.loadWithExport(pkg, info);
+    if (info instanceof _un_property_un_property_tag__WEBPACK_IMPORTED_MODULE_4__["default"]) return this.loadWithPropertyTag(pkg, info);
+    throw new Error("Unsupported overload");
+  }
+  loadWithPropertyTag(pkg, tag) {
+    const exp = new _un_export__WEBPACK_IMPORTED_MODULE_2__["default"]();
+    exp.objectName = `${tag.name}[Struct]`;
+    exp.offset = pkg.tell();
+    exp.size = tag.dataSize;
+    exp.isFake = true;
+    return this.loadWithExport(pkg, exp);
+  }
+  loadWithExport(pkg, exp) {
     if (this.isLoading || this.isReady) return this;
     this.isLoading = true;
 
@@ -1878,6 +1900,35 @@ class UObject {
     this.isReady = true;
     return this;
   }
+
+  // public load(pkg: UPackage, exp?: UExport): this {
+  //     if (this.isLoading || this.isReady)
+  //         return this;
+
+  //     this.isLoading = true;
+
+  //     // if (exp.objectName === "DefaultTexture")
+  //     //     debugger;
+
+  //     this.preLoad(pkg, exp);
+
+  //     if (!isFinite(this.readHead))
+  //         debugger;
+
+  //     if (!isFinite(this.readTail))
+  //         debugger;
+
+  //     if ((this.readTail - this.readHead) > 0) {
+  //         this.doLoad(pkg, exp);
+  //         this.postLoad(pkg, exp);
+  //     }
+
+  //     this.isLoading = false;
+  //     this.isReady = true;
+
+  //     return this;
+  // }
+
   doLoad(pkg, exp) {
     this.readNamedProps(pkg);
   }
@@ -1940,10 +1991,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _un_header__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./un-header */ "../src/unreal/un-header.ts");
 /* harmony import */ var _un_import__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./un-import */ "../src/unreal/un-import.ts");
 /* harmony import */ var _un_name__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./un-name */ "../src/unreal/un-name.ts");
-/* harmony import */ var _un_object_flags__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./un-object-flags */ "../src/unreal/un-object-flags.ts");
-/* harmony import */ var _un_struct__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./un-struct */ "../src/unreal/un-struct.ts");
-/* harmony import */ var _un_properties__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./un-properties */ "../src/unreal/un-properties.ts");
+/* harmony import */ var _un_object__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./un-object */ "../src/unreal/un-object.ts");
+/* harmony import */ var _un_object_flags__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./un-object-flags */ "../src/unreal/un-object-flags.ts");
+/* harmony import */ var _un_struct__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./un-struct */ "../src/unreal/un-struct.ts");
 /* harmony import */ var _un_const__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./un-const */ "../src/unreal/un-const.ts");
+/* harmony import */ var _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ./un-property/un-properties */ "../src/unreal/un-property/un-properties.ts");
+
 
 
 
@@ -2059,7 +2112,7 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_3__["default"] 
             exp.idPackage = nativeIndex;
             exp.idObjectName = nameHash.get(className);
             exp.objectName = className;
-            exp.flags = _un_object_flags__WEBPACK_IMPORTED_MODULE_11__["default"].Native;
+            exp.flags = _un_object_flags__WEBPACK_IMPORTED_MODULE_12__["default"].Native;
             exp.size = 0;
             exp.offset = 0;
             exports.push(exp);
@@ -2207,7 +2260,7 @@ class UPackage extends _un_encoded_file__WEBPACK_IMPORTED_MODULE_3__["default"] 
         const obj = new _un_class__WEBPACK_IMPORTED_MODULE_2__["default"]();
         this.exports[index].object = obj;
         if (entry.size === 0) {
-          if (entry.flags !== _un_object_flags__WEBPACK_IMPORTED_MODULE_11__["default"].Native) throw new Error("0xdeadbeef");
+          if (entry.flags !== _un_object_flags__WEBPACK_IMPORTED_MODULE_12__["default"].Native) throw new Error("0xdeadbeef");
           obj.friendlyName = objname;
         }
         obj.setExport(pkg, entry);
@@ -2362,6 +2415,9 @@ class UNativePackage extends UPackage {
     console.log(`'${this.path}' loaded in ${performance.now() - tStart} ms`);
     return this;
   }
+  getStructConstructor(constructorName) {
+    return _un_object__WEBPACK_IMPORTED_MODULE_11__["default"];
+  }
   getConstructor(constructorName) {
     let Constructor;
     switch (constructorName) {
@@ -2369,7 +2425,7 @@ class UNativePackage extends UPackage {
         Constructor = _un_class__WEBPACK_IMPORTED_MODULE_2__["default"];
         break;
       case "Struct":
-        Constructor = _un_struct__WEBPACK_IMPORTED_MODULE_12__["default"];
+        Constructor = _un_struct__WEBPACK_IMPORTED_MODULE_13__["default"];
         break;
       case "Const":
         Constructor = _un_const__WEBPACK_IMPORTED_MODULE_14__["default"];
@@ -2381,37 +2437,37 @@ class UNativePackage extends UPackage {
         Constructor = _un_function__WEBPACK_IMPORTED_MODULE_6__["default"];
         break;
       case "FloatProperty":
-        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UFloatProperty;
+        Constructor = _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__.UFloatProperty;
         break;
       case "ByteProperty":
-        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UByteProperty;
+        Constructor = _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__.UByteProperty;
         break;
       case "StrProperty":
-        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UStrProperty;
+        Constructor = _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__.UStrProperty;
         break;
       case "IntProperty":
-        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UIntProperty;
+        Constructor = _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__.UIntProperty;
         break;
       case "BoolProperty":
-        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UBoolProperty;
+        Constructor = _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__.UBoolProperty;
         break;
       case "NameProperty":
-        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UNameProperty;
+        Constructor = _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__.UNameProperty;
         break;
       case "ClassProperty":
-        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UClassProperty;
+        Constructor = _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__.UClassProperty;
         break;
       case "ArrayProperty":
-        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UArrayProperty;
+        Constructor = _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__.UArrayProperty;
         break;
       case "StructProperty":
-        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UStructProperty;
+        Constructor = _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__.UStructProperty;
         break;
       case "ObjectProperty":
-        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UObjectProperty;
+        Constructor = _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__.UObjectProperty;
         break;
       case "DelegateProperty":
-        Constructor = _un_properties__WEBPACK_IMPORTED_MODULE_13__.UDelegateProperty;
+        Constructor = _un_property_un_properties__WEBPACK_IMPORTED_MODULE_15__.UDelegateProperty;
         break;
       default:
         debugger;
@@ -2434,7 +2490,7 @@ class UNativePackage extends UPackage {
     exp.idPackage = 0;
     exp.idObjectName = this.nameHash.get(className);
     exp.objectName = className;
-    exp.flags = _un_object_flags__WEBPACK_IMPORTED_MODULE_11__["default"].Native;
+    exp.flags = _un_object_flags__WEBPACK_IMPORTED_MODULE_12__["default"].Native;
     exp.size = 0;
     exp.offset = 0;
     this.exports.push(exp);
@@ -2491,7 +2547,7 @@ function addClassDependency(nameTable, nameHash, imports, exports, classPackage,
   exp.idPackage = nativeIndex;
   exp.idObjectName = idObjectName;
   exp.objectName = objectName;
-  exp.flags = _un_object_flags__WEBPACK_IMPORTED_MODULE_11__["default"].Native;
+  exp.flags = _un_object_flags__WEBPACK_IMPORTED_MODULE_12__["default"].Native;
   exp.size = 0;
   exp.offset = 0;
   exp.isFake = true;
@@ -2505,10 +2561,10 @@ function addClassDependency(nameTable, nameHash, imports, exports, classPackage,
 
 /***/ }),
 
-/***/ "../src/unreal/un-properties.ts":
-/*!**************************************!*\
-  !*** ../src/unreal/un-properties.ts ***!
-  \**************************************/
+/***/ "../src/unreal/un-property/un-properties.ts":
+/*!**************************************************!*\
+  !*** ../src/unreal/un-property/un-properties.ts ***!
+  \**************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -2528,9 +2584,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "UStructProperty": () => (/* binding */ UStructProperty)
 /* harmony export */ });
 /* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
-/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
-/* harmony import */ var _utils_flags__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../utils/flags */ "../src/utils/flags.ts");
-/* harmony import */ var _un_field__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./un-field */ "../src/unreal/un-field.ts");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../buffer-value */ "../src/buffer-value.ts");
+/* harmony import */ var _utils_flags__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../utils/flags */ "../src/utils/flags.ts");
+/* harmony import */ var _un_field__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../un-field */ "../src/unreal/un-field.ts");
 
 
 
@@ -2649,10 +2705,10 @@ var PropertyFlags_T;
 
 /***/ }),
 
-/***/ "../src/unreal/un-property-tag.ts":
-/*!****************************************!*\
-  !*** ../src/unreal/un-property-tag.ts ***!
-  \****************************************/
+/***/ "../src/unreal/un-property/un-property-tag.ts":
+/*!****************************************************!*\
+  !*** ../src/unreal/un-property/un-property-tag.ts ***!
+  \****************************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 "use strict";
@@ -2664,7 +2720,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 /* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
-/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+/* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../buffer-value */ "../src/buffer-value.ts");
 
 
 class PropertyTag {
@@ -2869,6 +2925,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @babel/runtime/helpers/defineProperty */ "../node_modules/@babel/runtime/helpers/esm/defineProperty.js");
 /* harmony import */ var _un_field__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./un-field */ "../src/unreal/un-field.ts");
 /* harmony import */ var _buffer_value__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../buffer-value */ "../src/buffer-value.ts");
+/* harmony import */ var _un_object_flags__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./un-object-flags */ "../src/unreal/un-object-flags.ts");
+/* harmony import */ var _un_object__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./un-object */ "../src/unreal/un-object.ts");
+/* harmony import */ var _un_property_un_properties__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./un-property/un-properties */ "../src/unreal/un-property/un-properties.ts");
+
+
+
 
 
 
@@ -2911,7 +2973,7 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
     throw new Error("Broken");
   }
   setProperty(tag, value) {
-    // debugger;
+    debugger;
     let field = this;
     while (field) {
       const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
@@ -2964,6 +3026,73 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
   }
   readScript(pkg) {
     pkg.seek(this.scriptSize);
+  }
+  buildClass(pkg) {
+    var _class;
+    if (this.kls) return this.kls;
+    this.loadSelf();
+    const dependencyTree = this.collectDependencies();
+    if (!this.isReady) debugger;
+    const clsNamedProperties = {};
+    const inheretenceChain = new Array();
+    let lastNative = null;
+    for (const base of dependencyTree.reverse()) {
+      inheretenceChain.push(base.friendlyName);
+      if (!base.exp || base.exp.anyFlags(_un_object_flags__WEBPACK_IMPORTED_MODULE_3__["default"].Native)) lastNative = base;
+      if (base.constructor !== UStruct) debugger;
+      const {
+        childPropFields,
+        defaultProperties
+      } = base;
+      for (const field of childPropFields) {
+        if (!(field instanceof _un_property_un_properties__WEBPACK_IMPORTED_MODULE_5__.UProperty)) continue;
+        const propertyName = field.propertyName;
+        debugger;
+        if (field instanceof _un_property_un_properties__WEBPACK_IMPORTED_MODULE_5__.UArrayProperty) {
+          if (field.arrayDimensions !== 1) debugger;
+          if (defaultProperties.has(propertyName)) debugger;
+          clsNamedProperties[propertyName] = field.dtype.clone(this[propertyName]);
+          continue;
+        }
+        clsNamedProperties[propertyName] = field.arrayDimensions > 1 ? propertyName in this ? this[propertyName] : new Array(field.arrayDimensions) : this[propertyName];
+      }
+      for (const propertyName of Object.keys(defaultProperties)) clsNamedProperties[propertyName] = this[propertyName];
+    }
+    const friendlyName = this.friendlyName;
+    const hostClass = this;
+    const Constructor = lastNative ? pkg.getConstructor(lastNative.friendlyName) : pkg.getStructConstructor(this.friendlyName);
+    if (lastNative) debugger;
+    const cls = {
+      [this.friendlyName]: (_class = class extends Constructor {
+        constructor() {
+          super();
+          (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "newProps", {});
+          const oldProps = this.getPropertyMap();
+          const newProps = this.newProps;
+          const missingProps = [];
+          for (const [name, value] of Object.entries(clsNamedProperties)) {
+            const varname = name in oldProps ? oldProps[name] : name;
+            if (!(name in oldProps)) {
+              newProps[varname] = varname;
+              missingProps.push(varname);
+            }
+            if (value !== undefined || !(varname in this)) this[varname] = value;
+          }
+          if (missingProps.length > 0 && lastNative) console.warn(`Native type '${friendlyName}' is missing property '${missingProps.join(", ")}'`);
+        }
+        getPropertyMap() {
+          return {
+            ...super.getPropertyMap(),
+            ...this.newProps
+          };
+        }
+        toString() {
+          return Constructor === _un_object__WEBPACK_IMPORTED_MODULE_4__["default"] ? `[D|S]${friendlyName}` : Constructor.prototype.toString.call(this);
+        }
+      }, (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(_class, "isDynamicClass", true), (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(_class, "friendlyName", friendlyName), (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(_class, "hostClass", hostClass), (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(_class, "nativeClass", lastNative), (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(_class, "inheretenceChain", Object.freeze(inheretenceChain)), _class)
+    }[this.friendlyName];
+    this.kls = cls;
+    return this.kls;
   }
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (UStruct);

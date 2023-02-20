@@ -2,7 +2,7 @@ import UField from "./un-field";
 import BufferValue from "../buffer-value";
 import ObjectFlags_T from "./un-object-flags";
 import UObject from "./un-object";
-import { UArrayProperty, UProperty } from "./un-properties";
+import { UArrayProperty, UProperty } from "./un-property/un-properties";
 import FArray from "./un-array";
 
 class UStruct extends UField {
@@ -53,7 +53,7 @@ class UStruct extends UField {
     }
 
     protected setProperty(tag: PropertyTag, value: any) {
-        // debugger;
+        debugger;
         let field: UStruct = this;
 
         while (field) {
@@ -66,6 +66,8 @@ class UStruct extends UField {
             }
 
             const property = field.childPropFields[index];
+
+            console.log(property);
 
             if (property.arrayDimensions > 1) {
                 (this as any)[tag.name] = (this as any)[tag.name] || new Array(property.arrayDimensions);

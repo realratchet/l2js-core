@@ -17,8 +17,8 @@ type IAssetListInfo = Record<string, string>;
 
 type UObject = import("./src/unreal/un-object").UObject;
 
-type UProperty = import("./src/unreal/un-properties").UProperty;
-type PropertyTag = import("./src/unreal/un-property-tag").PropertyTag;
+type UProperty = import("./src/unreal/un-property/un-properties").UProperty;
+type PropertyTag = import("./src/unreal/un-property/un-property-tag").PropertyTag;
 
 type UField = import("./src/unreal/un-field").UField;
 type UStruct = import("./src/unreal/un-struct").UStruct;

@@ -1,6 +1,6 @@
-import BufferValue from "../buffer-value";
-import { flagBitsToDict } from "../utils/flags";
-import UField from "./un-field";
+import BufferValue from "../../buffer-value";
+import { flagBitsToDict } from "../../utils/flags";
+import UField from "../un-field";
 
 abstract class UProperty extends UField {
     public arrayDimensions: number;
@@ -105,6 +105,14 @@ class UNameProperty extends UProperty {
 }
 
 class UByteProperty extends UBaseExportProperty<UEnum> {
+    public loadSelf() {
+        super.loadSelf();
+
+        if (this.valueId !== 0 && !this.value)
+            this.value = this.pkg.fetchObject(this.valueId);
+
+        return this;
+    }
 }
 
 class UArrayProperty extends UBaseExportProperty<UProperty> {

@@ -4,7 +4,7 @@ import { flagBitsToDict } from "../utils/flags";
 import { FArray, FIndexArray } from "./un-array";
 import UObject, { EnumeratedValue } from "./un-object";
 import ObjectFlags_T from "./un-object-flags";
-import { UProperty } from "./un-properties";
+import { UProperty } from "./un-property/un-properties";
 import UEnum from "./un-enum";
 
 class FDependencies implements IConstructable {

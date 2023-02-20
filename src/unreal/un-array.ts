@@ -1,6 +1,6 @@
 import UPackage from "./un-package";
 import BufferValue from "../buffer-value";
-import PropertyTag from "./un-property-tag";
+import PropertyTag from "./un-property/un-property-tag";
 import UExport from "./un-export";
 import FNumber from "./un-number";
 
