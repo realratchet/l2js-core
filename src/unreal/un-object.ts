@@ -1,9 +1,10 @@
 import BufferValue from "../buffer-value";
+import UExport from "./un-export";
 import ObjectFlags_T from "./un-object-flags";
 import * as UnProperties from "./un-properties";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property-tag";
 
-abstract class UObject {
+abstract class UObject implements ISerializable {
     public static CLEANUP_NAMESPACE = true;
 
     public readonly isObject = true;
@@ -126,8 +127,24 @@ abstract class UObject {
     protected readRotatorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
     protected readMapProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
     protected readFixedProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readStructProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); }
+    protected readStructProperty(pkg: UPackage, tag: PropertyTag) {
 
+        const core = pkg.loader.getPackage("core", "Script");
+        const native = pkg.loader.getPackage("native", "Script");
+
+        const expStruct = core.fetchObjectByType<UStruct>("Struct", tag.structName);
+        const kls = expStruct.buildClass(native);
+
+        debugger;
+
+        switch (tag.structName) {
+
+        }
+
+        throw new Error("Not yet implemented");
+    }
+
+  
     protected loadProperty(pkg: UPackage, tag: PropertyTag) {
         const offStart = pkg.tell();
         const offEnd = offStart + tag.dataSize;
@@ -196,7 +213,31 @@ abstract class UObject {
         this.setReadPointers(exp);
     }
 
-    public load(pkg: UPackage, exp: UExport): this {
+    public load(pkg: UPackage): this;
+    public load(pkg: UPackage, info: UExport): this;
+    public load(pkg: UPackage, info: PropertyTag): this;
+    public load(pkg: UPackage, info?: any) {
+        if (info instanceof UExport)
+            return this.loadWithExport(pkg, info);
+
+        if (info instanceof PropertyTag)
+            return this.loadWithPropertyTag(pkg, info);
+
+        throw new Error("Unsupported overload");
+    }
+
+    protected loadWithPropertyTag(pkg: UPackage, tag: PropertyTag): this {
+        const exp = new UExport();
+
+        exp.objectName = `${tag.name}[Struct]`;
+        exp.offset = pkg.tell();
+        exp.size = tag.dataSize;
+        exp.isFake = true;
+
+        return this.loadWithExport(pkg, exp);
+    }
+
+    protected loadWithExport(pkg: UPackage, exp: UExport): this {
         if (this.isLoading || this.isReady)
             return this;
 
@@ -223,6 +264,34 @@ abstract class UObject {
 
         return this;
     }
+
+    // public load(pkg: UPackage, exp?: UExport): this {
+    //     if (this.isLoading || this.isReady)
+    //         return this;
+
+    //     this.isLoading = true;
+
+    //     // if (exp.objectName === "DefaultTexture")
+    //     //     debugger;
+
+    //     this.preLoad(pkg, exp);
+
+    //     if (!isFinite(this.readHead))
+    //         debugger;
+
+    //     if (!isFinite(this.readTail))
+    //         debugger;
+
+    //     if ((this.readTail - this.readHead) > 0) {
+    //         this.doLoad(pkg, exp);
+    //         this.postLoad(pkg, exp);
+    //     }
+
+    //     this.isLoading = false;
+    //     this.isReady = true;
+
+    //     return this;
+    // }
 
     protected doLoad(pkg: UPackage, exp: UExport): void { this.readNamedProps(pkg); }
 

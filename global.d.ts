@@ -199,3 +199,9 @@ type NativeTypes_T =
     | "MeshAnimation"
     | "MeshEmitter"
     | "SpriteEmitter";
+
+interface ISerializable {
+    load(pkg: UPackage): this;
+    load(pkg: UPackage, info: UExport): this;
+    load(pkg: UPackage, info: PropertyTag): this;
+}

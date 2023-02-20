@@ -424,10 +424,10 @@ abstract class UPackage extends UEncodedFile {
         return null;
     }
 
-    public fetchObjectByType(className: string, objectName: string, groupName: string = "None") {
+    public fetchObjectByType<T extends UObject>(className: string, objectName: string, groupName: string = "None") {
         const index = this.findObjectRef(className, objectName, groupName);
 
-        return this.fetchObject(index);
+        return this.fetchObject<T>(index);
     }
 
     protected findObjectRef(className: string, objectName: string, groupName: string = "None"): number {
@@ -574,6 +574,8 @@ abstract class UNativePackage extends UPackage {
 
         return this;
     }
+
+    public getStructConstructor<T extends typeof UObject = typeof UObject>(constructorName: string): new () => T { return UObject as any; }
 
     public getConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T {
         let Constructor: any;

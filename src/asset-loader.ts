@@ -30,13 +30,13 @@ abstract class AssetLoader {
         return this;
     }
 
-    public getPackage(pkgName: string, impType: string): UPackage {
+    public getPackage<T extends string | "native">(pkgName: T, impType: string): ReturnType<T> {
         const pkg = getPackage(this.packages, pkgName, impType);
 
         if (pkg === null)
             throw new Error(`Package '${pkgName}[${impType}]' not found!`);
 
-        return pkg;
+        return pkg as any;
     }
 
     public hasPackage(pkgName: string, impType: string) {
@@ -138,3 +138,4 @@ function getPackage(allPackages: Map<string, Map<SupportedExtensions_T, UPackage
     return pkg;
 }
 
+type ReturnType<T extends string | "native"> = T extends "native" ? UNativePackage : UPackage;

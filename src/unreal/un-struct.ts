@@ -1,5 +1,9 @@
 import UField from "./un-field";
 import BufferValue from "../buffer-value";
+import ObjectFlags_T from "./un-object-flags";
+import UObject from "./un-object";
+import { UArrayProperty, UProperty } from "./un-properties";
+import FArray from "./un-array";
 
 class UStruct extends UField {
     protected textBufferId: number;
@@ -134,6 +138,120 @@ class UStruct extends UField {
     }
 
     protected readScript(pkg: UPackage) { pkg.seek(this.scriptSize); }
+
+    public buildClass<T extends UObject = UObject>(pkg: UNativePackage): new () => T {
+        if (this.kls)
+            return this.kls as any as new () => T;
+
+        this.loadSelf();
+        const dependencyTree = this.collectDependencies<UStruct>();
+
+        if (!this.isReady)
+            debugger;
+
+        const clsNamedProperties: Record<string, any> = {};
+        const inheretenceChain = new Array<string>();
+
+        let lastNative: UStruct = null;
+
+        for (const base of dependencyTree.reverse()) {
+
+            inheretenceChain.push(base.friendlyName);
+
+            if (!base.exp || base.exp.anyFlags(ObjectFlags_T.Native))
+                lastNative = base;
+
+            if (base.constructor !== UStruct)
+                debugger;
+
+            const { childPropFields, defaultProperties } = base;
+
+            for (const field of childPropFields) {
+                if (!(field instanceof UProperty)) continue;
+
+                const propertyName = field.propertyName;
+
+                debugger;
+
+                if (field instanceof UArrayProperty) {
+                    if (field.arrayDimensions !== 1)
+                        debugger;
+
+                    if (defaultProperties.has(propertyName))
+                        debugger;
+
+                    clsNamedProperties[propertyName] = (field.dtype as FArray).clone((this as any)[propertyName]);
+                    continue;
+                }
+
+                clsNamedProperties[propertyName] = field.arrayDimensions > 1
+                    ? propertyName in this
+                        ? (this as any)[propertyName]
+                        : new Array(field.arrayDimensions)
+                    : (this as any)[propertyName];
+            }
+
+            for (const propertyName of Object.keys(defaultProperties))
+                clsNamedProperties[propertyName] = (this as any)[propertyName];
+        }
+
+        const friendlyName = this.friendlyName;
+        const hostClass = this;
+        const Constructor = lastNative
+            ? pkg.getConstructor(lastNative.friendlyName as NativeTypes_T) as any as typeof UObject
+            : pkg.getStructConstructor(this.friendlyName) as any as typeof UObject;
+
+        if (lastNative)
+            debugger;
+
+        const cls = {
+            [this.friendlyName]: class extends Constructor {
+                public static readonly isDynamicClass = true;
+                public static readonly friendlyName = friendlyName;
+                public static readonly hostClass = hostClass;
+                public static readonly nativeClass = lastNative;
+                public static readonly inheretenceChain = Object.freeze(inheretenceChain);
+
+                protected newProps: Record<string, string> = {};
+
+                constructor() {
+                    super();
+
+                    const oldProps = this.getPropertyMap();
+                    const newProps = this.newProps;
+                    const missingProps = [];
+
+                    for (const [name, value] of Object.entries(clsNamedProperties)) {
+                        const varname = name in oldProps ? oldProps[name] : name;
+
+                        if (!(name in oldProps)) {
+                            newProps[varname] = varname;
+                            missingProps.push(varname);
+                        }
+
+                        if (value !== undefined || !(varname in this))
+                            (this as any)[varname] = value;
+                    }
+
+                    if (missingProps.length > 0 && lastNative)
+                        console.warn(`Native type '${friendlyName}' is missing property '${missingProps.join(", ")}'`);
+                }
+
+                protected getPropertyMap(): Record<string, string> {
+                    return {
+                        ...super.getPropertyMap(),
+                        ...this.newProps
+                    };
+                }
+
+                public toString() { return Constructor === UObject ? `[D|S]${friendlyName}` : Constructor.prototype.toString.call(this); }
+            }
+        }[this.friendlyName];
+
+        this.kls = cls as any;
+
+        return this.kls as any as new () => T;
+    }
 }
 
 export default UStruct;
