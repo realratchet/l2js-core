@@ -22,7 +22,7 @@ class UStruct extends UField {
     public readonly isStruct = true;
 
     protected static getConstructorName() { return "Struct"; }
-    protected defaultProperties = new Set<string>();
+    protected defaultProperties = new Map<string, any>();
 
     protected readArray(pkg: UPackage, tag: PropertyTag) {
         let field: UStruct = this;
@@ -70,21 +70,21 @@ class UStruct extends UField {
             console.log(property);
 
             if (property.arrayDimensions > 1) {
-                (this as any)[tag.name] = (this as any)[tag.name] || new Array(property.arrayDimensions);
+                if (!this.defaultProperties.has(tag.name))
+                    this.defaultProperties.set(tag.name, new Array(property.arrayDimensions));
 
-                if (tag.arrayIndex in (this as any)[tag.name])
+                const arr = this.defaultProperties.get(tag.name) as any[];
+
+                if (tag.arrayIndex in arr)
                     debugger;
 
-                (this as any)[tag.name][tag.arrayIndex] = value;
+                arr[tag.arrayIndex] = value;
             } else {
-                if (tag.name in (this as any))
+                if (this.defaultProperties.has(tag.name))
                     debugger;
 
-                (this as any)[tag.name] = value;
+                this.defaultProperties.set(tag.name, value);
             }
-
-            this.defaultProperties.add(tag.name);
-
 
             return true;
         }

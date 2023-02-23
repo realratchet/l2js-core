@@ -45,7 +45,6 @@ class UClass extends UState {
 
     public readonly isClass = true;
     protected static getConstructorName() { return "Class"; }
-    protected defaultProperties = new Set<string>();
 
     protected defaultsLoading = new Array<Function>();
 
