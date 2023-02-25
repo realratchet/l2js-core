@@ -128,7 +128,7 @@ class UClass extends UState {
 
             const { childPropFields, defaultProperties } = base;
 
-            for (const field of childPropFields) {
+            for (const field of childPropFields.values()) {
                 if (!(field instanceof UProperty)) continue;
 
                 const propertyName = field.propertyName;
@@ -258,43 +258,7 @@ class UClass extends UState {
 
                 }
 
-                protected setProperty(tag: PropertyTag, value: any) {
-                    debugger;
-                    let field: UClass = this;
-
-                    while (field) {
-
-                        const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
-
-                        if (index === -1) {
-                            field = field.superField as UClass;
-                            continue;
-                        }
-
-                        const property = field.childPropFields[index];
-
-                        if (property.arrayDimensions > 1) {
-                            (this as any)[tag.name] = (this as any)[tag.name] || new Array(property.arrayDimensions);
-
-                            if (tag.arrayIndex in (this as any)[tag.name])
-                                debugger;
-
-                            (this as any)[tag.name][tag.arrayIndex] = value;
-                        } else {
-                            if (tag.name in (this as any))
-                                debugger;
-
-                            (this as any)[tag.name] = value;
-                        }
-
-                        this.defaultProperties.add(tag.name);
-
-
-                        return true;
-                    }
-
-                    throw new Error("Broken");
-                }
+               
 
                 protected getPropertyMap(): Record<string, string> {
                     return {

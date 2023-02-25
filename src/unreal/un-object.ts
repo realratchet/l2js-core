@@ -99,9 +99,9 @@ abstract class UObject implements ISerializable {
         if (tag.arrayIndex < 0 || (tag.arrayIndex > 0 && tag.arrayIndex >= this.getPropCount(tag.name)))
             throw new Error(`Something went wrong, expected index '${tag.arrayIndex} (max: '${this.getPropCount(tag.name)}')'.`);
 
-        if ((this as any)[varName] instanceof Array) ((this as any)[varName] as Array<any>)[arrayIndex] = value;
-        else if ((this as any)[varName] instanceof Set) ((this as any)[varName] as Set<any>).add(value);
-        else if ((this as any)[varName] instanceof EnumeratedValue) (this as any)[varName].value = value;
+        if ((this as any)[varName] instanceof Array) { debugger; ((this as any)[varName] as Array<any>)[arrayIndex] = value; }
+        else if ((this as any)[varName] instanceof Set) { debugger; ((this as any)[varName] as Set<any>).add(value); }
+        else if ((this as any)[varName] instanceof EnumeratedValue) { debugger; (this as any)[varName].value = value; }
         else this.propertyDict.set(varName, value);
 
         // console.log(`Setting '${this.constructor.name}' property: ${propName}[${arrayIndex}] -> ${typeof (value) === "object" && value !== null ? value.constructor.name : value}`);
@@ -136,7 +136,13 @@ abstract class UObject implements ISerializable {
         const native = pkg.loader.getPackage("native", "Script");
 
         const expStruct = core.fetchObjectByType<UStruct>("Struct", tag.structName);
-        const kls = expStruct.buildClass(native);
+        const StructConstructor = expStruct.buildClass(native);
+
+        const struct = new StructConstructor();
+
+        debugger;
+
+        struct.load(pkg, tag);
 
         debugger;
 
@@ -147,7 +153,7 @@ abstract class UObject implements ISerializable {
         throw new Error("Not yet implemented");
     }
 
-  
+
     protected loadProperty(pkg: UPackage, tag: PropertyTag) {
         const offStart = pkg.tell();
         const offEnd = offStart + tag.dataSize;

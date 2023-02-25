@@ -729,7 +729,6 @@ class UClass extends _un_state__WEBPACK_IMPORTED_MODULE_1__["default"] {
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "baseStruct", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "second", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isClass", true);
-    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "defaultProperties", new Set());
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "defaultsLoading", new Array());
   }
   static getConstructorName() {
@@ -786,7 +785,7 @@ class UClass extends _un_state__WEBPACK_IMPORTED_MODULE_1__["default"] {
         childPropFields,
         defaultProperties
       } = base;
-      for (const field of childPropFields) {
+      for (const field of childPropFields.values()) {
         if (!(field instanceof _un_property_un_properties__WEBPACK_IMPORTED_MODULE_7__.UProperty)) continue;
         const propertyName = field.propertyName;
 
@@ -872,29 +871,6 @@ class UClass extends _un_state__WEBPACK_IMPORTED_MODULE_1__["default"] {
           //     debugger;
         }
 
-        setProperty(tag, value) {
-          debugger;
-          let field = this;
-          while (field) {
-            const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
-            if (index === -1) {
-              field = field.superField;
-              continue;
-            }
-            const property = field.childPropFields[index];
-            if (property.arrayDimensions > 1) {
-              this[tag.name] = this[tag.name] || new Array(property.arrayDimensions);
-              if (tag.arrayIndex in this[tag.name]) debugger;
-              this[tag.name][tag.arrayIndex] = value;
-            } else {
-              if (tag.name in this) debugger;
-              this[tag.name] = value;
-            }
-            this.defaultProperties.add(tag.name);
-            return true;
-          }
-          throw new Error("Broken");
-        }
         getPropertyMap() {
           return {
             ...super.getPropertyMap(),
@@ -1715,7 +1691,16 @@ class UObject {
     if (!varName) throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${value === null ? "NULL" : typeof value === "object" ? value.constructor.name : typeof value}'`);
     if (!this.isValidProperty(varName)) throw new Error(`Cannot map property '${propName}' -> ${varName}`);
     if (tag.arrayIndex < 0 || tag.arrayIndex > 0 && tag.arrayIndex >= this.getPropCount(tag.name)) throw new Error(`Something went wrong, expected index '${tag.arrayIndex} (max: '${this.getPropCount(tag.name)}')'.`);
-    if (this[varName] instanceof Array) this[varName][arrayIndex] = value;else if (this[varName] instanceof Set) this[varName].add(value);else if (this[varName] instanceof EnumeratedValue) this[varName].value = value;else this.propertyDict.set(varName, value);
+    if (this[varName] instanceof Array) {
+      debugger;
+      this[varName][arrayIndex] = value;
+    } else if (this[varName] instanceof Set) {
+      debugger;
+      this[varName].add(value);
+    } else if (this[varName] instanceof EnumeratedValue) {
+      debugger;
+      this[varName].value = value;
+    } else this.propertyDict.set(varName, value);
 
     // console.log(`Setting '${this.constructor.name}' property: ${propName}[${arrayIndex}] -> ${typeof (value) === "object" && value !== null ? value.constructor.name : value}`);
 
@@ -1778,7 +1763,10 @@ class UObject {
     const core = pkg.loader.getPackage("core", "Script");
     const native = pkg.loader.getPackage("native", "Script");
     const expStruct = core.fetchObjectByType("Struct", tag.structName);
-    const kls = expStruct.buildClass(native);
+    const StructConstructor = expStruct.buildClass(native);
+    const struct = new StructConstructor();
+    debugger;
+    struct.load(pkg, tag);
     debugger;
     switch (tag.structName) {}
     throw new Error("Not yet implemented");
@@ -2670,7 +2658,13 @@ class UStrProperty extends UProperty {}
 class UDelegateProperty extends UProperty {}
 class UBoolProperty extends UProperty {}
 class UNameProperty extends UProperty {}
-class UByteProperty extends UBaseExportProperty {}
+class UByteProperty extends UBaseExportProperty {
+  loadSelf() {
+    super.loadSelf();
+    if (this.valueId !== 0 && !this.value) this.value = this.pkg.fetchObject(this.valueId);
+    return this;
+  }
+}
 class UArrayProperty extends UBaseExportProperty {}
 function readProperty(pkg, dtype) {
   return pkg.read(new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](dtype)).value;
@@ -2939,7 +2933,7 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
     super(...args);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "textBufferId", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "firstChildPropId", void 0);
-    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "childPropFields", []);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "childPropFields", new Map());
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "friendlyName", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "line", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "textPos", void 0);
@@ -2948,7 +2942,7 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "scriptSize", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "kls", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isStruct", true);
-    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "defaultProperties", new Set());
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "defaultProperties", new Map());
   }
   static getConstructorName() {
     return "Struct";
@@ -2956,15 +2950,12 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
   readArray(pkg, tag) {
     let field = this;
     while (field) {
-      const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
-      if (index === -1) {
+      if (!field.childPropFields.has(tag.name)) {
         field = field.superField;
         continue;
       }
-      const property = field.childPropFields[index];
-
-      // debugger;
-
+      const property = field.childPropFields.get(tag.name);
+      debugger;
       const constr = property.createObject();
       const value = constr(pkg, tag);
       this.setProperty(tag, value);
@@ -2973,24 +2964,24 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
     throw new Error("Broken");
   }
   setProperty(tag, value) {
-    debugger;
     let field = this;
     while (field) {
-      const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
-      if (index === -1) {
+      if (!field.childPropFields.has(tag.name)) {
         field = field.superField;
         continue;
       }
-      const property = field.childPropFields[index];
+      const property = field.childPropFields.get(tag.name);
+      if (!(property instanceof _un_property_un_properties__WEBPACK_IMPORTED_MODULE_5__.UProperty)) continue;
+      console.log(property);
       if (property.arrayDimensions > 1) {
-        this[tag.name] = this[tag.name] || new Array(property.arrayDimensions);
-        if (tag.arrayIndex in this[tag.name]) debugger;
-        this[tag.name][tag.arrayIndex] = value;
+        if (!this.defaultProperties.has(tag.name)) this.defaultProperties.set(tag.name, new Array(property.arrayDimensions));
+        const arr = this.defaultProperties.get(tag.name);
+        if (tag.arrayIndex in arr) debugger;
+        arr[tag.arrayIndex] = value;
       } else {
-        if (tag.name in this) debugger;
-        this[tag.name] = value;
+        if (this.defaultProperties.has(tag.name)) debugger;
+        this.defaultProperties.set(tag.name, value);
       }
-      this.defaultProperties.add(tag.name);
       return true;
     }
     throw new Error("Broken");
@@ -3019,7 +3010,7 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
       let childPropId = this.firstChildPropId;
       while (Number.isFinite(childPropId) && childPropId !== 0) {
         const field = pkg.fetchObject(childPropId).loadSelf();
-        this.childPropFields.push(field);
+        this.childPropFields.set(field.propertyName, field);
         childPropId = field.nextFieldId;
       }
     }
@@ -3037,26 +3028,32 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
     const inheretenceChain = new Array();
     let lastNative = null;
     for (const base of dependencyTree.reverse()) {
+      var _base$constructor;
       inheretenceChain.push(base.friendlyName);
       if (!base.exp || base.exp.anyFlags(_un_object_flags__WEBPACK_IMPORTED_MODULE_3__["default"].Native)) lastNative = base;
-      if (base.constructor !== UStruct) debugger;
+      if (base.constructor !== UStruct && ((_base$constructor = base.constructor) === null || _base$constructor === void 0 ? void 0 : _base$constructor.friendlyName) !== UStruct.getConstructorName()) debugger;
       const {
         childPropFields,
         defaultProperties
       } = base;
-      for (const field of childPropFields) {
+      for (const field of childPropFields.values()) {
         if (!(field instanceof _un_property_un_properties__WEBPACK_IMPORTED_MODULE_5__.UProperty)) continue;
         const propertyName = field.propertyName;
-        debugger;
+
+        // debugger;
+
         if (field instanceof _un_property_un_properties__WEBPACK_IMPORTED_MODULE_5__.UArrayProperty) {
           if (field.arrayDimensions !== 1) debugger;
           if (defaultProperties.has(propertyName)) debugger;
           clsNamedProperties[propertyName] = field.dtype.clone(this[propertyName]);
           continue;
         }
-        clsNamedProperties[propertyName] = field.arrayDimensions > 1 ? propertyName in this ? this[propertyName] : new Array(field.arrayDimensions) : this[propertyName];
+        if (this.propertyDict.has(propertyName)) clsNamedProperties[propertyName] = this.propertyDict.get(propertyName);else if (field.arrayDimensions > 1) clsNamedProperties[propertyName] = new Array(field.arrayDimensions);
       }
-      for (const propertyName of Object.keys(defaultProperties)) clsNamedProperties[propertyName] = this[propertyName];
+      for (const propertyName of Object.keys(defaultProperties)) {
+        debugger;
+        clsNamedProperties[propertyName] = this[propertyName];
+      }
     }
     const friendlyName = this.friendlyName;
     const hostClass = this;

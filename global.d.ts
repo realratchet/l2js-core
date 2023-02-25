@@ -25,6 +25,7 @@ type UStruct = import("./src/unreal/un-struct").UStruct;
 type UState = import("./src/unreal/un-state").UState;
 type UClass = import("./src/unreal/un-class").UClass;
 type UEnum = import("./src/unreal/un-enum").UEnum;
+type UFunction = import("./src/unreal/un-function").UFunction;
 
 type UExport<T extends UObject = UObject> = import("./src/unreal/un-export").UExport<T>;
 

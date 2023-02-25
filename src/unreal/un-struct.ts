@@ -9,7 +9,7 @@ class UStruct extends UField {
     protected textBufferId: number;
 
     protected firstChildPropId: number;
-    public readonly childPropFields: UProperty[] = [];
+    public readonly childPropFields = new Map<string, UProperty | UFunction>();
 
     public friendlyName: string;
     protected line: number;
@@ -29,16 +29,15 @@ class UStruct extends UField {
 
         while (field) {
 
-            const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
 
-            if (index === -1) {
+            if (!field.childPropFields.has(tag.name)) {
                 field = field.superField as any as UStruct;
                 continue;
             }
 
-            const property = field.childPropFields[index];
+            const property = field.childPropFields.get(tag.name);
 
-            // debugger;
+            debugger;
 
             const constr = property.createObject();
             const value = constr(pkg, tag);
@@ -53,19 +52,18 @@ class UStruct extends UField {
     }
 
     protected setProperty(tag: PropertyTag, value: any) {
-        debugger;
         let field: UStruct = this;
 
         while (field) {
-
-            const index = field.childPropFields.findIndex(x => x.propertyName === tag.name);
-
-            if (index === -1) {
+            if (!field.childPropFields.has(tag.name)) {
                 field = field.superField as UStruct;
                 continue;
             }
 
-            const property = field.childPropFields[index];
+            const property = field.childPropFields.get(tag.name);
+
+            if (!(property instanceof UProperty))
+                continue;
 
             console.log(property);
 
@@ -132,7 +130,7 @@ class UStruct extends UField {
 
                 const field = pkg.fetchObject<UProperty>(childPropId).loadSelf();
 
-                this.childPropFields.push(field);
+                this.childPropFields.set(field.propertyName, field);
 
                 childPropId = field.nextFieldId;
             }
@@ -163,17 +161,17 @@ class UStruct extends UField {
             if (!base.exp || base.exp.anyFlags(ObjectFlags_T.Native))
                 lastNative = base;
 
-            if (base.constructor !== UStruct)
+            if (base.constructor !== UStruct && (base.constructor as any as UStruct)?.friendlyName !== UStruct.getConstructorName())
                 debugger;
 
             const { childPropFields, defaultProperties } = base;
 
-            for (const field of childPropFields) {
+            for (const field of childPropFields.values()) {
                 if (!(field instanceof UProperty)) continue;
 
                 const propertyName = field.propertyName;
 
-                debugger;
+                // debugger;
 
                 if (field instanceof UArrayProperty) {
                     if (field.arrayDimensions !== 1)
@@ -186,15 +184,16 @@ class UStruct extends UField {
                     continue;
                 }
 
-                clsNamedProperties[propertyName] = field.arrayDimensions > 1
-                    ? propertyName in this
-                        ? (this as any)[propertyName]
-                        : new Array(field.arrayDimensions)
-                    : (this as any)[propertyName];
+                if (this.propertyDict.has(propertyName))
+                    clsNamedProperties[propertyName] = this.propertyDict.get(propertyName);
+                else if (field.arrayDimensions > 1)
+                    clsNamedProperties[propertyName] = new Array(field.arrayDimensions)
             }
 
-            for (const propertyName of Object.keys(defaultProperties))
+            for (const propertyName of Object.keys(defaultProperties)) {
+                debugger;
                 clsNamedProperties[propertyName] = (this as any)[propertyName];
+            }
         }
 
         const friendlyName = this.friendlyName;
