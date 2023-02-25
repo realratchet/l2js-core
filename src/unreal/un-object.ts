@@ -136,23 +136,23 @@ abstract class UObject implements ISerializable {
         const native = pkg.loader.getPackage("native", "Script");
 
         const expStruct = core.fetchObjectByType<UStruct>("Struct", tag.structName);
-        const StructConstructor = expStruct.buildClass(native);
+        const StructConstructor = expStruct.buildClass<UStruct>(native);
 
         const struct = new StructConstructor();
 
-        debugger;
-
-        struct.load(pkg, tag);
-
-        debugger;
-
         switch (tag.structName) {
-
+            case "Color": debugger; break;
+            case "Scale": debugger; break;
+            case "Vector": return struct.loadNative(pkg);
+            case "Rotator": debugger; break;
         }
 
         throw new Error("Not yet implemented");
     }
 
+    protected loadNative(pkg: UPackage) {
+        debugger;
+    }
 
     protected loadProperty(pkg: UPackage, tag: PropertyTag) {
         const offStart = pkg.tell();

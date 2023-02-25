@@ -186,8 +186,14 @@ class UStruct extends UField {
 
                 if (this.propertyDict.has(propertyName))
                     clsNamedProperties[propertyName] = this.propertyDict.get(propertyName);
-                else if (field.arrayDimensions > 1)
-                    clsNamedProperties[propertyName] = new Array(field.arrayDimensions)
+                else if (field.arrayDimensions > 1) {
+                    debugger;
+                    clsNamedProperties[propertyName] = new Array(field.arrayDimensions);
+                } else if (field.isNumericType) {
+                    clsNamedProperties[propertyName] = (field as any as IBufferValueProperty).createBuffer();
+                } else {
+                    debugger;
+                }
             }
 
             for (const propertyName of Object.keys(defaultProperties)) {
@@ -203,6 +209,9 @@ class UStruct extends UField {
             : pkg.getStructConstructor(this.friendlyName) as any as typeof UObject;
 
         if (lastNative)
+            debugger;
+
+        if (friendlyName === "Vector")
             debugger;
 
         const cls = {
@@ -221,6 +230,9 @@ class UStruct extends UField {
                     const oldProps = this.getPropertyMap();
                     const newProps = this.newProps;
                     const missingProps = [];
+
+                    if (friendlyName === "Vector")
+                        debugger;
 
                     for (const [name, value] of Object.entries(clsNamedProperties)) {
                         const varname = name in oldProps ? oldProps[name] : name;

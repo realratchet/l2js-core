@@ -11,6 +11,7 @@ type ValidTypes_T<T extends ValueTypeNames_T> = {
     dtype?: BigInt64ArrayConstructor | BigUint64ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor | Int16ArrayConstructor | Uint16ArrayConstructor | Int8ArrayConstructor | Uint8ArrayConstructor | Float32ArrayConstructor;
 };
 
+type BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> = import("./src/buffer-value").BufferValue<T>;
 type Seek_T = "current" | "set";
 
 type IAssetListInfo = Record<string, string>;
@@ -205,4 +206,9 @@ interface ISerializable {
     load(pkg: UPackage): this;
     load(pkg: UPackage, info: UExport): this;
     load(pkg: UPackage, info: PropertyTag): this;
+}
+
+interface IBufferValueProperty<T extends ValueTypeNames_T = ValueTypeNames_T> {
+    readonly isNumericType: true;
+    createBuffer(): BufferValue<T>;
 }

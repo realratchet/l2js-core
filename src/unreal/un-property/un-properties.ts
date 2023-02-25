@@ -11,6 +11,8 @@ abstract class UProperty extends UField {
     public propertyName: string;
     public propertyFlags: Readonly<Record<string, boolean>>;
 
+    public readonly isNumericType: boolean = false;
+
     protected preLoad(pkg: UPackage, exp: UExport): void {
         super.preLoad(pkg, exp);
 
@@ -78,19 +80,32 @@ class UClassProperty extends UObjectProperty {
 class UStructProperty extends UBaseExportProperty<UClass> {
 }
 
-class UFloatProperty extends UProperty {
-    // public static dtype = BufferValue.float;
+abstract class UNumericProperty<T extends ValueTypeNames_T = ValueTypeNames_T> extends UProperty implements IBufferValueProperty<T> {
+    ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<T> };
 
-    // public static readProperty(pkg: UPackage) { return pkg.read(new BufferValue(BufferValue.float)).value; }
+    public createBuffer() {
+        const constr = this.constructor;
+
+        if (!("dtype" in constr))
+            throw new Error("Missing 'dtype' for numeric property type.");
+
+        return new BufferValue(constr.dtype);
+    }
+
+    public readonly isNumericType = true;
 }
 
-class UIntProperty extends UProperty {
-    // public static dtype = BufferValue.int32;
+class UFloatProperty extends UNumericProperty<"float"> {
+    public static dtype = BufferValue.float;
+}
+
+class UIntProperty extends UNumericProperty<"int32"> {
+    public static dtype = BufferValue.int32;
 
     // public static readProperty(pkg: UPackage) { return readProperty(pkg, this.dtype); }
 }
 
-class UStrProperty extends UProperty {
+class UStrProperty extends UNumericProperty<"char"> {
     public static dtype = BufferValue.char;
 }
 
