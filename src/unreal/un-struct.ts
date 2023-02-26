@@ -2,7 +2,7 @@ import UField from "./un-field";
 import BufferValue from "../buffer-value";
 import ObjectFlags_T from "./un-object-flags";
 import UObject from "./un-object";
-import { UArrayProperty, UProperty } from "./un-property/un-properties";
+import * as UnProperties from "./un-property/un-properties";
 import FArray from "./un-array";
 
 class UStruct extends UField {
@@ -11,7 +11,7 @@ class UStruct extends UField {
     protected textBufferId: number;
 
     protected firstChildPropId: number;
-    public readonly childPropFields = new Map<string, UProperty | UFunction>();
+    public readonly childPropFields = new Map<string, UnProperties.UProperty | UFunction>();
 
     public friendlyName: string;
     protected line: number;
@@ -64,7 +64,7 @@ class UStruct extends UField {
 
             const property = field.childPropFields.get(tag.name);
 
-            if (!(property instanceof UProperty))
+            if (!(property instanceof UnProperties.UProperty))
                 continue;
 
             console.log(property);
@@ -130,7 +130,7 @@ class UStruct extends UField {
 
             while (Number.isFinite(childPropId) && childPropId !== 0) {
 
-                const field = pkg.fetchObject<UProperty>(childPropId).loadSelf();
+                const field = pkg.fetchObject<UnProperties.UProperty>(childPropId).loadSelf();
 
                 this.childPropFields.set(field.propertyName, field);
 
@@ -169,13 +169,13 @@ class UStruct extends UField {
             const { childPropFields, defaultProperties } = base;
 
             for (const field of childPropFields.values()) {
-                if (!(field instanceof UProperty)) continue;
+                if (!(field instanceof UnProperties.UProperty)) continue;
 
                 const propertyName = field.propertyName;
 
                 // debugger;
 
-                if (field instanceof UArrayProperty) {
+                if (field instanceof UnProperties.UArrayProperty) {
                     debugger;
                     if (field.arrayDimensions !== 1)
                         debugger;
