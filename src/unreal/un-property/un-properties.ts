@@ -61,6 +61,14 @@ abstract class UBaseExportProperty<T extends UField> extends UProperty {
 }
 
 class UObjectProperty extends UBaseExportProperty<UClass> {
+    public loadSelf() {
+        super.loadSelf();
+
+        if (this.valueId !== 0 && !this.value)
+            this.value = this.pkg.fetchObject(this.valueId);
+
+        return this;
+    }
 }
 
 class UClassProperty extends UObjectProperty {
@@ -81,7 +89,7 @@ class UStructProperty extends UBaseExportProperty<UClass> {
 }
 
 abstract class UNumericProperty<T extends ValueTypeNames_T = ValueTypeNames_T> extends UProperty implements IBufferValueProperty<T> {
-    ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<T> };
+    declare ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<T> };
 
     public createBuffer() {
         const constr = this.constructor;
@@ -97,6 +105,8 @@ abstract class UNumericProperty<T extends ValueTypeNames_T = ValueTypeNames_T> e
 
 class UFloatProperty extends UNumericProperty<"float"> {
     public static dtype = BufferValue.float;
+
+    declare ["constructor"]: typeof UNumericProperty & typeof UFloatProperty;
 }
 
 class UIntProperty extends UNumericProperty<"int32"> {

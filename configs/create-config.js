@@ -43,6 +43,7 @@ function createModuleConfig({ resolve, entry: _entry }) {
                     ]
                 ],
                 plugins: [
+                    ["@babel/plugin-transform-typescript", { allowDeclareFields: true }],
                     "@babel/transform-runtime",
                     "@babel/plugin-proposal-class-properties"
                 ]
@@ -66,6 +67,7 @@ function createModuleConfig({ resolve, entry: _entry }) {
                     ]
                 ],
                 plugins: [
+                    ["@babel/plugin-transform-typescript", { allowDeclareFields: true }],
                     "@babel/transform-runtime",
                     "@babel/plugin-proposal-class-properties"
                 ]

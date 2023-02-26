@@ -1765,11 +1765,23 @@ class UObject {
     const expStruct = core.fetchObjectByType("Struct", tag.structName);
     const StructConstructor = expStruct.buildClass(native);
     const struct = new StructConstructor();
-    debugger;
-    struct.load(pkg, tag);
-    debugger;
-    switch (tag.structName) {}
+    switch (tag.structName) {
+      case "Color":
+        debugger;
+        break;
+      case "Scale":
+        debugger;
+        break;
+      case "Vector":
+        return struct.loadNative(pkg);
+      case "Rotator":
+        debugger;
+        break;
+    }
     throw new Error("Not yet implemented");
+  }
+  loadNative(pkg) {
+    debugger;
   }
   loadProperty(pkg, tag) {
     const offStart = pkg.tell();
@@ -2589,6 +2601,7 @@ class UProperty extends _un_field__WEBPACK_IMPORTED_MODULE_3__["default"] {
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "categoryName", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "propertyName", void 0);
     (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "propertyFlags", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isNumericType", false);
   }
   preLoad(pkg, exp) {
     super.preLoad(pkg, exp);
@@ -2643,17 +2656,23 @@ class UClassProperty extends UObjectProperty {
   }
 }
 class UStructProperty extends UBaseExportProperty {}
-class UFloatProperty extends UProperty {
-  // public static dtype = BufferValue.float;
-
-  // public static readProperty(pkg: UPackage) { return pkg.read(new BufferValue(BufferValue.float)).value; }
+class UNumericProperty extends UProperty {
+  constructor(...args) {
+    super(...args);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "constructor", void 0);
+    (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(this, "isNumericType", true);
+  }
+  createBuffer() {
+    const constr = this.constructor;
+    if (!("dtype" in constr)) throw new Error("Missing 'dtype' for numeric property type.");
+    return new _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"](constr.dtype);
+  }
 }
-class UIntProperty extends UProperty {
-  // public static dtype = BufferValue.int32;
-
-  // public static readProperty(pkg: UPackage) { return readProperty(pkg, this.dtype); }
-}
-class UStrProperty extends UProperty {}
+class UFloatProperty extends UNumericProperty {}
+(0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(UFloatProperty, "dtype", _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].float);
+class UIntProperty extends UNumericProperty {}
+(0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(UIntProperty, "dtype", _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].int32);
+class UStrProperty extends UNumericProperty {}
 (0,_babel_runtime_helpers_defineProperty__WEBPACK_IMPORTED_MODULE_0__["default"])(UStrProperty, "dtype", _buffer_value__WEBPACK_IMPORTED_MODULE_1__["default"].char);
 class UDelegateProperty extends UProperty {}
 class UBoolProperty extends UProperty {}
@@ -3048,7 +3067,14 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
           clsNamedProperties[propertyName] = field.dtype.clone(this[propertyName]);
           continue;
         }
-        if (this.propertyDict.has(propertyName)) clsNamedProperties[propertyName] = this.propertyDict.get(propertyName);else if (field.arrayDimensions > 1) clsNamedProperties[propertyName] = new Array(field.arrayDimensions);
+        if (this.propertyDict.has(propertyName)) clsNamedProperties[propertyName] = this.propertyDict.get(propertyName);else if (field.arrayDimensions > 1) {
+          debugger;
+          clsNamedProperties[propertyName] = new Array(field.arrayDimensions);
+        } else if (field.isNumericType) {
+          clsNamedProperties[propertyName] = field.createBuffer();
+        } else {
+          debugger;
+        }
       }
       for (const propertyName of Object.keys(defaultProperties)) {
         debugger;
@@ -3059,6 +3085,7 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
     const hostClass = this;
     const Constructor = lastNative ? pkg.getConstructor(lastNative.friendlyName) : pkg.getStructConstructor(this.friendlyName);
     if (lastNative) debugger;
+    if (friendlyName === "Vector") debugger;
     const cls = {
       [this.friendlyName]: (_class = class extends Constructor {
         constructor() {
@@ -3067,6 +3094,7 @@ class UStruct extends _un_field__WEBPACK_IMPORTED_MODULE_1__["default"] {
           const oldProps = this.getPropertyMap();
           const newProps = this.newProps;
           const missingProps = [];
+          if (friendlyName === "Vector") debugger;
           for (const [name, value] of Object.entries(clsNamedProperties)) {
             const varname = name in oldProps ? oldProps[name] : name;
             if (!(name in oldProps)) {

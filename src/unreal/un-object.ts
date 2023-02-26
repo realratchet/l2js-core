@@ -82,7 +82,6 @@ abstract class UObject implements ISerializable {
 
     protected getPropertyMap() { return {}; }
 
-    protected propertyList = new Array<any>();
     protected propertyDict = new Map<string, any>();
 
     protected setProperty(tag: PropertyTag, value: any) {
@@ -151,7 +150,8 @@ abstract class UObject implements ISerializable {
     }
 
     protected loadNative(pkg: UPackage) {
-        debugger;
+        for (const propVal of this.propertyDict.values())
+            pkg.read(propVal);
     }
 
     protected loadProperty(pkg: UPackage, tag: PropertyTag) {

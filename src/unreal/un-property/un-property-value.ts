@@ -14,7 +14,7 @@ class UPropValueUint8 extends UPropValue {
     static dtype = BufferValue.uint8;
     public value = new BufferValue(this.constructor.dtype);
 
-    ["constructor"]: typeof UPropValueUint8;
+    declare ["constructor"]: typeof UPropValueUint8;
 
     public static load(pkg: UPackage): this {
         pkg.read(this.value);

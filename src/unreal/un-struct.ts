@@ -6,6 +6,8 @@ import { UArrayProperty, UProperty } from "./un-property/un-properties";
 import FArray from "./un-array";
 
 class UStruct extends UField {
+    declare ["constructor"]: typeof UStruct;
+
     protected textBufferId: number;
 
     protected firstChildPropId: number;
@@ -161,7 +163,7 @@ class UStruct extends UField {
             if (!base.exp || base.exp.anyFlags(ObjectFlags_T.Native))
                 lastNative = base;
 
-            if (base.constructor !== UStruct && (base.constructor as any as UStruct)?.friendlyName !== UStruct.getConstructorName())
+            if (base.constructor !== this.constructor && (base.constructor as any as UStruct)?.friendlyName !== this.constructor.getConstructorName())
                 debugger;
 
             const { childPropFields, defaultProperties } = base;
@@ -174,6 +176,7 @@ class UStruct extends UField {
                 // debugger;
 
                 if (field instanceof UArrayProperty) {
+                    debugger;
                     if (field.arrayDimensions !== 1)
                         debugger;
 
@@ -187,8 +190,14 @@ class UStruct extends UField {
                 if (this.propertyDict.has(propertyName))
                     clsNamedProperties[propertyName] = this.propertyDict.get(propertyName);
                 else if (field.arrayDimensions > 1) {
-                    debugger;
-                    clsNamedProperties[propertyName] = new Array(field.arrayDimensions);
+                    const arr = clsNamedProperties[propertyName] = new Array(field.arrayDimensions);
+
+                    if (field.isNumericType) {
+                        for (let i = 0; i < field.arrayDimensions; i++)
+                            arr[i] = (field as any as IBufferValueProperty).createBuffer();
+                    } else {
+                        debugger;
+                    }
                 } else if (field.isNumericType) {
                     clsNamedProperties[propertyName] = (field as any as IBufferValueProperty).createBuffer();
                 } else {
@@ -208,11 +217,11 @@ class UStruct extends UField {
             ? pkg.getConstructor(lastNative.friendlyName as NativeTypes_T) as any as typeof UObject
             : pkg.getStructConstructor(this.friendlyName) as any as typeof UObject;
 
-        if (lastNative)
-            debugger;
+        // if (lastNative)
+        //     debugger;
 
-        if (friendlyName === "Vector")
-            debugger;
+        // if (friendlyName === "Vector")
+        //     debugger;
 
         const cls = {
             [this.friendlyName]: class extends Constructor {
@@ -231,8 +240,8 @@ class UStruct extends UField {
                     const newProps = this.newProps;
                     const missingProps = [];
 
-                    if (friendlyName === "Vector")
-                        debugger;
+                    // if (friendlyName === "Vector")
+                    //     debugger;
 
                     for (const [name, value] of Object.entries(clsNamedProperties)) {
                         const varname = name in oldProps ? oldProps[name] : name;
@@ -242,8 +251,13 @@ class UStruct extends UField {
                             missingProps.push(varname);
                         }
 
-                        if (value !== undefined || !(varname in this))
-                            (this as any)[varname] = value;
+                        if (!(value instanceof BufferValue))
+                            debugger;
+
+                        this.propertyDict.set(varname, value);
+
+                        // if (value !== undefined || !(varname in this))
+                        //     (this as any)[varname] = value;
                     }
 
                     if (missingProps.length > 0 && lastNative)
