@@ -48,7 +48,7 @@ abstract class UProperty extends UField {
 
 abstract class UBaseExportProperty<T extends UField> extends UProperty {
     protected valueId: number;
-    protected value: T;
+    public value: T;
 
     protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
@@ -85,7 +85,15 @@ class UClassProperty extends UObjectProperty {
     }
 }
 
-class UStructProperty extends UBaseExportProperty<UClass> {
+class UStructProperty extends UBaseExportProperty<UStruct> {
+    public loadSelf() {
+        super.loadSelf();
+
+        if (this.valueId !== 0 && !this.value)
+            this.value = this.pkg.fetchObject(this.valueId);
+
+        return this;
+    }
 }
 
 abstract class UNumericProperty<T extends ValueTypeNames_T = ValueTypeNames_T> extends UProperty implements IBufferValueProperty<T> {

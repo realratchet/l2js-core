@@ -200,6 +200,12 @@ class UStruct extends UField {
                     }
                 } else if (field.isNumericType) {
                     clsNamedProperties[propertyName] = (field as any as IBufferValueProperty).createBuffer();
+                } else if (field instanceof UnProperties.UObjectProperty || field instanceof UnProperties.UNameProperty || field instanceof UnProperties.UByteProperty) {
+                    clsNamedProperties[propertyName] = field;
+                } else if (field instanceof UnProperties.UStructProperty) {
+                    clsNamedProperties[propertyName] = field.value.buildClass(pkg);
+                } else if (field instanceof UnProperties.UBoolProperty) {
+                    clsNamedProperties[propertyName] = field;
                 } else {
                     debugger;
                 }
@@ -223,8 +229,9 @@ class UStruct extends UField {
         // if (friendlyName === "Vector")
         //     debugger;
 
-        const cls = {
-            [this.friendlyName]: class extends Constructor {
+        // @ts-ignore
+        const _clsBase = {
+            [this.friendlyName]: class DynamicStruct extends Constructor {
                 public static readonly isDynamicClass = true;
                 public static readonly friendlyName = friendlyName;
                 public static readonly hostClass = hostClass;
@@ -274,6 +281,20 @@ class UStruct extends UField {
                 public toString() { return Constructor === UObject ? `[D|S]${friendlyName}` : Constructor.prototype.toString.call(this); }
             }
         }[this.friendlyName];
+
+        const cls = eval([
+            `(function() {`,
+            `    const ${Constructor.name} = _clsBase;`,
+            `    return class ${friendlyName} extends ${Constructor.name} {`,
+            `        /*`,
+            `        */`,
+            `}`,
+            `})();`,
+        ].join("\n"));
+
+        console.log(cls);
+
+        debugger;
 
         this.kls = cls as any;
 
