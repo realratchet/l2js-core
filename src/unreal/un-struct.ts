@@ -3,7 +3,7 @@ import BufferValue from "../buffer-value";
 import ObjectFlags_T from "./un-object-flags";
 import UObject from "./un-object";
 import * as UnProperties from "./un-property/un-properties";
-import FArray from "./un-array";
+import FArray, { FIndexArray, FPrimitiveArray } from "./un-array";
 
 class UStruct extends UField {
     declare ["constructor"]: typeof UStruct;
@@ -175,40 +175,13 @@ class UStruct extends UField {
 
                 // debugger;
 
-                if (field instanceof UnProperties.UArrayProperty) {
-                    debugger;
-                    if (field.arrayDimensions !== 1)
-                        debugger;
 
-                    if (defaultProperties.has(propertyName))
-                        debugger;
 
-                    clsNamedProperties[propertyName] = (field.dtype as FArray).clone((this as any)[propertyName]);
-                    continue;
-                }
 
-                if (this.propertyDict.has(propertyName))
-                    clsNamedProperties[propertyName] = this.propertyDict.get(propertyName);
-                else if (field.arrayDimensions > 1) {
-                    const arr = clsNamedProperties[propertyName] = new Array(field.arrayDimensions);
-
-                    if (field.isNumericType) {
-                        for (let i = 0; i < field.arrayDimensions; i++)
-                            arr[i] = (field as any as IBufferValueProperty).createBuffer();
-                    } else {
-                        debugger;
-                    }
-                } else if (field.isNumericType) {
-                    clsNamedProperties[propertyName] = (field as any as IBufferValueProperty).createBuffer();
-                } else if (field instanceof UnProperties.UObjectProperty || field instanceof UnProperties.UNameProperty || field instanceof UnProperties.UByteProperty) {
-                    clsNamedProperties[propertyName] = field;
-                } else if (field instanceof UnProperties.UStructProperty) {
-                    clsNamedProperties[propertyName] = field.value.buildClass(pkg);
-                } else if (field instanceof UnProperties.UBoolProperty) {
-                    clsNamedProperties[propertyName] = field;
-                } else {
-                    debugger;
-                }
+                // if (this.propertyDict.has(propertyName))
+                //     clsNamedProperties[propertyName] = this.propertyDict.get(propertyName);
+                // else
+                clsNamedProperties[propertyName] = buildProperty(pkg, field);
             }
 
             for (const propertyName of Object.keys(defaultProperties)) {
@@ -282,19 +255,27 @@ class UStruct extends UField {
             }
         }[this.friendlyName];
 
+        const clsNamedPropertiesKeys = Object.keys(clsNamedProperties);
+
         const cls = eval([
             `(function() {`,
             `    const ${Constructor.name} = _clsBase;`,
-            `    return class ${friendlyName} extends ${Constructor.name} {`,
-            `        /*`,
-            `        */`,
-            `}`,
+            ...
+            (
+                clsNamedPropertiesKeys.length > 0
+                    ? [
+                        `    return class ${friendlyName} extends ${Constructor.name} {`,
+                        `        /* ${clsNamedPropertiesKeys.join(", ")} */`,
+                        `}`,
+                    ]
+                    : [`    return class ${friendlyName} extends ${Constructor.name} {}`]
+            ),
             `})();`,
         ].join("\n"));
 
-        console.log(cls);
+        // console.log(cls);
 
-        debugger;
+        // debugger;
 
         this.kls = cls as any;
 
@@ -304,3 +285,67 @@ class UStruct extends UField {
 
 export default UStruct;
 export { UStruct };
+
+function buildStructProperty(pkg: UNativePackage, field: UnProperties.UArrayProperty) {
+    if (field.arrayDimensions !== 1)
+        debugger;
+
+    const childProperty = field.value;
+
+    if (childProperty.isNumericType) {
+        const dtype = (childProperty as UNumericProperty).constructor.dtype;
+        const arr = new FPrimitiveArray(dtype);
+
+        return arr;
+    }
+
+    if (childProperty instanceof UnProperties.UStructProperty) {
+        const cls = buildProperty(pkg, childProperty);
+        const arr = new FArray(cls);
+
+        return arr;
+    }
+
+    if (childProperty instanceof UnProperties.UObjectProperty) {
+        return new FIndexArray();
+    }
+
+
+    debugger;
+}
+
+function buildProperty(pkg: UNativePackage, field: UProperty): any {
+    const propertyName = field.propertyName;
+
+    if (field instanceof UnProperties.UArrayProperty)
+        return buildStructProperty(pkg, field);
+
+    if (field.arrayDimensions > 1) {
+        const arr = new Array(field.arrayDimensions);
+
+        if (field.isNumericType) {
+            for (let i = 0; i < field.arrayDimensions; i++)
+                arr[i] = (field as any as IBufferValueProperty).createBuffer();
+        } else {
+            debugger;
+        }
+
+        return arr;
+    }
+
+    if (field.isNumericType)
+        return (field as any as IBufferValueProperty).createBuffer();
+
+
+    if (field instanceof UnProperties.UObjectProperty || field instanceof UnProperties.UNameProperty || field instanceof UnProperties.UByteProperty)
+        return field;
+
+    if (field instanceof UnProperties.UStructProperty)
+        return field.value.buildClass(pkg);
+
+    if (field instanceof UnProperties.UBoolProperty)
+        return field;
+
+
+    debugger;
+}

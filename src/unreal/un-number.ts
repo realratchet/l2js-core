@@ -2,14 +2,14 @@ import BufferValue from "../buffer-value";
 
 class FNumber<T extends NumberTypes_T> {
     protected readonly type: ValidTypes_T<T>;
-    public value: number | BigInt;
+    public value: ReturnType<T>;
 
     private constructor(dtype: ValidTypes_T<T>) {
         this.type = dtype;
     }
 
     public load(pkg: UPackage): this {
-        this.value = pkg.read(new BufferValue(this.type)).value;
+        this.value = pkg.read(new BufferValue<NumberTypes_T>(this.type)).value as ReturnType<T>;
 
         return this;
     }
@@ -25,3 +25,5 @@ class FNumber<T extends NumberTypes_T> {
 
 export default FNumber;
 export { FNumber };
+
+type ReturnType<T extends NumberTypes_T> = T extends PrimitiveNumberTypes_T ? number : T extends BigNumberTypes_T ? bigint : never;

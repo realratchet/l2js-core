@@ -4,11 +4,11 @@ import PropertyTag from "./un-property/un-property-tag";
 import UExport from "./un-export";
 import FNumber from "./un-number";
 
-class FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable, R = T & number> extends Array<R> implements IConstructable {
+class FArray<T extends UObject | FNumber<NumberTypes_T> | IConstructable> extends Array<T> implements IConstructable {
     protected Constructor: { new(...pars: any): T };
 
     public getElemCount() { return this.length; }
-    public getElem(idx: number): R { return this[idx]; }
+    public getElem(idx: number): T { return this[idx]; }
 
     public constructor(constr: { new(...pars: any): T }) {
         super();
@@ -16,7 +16,7 @@ class FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable, R =
         this.Constructor = constr;
     }
 
-    public map<T2>(fnMap: (value: R, index: number, array: R[]) => T2): T2[] { return [...this].map(fnMap); }
+    public map<T2>(fnMap: (value: T, index: number, array: T[]) => T2): T2[] { return [...this].map(fnMap); }
 
     public load(pkg: UPackage, tag?: PropertyTag): this {
         const hasTag = tag !== null && tag !== undefined;
@@ -50,7 +50,7 @@ class FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable, R =
         return this;
     }
 
-    public clone(other: FArray<T, R>): this {
+    public clone(other: FArray<T>): this {
         if (!other)
             return this;
 
@@ -98,5 +98,74 @@ class FNameArray extends Array<string> implements IConstructable {
     }
 }
 
+class FPrimitiveArray<T extends NumberTypes_T> implements IConstructable {
+    protected array: DataView;
+    protected Constructor: ValidTypes_T<T>;
+
+    public getElemCount() { return this.array ? this.array.byteLength / this.Constructor.bytes : 0; }
+    public getElem(idx: number): number {
+        let funName: string = null;
+
+        switch (this.Constructor.name) {
+            case "int64": funName = "getBigInt64"; break;
+            case "uint64": funName = "getBigUint64"; break;
+            case "compat32":
+            case "int32":
+                funName = "getInt32";
+                break;
+            case "float": funName = "getFloat32"; break;
+            case "uint32": funName = "getUint32"; break;
+            case "int8": funName = "getInt8"; break;
+            case "uint8": funName = "getUint8"; break;
+            case "int16": funName = "getInt16"; break;
+            case "uint16": funName = "getUint16"; break;
+            default: throw new Error(`Unknown type: ${this.Constructor.name}`);
+        }
+
+        return (this.array as any)[funName](idx * this.Constructor.bytes, true);
+
+    }
+
+    public constructor(constr: ValidTypes_T<T>) { this.Constructor = constr; }
+
+    public map<T>(fnMap: (value: any, index: number, array: any[]) => T): T[] { return [...(this as any as Array<T>)].map(fnMap); }
+
+    public load(pkg: UPackage, tag?: PropertyTag): this {
+        const hasTag = tag !== null && tag !== undefined;
+        const beginIndex = hasTag ? pkg.tell() : null;
+        const count = pkg.read(new BufferValue(BufferValue.compat32));
+        const elementCount = count.value as number;
+
+        if (elementCount === 0) {
+            this.array = new DataView(new ArrayBuffer(0));
+            return this;
+        }
+
+        const byteLength = elementCount * this.Constructor.bytes;
+
+        this.array = pkg.readPrimitive(pkg.tell(), byteLength);
+
+        pkg.seek(byteLength);
+
+        if (hasTag && (pkg.tell() - beginIndex - tag.dataSize) !== 0) debugger;
+        if (hasTag) console.assert((pkg.tell() - beginIndex - tag.dataSize) === 0);
+
+        return this;
+    }
+
+    public getTypedArray() {
+        try {
+            return new this.Constructor.dtype(this.array.buffer, this.array.byteOffset, this.getElemCount());
+        } catch (e) {
+            if (e.message.includes("should be a multiple of"))
+                return new this.Constructor.dtype(this.array.buffer.slice(this.array.byteOffset, this.array.byteOffset + this.getByteLength()));
+
+            throw e;
+        }
+    }
+
+    public getByteLength() { return this.array.byteLength; }
+}
+
 export default FArray;
-export { FArray, FIndexArray, FNameArray };
+export { FArray, FIndexArray, FNameArray, FPrimitiveArray };

@@ -19,6 +19,7 @@ type IAssetListInfo = Record<string, string>;
 type UObject = import("./src/unreal/un-object").UObject;
 
 type UProperty = import("./src/unreal/un-property/un-properties").UProperty;
+type UNumericProperty = import("./src/unreal/un-property/un-properties").UNumericProperty;
 type PropertyTag = import("./src/unreal/un-property/un-property-tag").PropertyTag;
 
 type UField = import("./src/unreal/un-field").UField;
@@ -42,7 +43,7 @@ interface IConstructable {
 }
 
 type FNumber<T extends ValueTypeNames_T = ValueTypeNames_T> = import("./src/unreal/un-number").FNumber<T>;
-type FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable, R = T & number> = import("./src/unreal/un-array").FArray<T, R>;
+type FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArray<T>;
 
 type NativePropertyTypes_T =
     | "Property"

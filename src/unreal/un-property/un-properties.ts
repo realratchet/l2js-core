@@ -58,9 +58,7 @@ abstract class UBaseExportProperty<T extends UField> extends UProperty {
         this.valueId = pkg.read(compat32).value;
         this.readHead = pkg.tell();
     }
-}
 
-class UObjectProperty extends UBaseExportProperty<UClass> {
     public loadSelf() {
         super.loadSelf();
 
@@ -69,6 +67,17 @@ class UObjectProperty extends UBaseExportProperty<UClass> {
 
         return this;
     }
+}
+
+class UObjectProperty extends UBaseExportProperty<UClass> {
+    // public loadSelf() {
+    //     super.loadSelf();
+
+    //     if (this.valueId !== 0 && !this.value)
+    //         this.value = this.pkg.fetchObject(this.valueId);
+
+    //     return this;
+    // }
 }
 
 class UClassProperty extends UObjectProperty {
@@ -86,17 +95,17 @@ class UClassProperty extends UObjectProperty {
 }
 
 class UStructProperty extends UBaseExportProperty<UStruct> {
-    public loadSelf() {
-        super.loadSelf();
+    // public loadSelf() {
+    //     super.loadSelf();
 
-        if (this.valueId !== 0 && !this.value)
-            this.value = this.pkg.fetchObject(this.valueId);
+    //     if (this.valueId !== 0 && !this.value)
+    //         this.value = this.pkg.fetchObject(this.valueId);
 
-        return this;
-    }
+    //     return this;
+    // }
 }
 
-abstract class UNumericProperty<T extends ValueTypeNames_T = ValueTypeNames_T> extends UProperty implements IBufferValueProperty<T> {
+abstract class UNumericProperty<T extends NumberTypes_T = NumberTypes_T> extends UProperty implements IBufferValueProperty<T> {
     declare ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<T> };
 
     public createBuffer() {
@@ -138,24 +147,31 @@ class UNameProperty extends UProperty {
 }
 
 class UByteProperty extends UBaseExportProperty<UEnum> {
-    public loadSelf() {
-        super.loadSelf();
+    // public loadSelf() {
+    //     super.loadSelf();
 
-        if (this.valueId !== 0 && !this.value)
-            this.value = this.pkg.fetchObject(this.valueId);
+    //     if (this.valueId !== 0 && !this.value)
+    //         this.value = this.pkg.fetchObject(this.valueId);
 
-        return this;
-    }
+    //     return this;
+    // }
 }
 
 class UArrayProperty extends UBaseExportProperty<UProperty> {
+    public loadSelf() {
+        super.loadSelf();
+
+        this.value?.loadSelf();
+
+        return this;
+    }
 }
 
 function readProperty(pkg: UPackage, dtype: ValidTypes_T<any>) {
     return pkg.read(new BufferValue(dtype)).value;
 }
 
-export { UProperty, UFloatProperty, UIntProperty, UStrProperty, UDelegateProperty, UBoolProperty, UNameProperty, UObjectProperty, UClassProperty, UStructProperty, UByteProperty, UArrayProperty };
+export { UProperty, UNumericProperty, UFloatProperty, UIntProperty, UStrProperty, UDelegateProperty, UBoolProperty, UNameProperty, UObjectProperty, UClassProperty, UStructProperty, UByteProperty, UArrayProperty };
 
 enum PropertyFlags_T {
     Edit = 0x00000001,          // Property is user - settable in the editor.
