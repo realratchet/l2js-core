@@ -325,7 +325,7 @@ function buildProperty(pkg: UNativePackage, field: UProperty): any {
 
         if (field.isNumericType) {
             for (let i = 0; i < field.arrayDimensions; i++)
-                arr[i] = (field as any as IBufferValueProperty).createBuffer();
+                arr[i] = (field as any as IBufferValueProperty).buildBuffer();
         } else {
             debugger;
         }
@@ -334,17 +334,23 @@ function buildProperty(pkg: UNativePackage, field: UProperty): any {
     }
 
     if (field.isNumericType)
-        return (field as any as IBufferValueProperty).createBuffer();
+        return (field as any as IBufferValueProperty).buildBuffer();
 
 
-    if (field instanceof UnProperties.UObjectProperty || field instanceof UnProperties.UNameProperty || field instanceof UnProperties.UByteProperty)
+    if (field instanceof UnProperties.UNameProperty)
+        return field.buildContainer();
+
+    if (field instanceof UnProperties.UObjectProperty)
         return field;
+
+    if (field instanceof UnProperties.UByteProperty)
+        return field.buildContainer();
 
     if (field instanceof UnProperties.UStructProperty)
         return field.value.buildClass(pkg);
 
     if (field instanceof UnProperties.UBoolProperty)
-        return field;
+        return field.buildContainer();
 
 
     debugger;

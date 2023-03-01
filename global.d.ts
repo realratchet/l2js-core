@@ -44,6 +44,7 @@ interface IConstructable {
 
 type FNumber<T extends ValueTypeNames_T = ValueTypeNames_T> = import("./src/unreal/un-number").FNumber<T>;
 type FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArray<T>;
+type FNameArray = import("./src/unreal/un-array").FNameArray;
 
 type NativePropertyTypes_T =
     | "Property"
@@ -211,5 +212,5 @@ interface ISerializable {
 
 interface IBufferValueProperty<T extends ValueTypeNames_T = ValueTypeNames_T> {
     readonly isNumericType: true;
-    createBuffer(): BufferValue<T>;
+    buildBuffer(): BufferValue<T>;
 }

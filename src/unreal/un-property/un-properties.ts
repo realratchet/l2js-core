@@ -1,6 +1,7 @@
 import BufferValue from "../../buffer-value";
 import { flagBitsToDict } from "../../utils/flags";
 import UField from "../un-field";
+import { EnumeratedValue } from "../un-object";
 
 abstract class UProperty extends UField {
     public arrayDimensions: number;
@@ -108,7 +109,7 @@ class UStructProperty extends UBaseExportProperty<UStruct> {
 abstract class UNumericProperty<T extends NumberTypes_T = NumberTypes_T> extends UProperty implements IBufferValueProperty<T> {
     declare ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<T> };
 
-    public createBuffer() {
+    public buildBuffer() {
         const constr = this.constructor;
 
         if (!("dtype" in constr))
@@ -132,21 +133,39 @@ class UIntProperty extends UNumericProperty<"int32"> {
     // public static readProperty(pkg: UPackage) { return readProperty(pkg, this.dtype); }
 }
 
-class UStrProperty extends UNumericProperty<"char"> {
-    public static dtype = BufferValue.char;
+class UStrProperty extends /*UNumericProperty<"char">*/ UProperty {
+    // public static dtype = BufferValue.char;
 }
 
 class UDelegateProperty extends UProperty {
 
 }
 
+class BoolContainer {
+    public value: boolean = false;
+
+    toString() { return `Bool[${this.value}]`; }
+}
+
 class UBoolProperty extends UProperty {
+    public buildContainer() { return new BoolContainer(); }
+}
+
+class NameContainer {
+    public value = "None";
+
+    toString() { return `Name[${this.value}]`; }
 }
 
 class UNameProperty extends UProperty {
+    public buildContainer() { return new NameContainer(); }
 }
 
 class UByteProperty extends UBaseExportProperty<UEnum> {
+    declare ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<"uint8"> };
+
+    public static dtype = BufferValue.uint8;
+
     // public loadSelf() {
     //     super.loadSelf();
 
@@ -155,6 +174,13 @@ class UByteProperty extends UBaseExportProperty<UEnum> {
 
     //     return this;
     // }
+
+    public buildContainer() {
+        if (this.valueId > 0)
+            return new EnumeratedValue(this.value.friendlyName, this.value.names, 0);
+
+        return new BufferValue(this.constructor.dtype);
+    }
 }
 
 class UArrayProperty extends UBaseExportProperty<UProperty> {

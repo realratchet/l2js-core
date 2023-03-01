@@ -576,6 +576,7 @@ abstract class UNativePackage extends UPackage {
     }
 
     public getStructConstructor<T extends typeof UObject = typeof UObject>(constructorName: string): new () => T { return UObject as any; }
+    protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T { return UObject as any; }
 
     public getConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T {
         let Constructor: any;
@@ -598,9 +599,8 @@ abstract class UNativePackage extends UPackage {
             case "StructProperty": Constructor = UnProperties.UStructProperty; break;
             case "ObjectProperty": Constructor = UnProperties.UObjectProperty; break;
             case "DelegateProperty": Constructor = UnProperties.UDelegateProperty; break;
-            default:
-                debugger;
-                throw new Error(`Not implemented native class: ${constructorName}`);
+
+            default: Constructor = this.getNonNativeConstructor(constructorName); break;
         }
 
         return Constructor;

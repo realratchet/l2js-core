@@ -324,9 +324,11 @@ abstract class UObject implements ISerializable {
 
 class EnumeratedValue {
     public value: number;
-    protected enumerations: Readonly<string[]>;
+    protected readonly enumerations: Readonly<string[]>;
+    public readonly name: string;
 
-    constructor(value: number, enumerations: string[]) {
+    constructor(name: string, enumerations: string[] | FNameArray, value: number) {
+        this.name = name;
         this.value = value;
         this.enumerations = Object.freeze(enumerations);
 
@@ -335,7 +337,7 @@ class EnumeratedValue {
 
     valueOf(): number { return this.value; }
     toString() {
-        return isFinite(this.value) && this.value < this.enumerations.length ? this.enumerations[this.value] : `<invalid '${this.value}'>`;
+        return isFinite(this.value) && this.value < this.enumerations.length ? `${this.name}[${this.enumerations[this.value]}]` : `${this.name}[<invalid '${this.value}']>`;
     }
 }
 
