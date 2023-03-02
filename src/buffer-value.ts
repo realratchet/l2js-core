@@ -201,12 +201,14 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
             return string;
         }
 
-        const bits = this.toString(16).toUpperCase();
+        const bits = this.value.toString(16).toUpperCase();
         const head = new Array(bits.length - this.type.bytes).fill("0").join("");
 
         return `0x${head}${bits}`;
     }
-    public toString(...args: any) { return this.value.toString(...args); }
+    public toString() {
+        return `BufferValue<${this.type.name}>[${this.value}]`;
+    }
 }
 
 export default BufferValue;

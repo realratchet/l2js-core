@@ -75,27 +75,47 @@ class UClass extends UState {
         const uint32 = new BufferValue(BufferValue.uint32);
         const compat32 = new BufferValue(BufferValue.compat32);
 
-        if (verArchive <= 61) {
+        if (verArchive < 0x3e) {
             debugger;
         }
+
+        if (exp.objectName === "Pawn")
+            debugger;
 
         this.flags = pkg.read(uint32).value;
         this.classFlags = flagBitsToDict(this.flags, EClassFlags_T as any);
         this.classGuid = pkg.read(BufferValue.allocBytes(16)).value;
+
+        debugger;
+
+        // console.log()
+
+        // ebp+arg_0 -> 0x19EFF0 -> 0x102D3D74 -> 274
+
+        // debugger;
+
+        if (this.flags === 1150)
+            debugger;
+
+        const guidBytes = new Uint8Array(this.classGuid.buffer);
 
         this.dependencies.load(pkg);
         this.pkgImportIds.load(pkg);
 
         if (verArchive >= 0x3e) {
             this.classWithinId = pkg.read(compat32).value;
-
+``
             const nameId = pkg.read(compat32).value;
 
             this.classConfigName = pkg.nameTable[nameId].name;
+        } else {
+            debugger;
         }
 
-        if (verArchive >= 0x63)
+        if (0x62 < verArchive) {
             this.pkgImportIds2.load(pkg);
+            // debugger;
+        }
 
         this.readHead = pkg.tell();
         this.readNamedProps(pkg);
@@ -260,7 +280,7 @@ class UClass extends UState {
 
     //             }
 
-               
+
 
     //             protected getPropertyMap(): Record<string, string> {
     //                 return {

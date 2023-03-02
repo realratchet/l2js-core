@@ -341,7 +341,7 @@ function buildProperty(pkg: UNativePackage, field: UProperty): any {
         return field.buildContainer();
 
     if (field instanceof UnProperties.UObjectProperty)
-        return field;
+        return field.buildContainer();
 
     if (field instanceof UnProperties.UByteProperty)
         return field.buildContainer();

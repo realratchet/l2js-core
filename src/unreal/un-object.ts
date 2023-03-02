@@ -337,7 +337,7 @@ class EnumeratedValue {
 
     valueOf(): number { return this.value; }
     toString() {
-        return isFinite(this.value) && this.value < this.enumerations.length ? `${this.name}[${this.enumerations[this.value]}]` : `${this.name}[<invalid '${this.value}']>`;
+        return isFinite(this.value) && this.value < this.enumerations.length ? `Enum<${this.name}>[${this.enumerations[this.value]}]` : `Enum<${this.name}>[<invalid '${this.value}']>`;
     }
 }
 

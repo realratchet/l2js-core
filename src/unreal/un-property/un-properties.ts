@@ -70,15 +70,28 @@ abstract class UBaseExportProperty<T extends UField> extends UProperty {
     }
 }
 
+class ObjectContainer<T extends UObject = UObject> {
+    public friendlyName: string;
+    public value: T = null;
+
+    public constructor(friendlyName: string) {
+        if (!friendlyName)
+            debugger;
+
+        this.friendlyName = friendlyName;
+    }
+
+    toString() { return `UObject<${this.friendlyName}>[${this.value}]`; }
+
+    public buildContainer() { return new NameContainer(); }
+}
+
 class UObjectProperty extends UBaseExportProperty<UClass> {
-    // public loadSelf() {
-    //     super.loadSelf();
+    public buildContainer() { return new ObjectContainer(this.value/*.loadSelf()*/.friendlyName); }
+}
 
-    //     if (this.valueId !== 0 && !this.value)
-    //         this.value = this.pkg.fetchObject(this.valueId);
+class ClassContainer {
 
-    //     return this;
-    // }
 }
 
 class UClassProperty extends UObjectProperty {
@@ -92,6 +105,19 @@ class UClassProperty extends UObjectProperty {
 
         this.metaClassId = pkg.read(compat32).value;
         this.readHead = pkg.tell();
+    }
+
+    public loadSelf() {
+        super.loadSelf();
+
+        if (this.metaClassId !== 0 && !this.metaClass)
+            this.metaClass = this.pkg.fetchObject(this.metaClassId);
+
+        return this;
+    }
+
+    public buildContainer() {
+        debugger;
     }
 }
 
