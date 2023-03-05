@@ -87,7 +87,7 @@ class ObjectContainer<T extends UObject = UObject> {
 }
 
 class UObjectProperty extends UBaseExportProperty<UClass> {
-    public buildContainer() { return new ObjectContainer(this.value/*.loadSelf()*/.friendlyName); }
+    public buildContainer() { return new ObjectContainer(this.value.loadSelf().friendlyName); }
 }
 
 class ClassContainer {
@@ -117,7 +117,7 @@ class UClassProperty extends UObjectProperty {
     }
 
     public buildContainer() {
-        debugger;
+        // debugger;
     }
 }
 

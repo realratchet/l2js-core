@@ -31,7 +31,7 @@ class FDependencies implements IConstructable {
 class UClass extends UState {
     declare ["constructor"]: typeof UClass;
 
-    protected flags: EClassFlags_T;
+    protected _classFlags: EClassFlags_T;
     public classFlags: Readonly<Record<string, boolean>>;
     protected classGuid: DataView;
     protected dependencies = new FArray(FDependencies);
@@ -66,6 +66,9 @@ class UClass extends UState {
     }
 
     protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
+        // if (exp.objectName === "Pawn")
+        //     debugger;
+        
         super.doLoad(pkg, exp);
 
         this.readHead = pkg.tell();
@@ -79,14 +82,16 @@ class UClass extends UState {
             debugger;
         }
 
-        if (exp.objectName === "Pawn")
-            debugger;
+        // if (exp.objectName === "Pawn")
+        //     debugger;
 
-        this.flags = pkg.read(uint32).value;
-        this.classFlags = flagBitsToDict(this.flags, EClassFlags_T as any);
+        // debugger
+
+        this._classFlags = pkg.read(uint32).value;
+        this.classFlags = flagBitsToDict(this._classFlags, EClassFlags_T as any);
         this.classGuid = pkg.read(BufferValue.allocBytes(16)).value;
 
-        debugger;
+        // debugger;
 
         // console.log()
 
@@ -94,7 +99,7 @@ class UClass extends UState {
 
         // debugger;
 
-        if (this.flags === 1150)
+        if (this._classFlags === 1150)
             debugger;
 
         const guidBytes = new Uint8Array(this.classGuid.buffer);
@@ -104,7 +109,7 @@ class UClass extends UState {
 
         if (verArchive >= 0x3e) {
             this.classWithinId = pkg.read(compat32).value;
-``
+            ``
             const nameId = pkg.read(compat32).value;
 
             this.classConfigName = pkg.nameTable[nameId].name;

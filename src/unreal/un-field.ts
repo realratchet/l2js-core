@@ -11,6 +11,9 @@ abstract class UField extends UObject {
     protected static getConstructorName() { return "Field"; }
 
     protected doLoad(pkg: UPackage, exp: UExport): void {
+        // if (exp.objectName === "Pawn")
+        //     debugger;
+
         if (this.constructor.name !== "UClass")
             super.doLoad(pkg, exp);
 
