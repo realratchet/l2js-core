@@ -3,6 +3,7 @@ import UExport from "./un-export";
 import ObjectFlags_T from "./un-object-flags";
 import UPackage from "./un-package";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
+import * as UnContainers from "./un-property/un-containers";
 
 abstract class UObject implements ISerializable {
     declare ["constructor"]: typeof UObject;
@@ -81,14 +82,13 @@ abstract class UObject implements ISerializable {
     }
 
     protected getPropertyVarName(tag: PropertyTag) { return tag.name; }
-    protected isValidProperty(varName: string) { return true; }
+    protected isValidProperty(varName: string) { return this.propertyDict.has(varName); }
 
     protected getPropertyMap() { return {}; }
 
     protected propertyDict = new Map<string, any>();
 
     protected setProperty(tag: PropertyTag, value: any) {
-        debugger;
         const varName = this.getPropertyVarName(tag);
         const { name: propName, arrayIndex } = tag;
 
@@ -101,9 +101,12 @@ abstract class UObject implements ISerializable {
         if (tag.arrayIndex < 0 || (tag.arrayIndex > 0 && tag.arrayIndex >= this.getPropCount(tag.name)))
             throw new Error(`Something went wrong, expected index '${tag.arrayIndex} (max: '${this.getPropCount(tag.name)}')'.`);
 
-        if ((this as any)[varName] instanceof Array) { debugger; ((this as any)[varName] as Array<any>)[arrayIndex] = value; }
-        else if ((this as any)[varName] instanceof Set) { debugger; ((this as any)[varName] as Set<any>).add(value); }
-        else if ((this as any)[varName] instanceof EnumeratedValue) { debugger; (this as any)[varName].value = value; }
+        const property = this.propertyDict.get(varName);
+
+        debugger;
+
+        if (property instanceof Array) { debugger; (property as Array<any>)[arrayIndex] = value; }
+        else if (property instanceof UnContainers.EnumContainer) { debugger; property.value = value; }
         else this.propertyDict.set(varName, value);
 
         // console.log(`Setting '${this.constructor.name}' property: ${propName}[${arrayIndex}] -> ${typeof (value) === "object" && value !== null ? value.constructor.name : value}`);
@@ -118,13 +121,13 @@ abstract class UObject implements ISerializable {
         return this.load(this.pkg, this.exp);
     }
 
-    protected readByteProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8)).value); }
-    protected readIntProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32)).value); }
-    protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float)).value); }
-    protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, tag.boolValue); }
-    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.compat32)).value); }
-    protected readNameProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.nameTable[pkg.read(new BufferValue(BufferValue.compat32)).value].name); }
-    protected readStrProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char)).value); }
+    protected readByteProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8)).value); }
+    protected readIntProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32)).value); }
+    protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float)).value); }
+    protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, tag.boolValue); }
+    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.compat32)).value); }
+    protected readNameProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.nameTable[pkg.read(new BufferValue(BufferValue.compat32)).value].name); }
+    protected readStrProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char)).value); }
     protected readStringProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
     protected readArrayProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); }
     protected readClassProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
@@ -133,6 +136,8 @@ abstract class UObject implements ISerializable {
     protected readMapProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
     protected readFixedProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
     protected readStructProperty(pkg: UPackage, tag: PropertyTag): any {
+
+        debugger;
 
         const core = pkg.loader.getPackage("core", "Script");
         const native = pkg.loader.getPackage("native", "Script");
@@ -158,7 +163,7 @@ abstract class UObject implements ISerializable {
                 pkg.read(propVal);
             else if (propVal instanceof UObject) {
                 propVal.load(pkg);
-            } else if (propVal instanceof EnumeratedValue) {
+            } else if (propVal instanceof UnContainers.EnumContainer) {
                 propVal.load(pkg);
             } else {
                 debugger;
@@ -340,35 +345,7 @@ abstract class UObject implements ISerializable {
     }
 }
 
-class EnumeratedValue implements IConstructable {
-    public value: number;
-    protected readonly enumerations: Readonly<string[]>;
-    public readonly name: string;
 
-    constructor(name: string, enumerations: string[] | FNameArray, value: number) {
-        this.name = name;
-        this.value = value;
-        this.enumerations = Object.freeze(enumerations);
-
-        Object.seal(this);
-    }
-
-    load(pkg: UPackage, tag?: PropertyTag): this {
-        if (!!tag) {
-            debugger;
-            throw new Error("Method not implemented.");
-        }
-
-        this.value = pkg.read(new BufferValue(BufferValue.uint8)).value;
-
-        return this;
-    }
-
-    valueOf(): number { return this.value; }
-    toString() {
-        return isFinite(this.value) && this.value < this.enumerations.length ? `Enum<${this.name}>[${this.enumerations[this.value]}]` : `Enum<${this.name}>[<invalid '${this.value}']>`;
-    }
-}
 
 export default UObject;
-export { UObject, EnumeratedValue };
+export { UObject };

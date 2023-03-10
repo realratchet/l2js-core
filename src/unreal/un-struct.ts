@@ -1,7 +1,8 @@
 import UField from "./un-field";
 import BufferValue from "../buffer-value";
 import ObjectFlags_T from "./un-object-flags";
-import UObject, { EnumeratedValue } from "./un-object";
+import UObject from "./un-object";
+import * as UnContainers from "./un-property/un-containers";
 import * as UnProperties from "./un-property/un-properties";
 import FArray, { FIndexArray, FPrimitiveArray } from "./un-array";
 import UNativeRegistry from "./un-native-registry";
@@ -284,13 +285,18 @@ class UStruct extends UField {
                             missingProps.push(varname);
                         }
 
+                        if (!value)
+                            debugger;
+
                         if (value instanceof BufferValue) {
                             this.propertyDict.set(varname, value);
                         } else if (value.getConstructorName?.()) {
                             this.propertyDict.set(varname, new value());
-                        } else if (value instanceof EnumeratedValue) {
+                        } else if (value instanceof UnContainers.UContainer) {
                             this.propertyDict.set(varname, value);
                         } else if (value instanceof Array) {
+                            this.propertyDict.set(varname, value);
+                        } else if (value instanceof FPrimitiveArray) {
                             this.propertyDict.set(varname, value);
                         } else {
                             debugger;
@@ -746,7 +752,7 @@ function buildProperty(pkg: UNativePackage, field: UProperty): any {
     if (field instanceof UnProperties.UNameProperty)
         return field.buildContainer();
 
-    if (field instanceof UnProperties.UObjectProperty)
+    if (field instanceof UnProperties.UObjectProperty || field instanceof UnProperties.UClassProperty)
         return field.buildContainer();
 
     if (field instanceof UnProperties.UByteProperty)

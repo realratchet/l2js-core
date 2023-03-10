@@ -2,7 +2,8 @@ import UState from "./un-state";
 import BufferValue from "../buffer-value";
 import { flagBitsToDict } from "../utils/flags";
 import { FArray, FIndexArray } from "./un-array";
-import UObject, { EnumeratedValue } from "./un-object";
+import UObject from "./un-object";
+import * as UnContainers from "./un-property/un-containers";
 import ObjectFlags_T from "./un-object-flags";
 import { UProperty } from "./un-property/un-properties";
 import UEnum from "./un-enum";
@@ -257,7 +258,7 @@ class UClass extends UState {
     //                     }
 
     //                     const oldValue = varname in this && (this as any)[varname] !== undefined ? (this as any)[varname] : defaultValue;
-    //                     const value = new EnumeratedValue(oldValue, names);
+    //                     const value = new UnContainers.EnumContainer(oldValue, names);
 
     //                     if (varname in this)
     //                         delete (this as any)[varname];

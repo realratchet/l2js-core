@@ -1,7 +1,7 @@
 import BufferValue from "../../buffer-value";
 import { flagBitsToDict } from "../../utils/flags";
 import UField from "../un-field";
-import { EnumeratedValue } from "../un-object";
+import * as UnContainers from "../un-property/un-containers";
 
 abstract class UProperty extends UField {
     public arrayDimensions: number;
@@ -68,31 +68,18 @@ abstract class UBaseExportProperty<T extends UField> extends UProperty {
     }
 }
 
-class ObjectContainer<T extends UObject = UObject> {
-    public friendlyName: string;
-    public _value: T = null;
+interface IObjectLikeProperty<T extends UnContainers.UContainer> {
+    buildContainer(): T;
+}
 
-    public constructor(friendlyName: string) {
-        if (!friendlyName)
-            debugger;
-
-        this.friendlyName = friendlyName;
+class UObjectProperty extends UBaseExportProperty<UClass> implements IObjectLikeProperty<UnContainers.ObjectContainer> {
+    public buildContainer<R extends UObject = UObject>() {
+        return new UnContainers.ObjectContainer<R>(this.value.loadSelf().friendlyName);
     }
-
-    toString() { return `UObject<${this.friendlyName}>[${this._value}]`; }
-
-    public buildContainer() { return new NameContainer(); }
 }
 
-class UObjectProperty extends UBaseExportProperty<UClass> {
-    public buildContainer() { return new ObjectContainer(this.value.loadSelf().friendlyName); }
-}
 
-class ClassContainer {
-
-}
-
-class UClassProperty extends UObjectProperty {
+class UClassProperty extends UBaseExportProperty<UClass> implements IObjectLikeProperty<UnContainers.ClassContainer>{
     protected metaClassId: number;
     protected _metaClass: UClass;
 
@@ -112,9 +99,7 @@ class UClassProperty extends UObjectProperty {
         return this._value;
     }
 
-    public buildContainer() {
-        // debugger;
-    }
+    public buildContainer() { return new UnContainers.ClassContainer(this.value); }
 }
 
 class UStructProperty extends UBaseExportProperty<UStruct> {
@@ -163,24 +148,16 @@ class UDelegateProperty extends UProperty {
 
 }
 
-class BoolContainer {
-    public value: boolean = false;
 
-    toString() { return `Bool[${this.value}]`; }
-}
 
 class UBoolProperty extends UProperty {
-    public buildContainer() { return new BoolContainer(); }
+    public buildContainer() { return new UnContainers.BoolContainer(); }
 }
 
-class NameContainer {
-    public value = "None";
 
-    toString() { return `Name[${this.value}]`; }
-}
 
 class UNameProperty extends UProperty {
-    public buildContainer() { return new NameContainer(); }
+    public buildContainer() { return new UnContainers.NameContainer(); }
 }
 
 class UByteProperty extends UBaseExportProperty<UEnum> {
@@ -199,7 +176,7 @@ class UByteProperty extends UBaseExportProperty<UEnum> {
 
     public buildContainer() {
         if (this.valueId > 0)
-            return new EnumeratedValue(this.value.friendlyName, this.value.names, 0);
+            return new UnContainers.EnumContainer(this.value.friendlyName, this.value.names, 0);
 
         return new BufferValue(this.constructor.dtype);
     }
