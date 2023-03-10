@@ -4,6 +4,9 @@ import FString from "./un-string";
 class UConst extends UField {
     protected value: string;
 
+    protected static getConstructorName() { return "Const"; }
+    public toString() { return `Const[${this.value}]`; }
+
     protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
 

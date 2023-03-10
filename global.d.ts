@@ -28,6 +28,7 @@ type UState = import("./src/unreal/un-state").UState;
 type UClass = import("./src/unreal/un-class").UClass;
 type UEnum = import("./src/unreal/un-enum").UEnum;
 type UFunction = import("./src/unreal/un-function").UFunction;
+type UConst = import("./src/unreal/un-const").UConst;
 
 type UExport<T extends UObject = UObject> = import("./src/unreal/un-export").UExport<T>;
 
@@ -45,6 +46,13 @@ interface IConstructable {
 type FNumber<T extends ValueTypeNames_T = ValueTypeNames_T> = import("./src/unreal/un-number").FNumber<T>;
 type FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArray<T>;
 type FNameArray = import("./src/unreal/un-array").FNameArray;
+
+interface INativeRegistry {
+    getClass(className: string): any;
+    hasNativeFunc(nativeIndex: number | string): boolean;
+    registerNativeFunc(nativeIndex: number | string, func: Function): void;
+    getNativeFuncName(nativeIndex: number | string): string;
+}
 
 type NativePropertyTypes_T =
     | "Property"
@@ -204,7 +212,7 @@ type NativeTypes_T =
     | "MeshEmitter"
     | "SpriteEmitter";
 
-interface ISerializable {
+interface ISerializable extends IConstructable {
     load(pkg: UPackage): this;
     load(pkg: UPackage, info: UExport): this;
     load(pkg: UPackage, info: PropertyTag): this;

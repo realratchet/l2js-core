@@ -6,6 +6,8 @@ class UEnum extends UField {
     public readonly names = new FNameArray();
     public friendlyName: string;
 
+    protected static getConstructorName() { return "Enum"; }
+
     protected preLoad(pkg: UPackage, exp: UExport<UObject>): void {
         super.preLoad(pkg, exp);
 
@@ -17,6 +19,8 @@ class UEnum extends UField {
 
         this.names.load(pkg);
     }
+
+    public toString() { return `Enum[${this.friendlyName}]`; }
 }
 
 export default UEnum;

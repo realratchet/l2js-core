@@ -1,11 +1,14 @@
 import BufferValue from "../buffer-value";
 import UExport from "./un-export";
 import ObjectFlags_T from "./un-object-flags";
-import * as UnPropValues from "./un-property/un-property-value";
+import UPackage from "./un-package";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
 
 abstract class UObject implements ISerializable {
-    public static CLEANUP_NAMESPACE = true;
+    declare ["constructor"]: typeof UObject;
+
+    public static readonly CLEANUP_NAMESPACE = true;
+    public static readonly isSerializable = true;
 
     public readonly isObject = true;
     public skipRemaining: boolean = false;
@@ -34,7 +37,7 @@ abstract class UObject implements ISerializable {
     public get bytesUnread() { return this.readTail - this.readHead; }
     public get byteOffset() { return this.readHead - this.readStart; }
 
-    protected static getConstructorName() {
+    protected static getConstructorName(): string {
         debugger;
         throw new Error("Must be implemented by inheriting class because JS does not support inheritence chain.");
     }
@@ -129,7 +132,7 @@ abstract class UObject implements ISerializable {
     protected readRotatorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
     protected readMapProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
     protected readFixedProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readStructProperty(pkg: UPackage, tag: PropertyTag) {
+    protected readStructProperty(pkg: UPackage, tag: PropertyTag): any {
 
         const core = pkg.loader.getPackage("core", "Script");
         const native = pkg.loader.getPackage("native", "Script");
@@ -140,18 +143,33 @@ abstract class UObject implements ISerializable {
         const struct = new StructConstructor();
 
         switch (tag.structName) {
-            case "Color": debugger; break;
-            case "Scale": debugger; break;
-            case "Vector": return struct.loadNative(pkg);
-            case "Rotator": debugger; break;
+            case "Color": return struct.load(pkg);
+            case "Scale": return struct.load(pkg);
+            case "Vector": return struct.load(pkg);
+            case "Rotator": return struct.load(pkg);
         }
 
         throw new Error("Not yet implemented");
     }
 
     protected loadNative(pkg: UPackage) {
-        for (const propVal of this.propertyDict.values())
-            pkg.read(propVal);
+        for (const propVal of this.propertyDict.values()) {
+            if (propVal instanceof BufferValue)
+                pkg.read(propVal);
+            else if (propVal instanceof UObject) {
+                propVal.load(pkg);
+            } else if (propVal instanceof EnumeratedValue) {
+                propVal.load(pkg);
+            } else {
+                debugger;
+                throw new Error("Not implemented");
+            }
+        }
+
+        this.isLoading = false;
+        this.isReady = true;
+
+        return this;
     }
 
     protected loadProperty(pkg: UPackage, tag: PropertyTag) {
@@ -232,7 +250,7 @@ abstract class UObject implements ISerializable {
         if (info instanceof PropertyTag)
             return this.loadWithPropertyTag(pkg, info);
 
-        throw new Error("Unsupported overload");
+        return this.loadNative(pkg);
     }
 
     protected loadWithPropertyTag(pkg: UPackage, tag: PropertyTag): this {
@@ -322,7 +340,7 @@ abstract class UObject implements ISerializable {
     }
 }
 
-class EnumeratedValue {
+class EnumeratedValue implements IConstructable {
     public value: number;
     protected readonly enumerations: Readonly<string[]>;
     public readonly name: string;
@@ -333,6 +351,17 @@ class EnumeratedValue {
         this.enumerations = Object.freeze(enumerations);
 
         Object.seal(this);
+    }
+
+    load(pkg: UPackage, tag?: PropertyTag): this {
+        if (!!tag) {
+            debugger;
+            throw new Error("Method not implemented.");
+        }
+
+        this.value = pkg.read(new BufferValue(BufferValue.uint8)).value;
+
+        return this;
     }
 
     valueOf(): number { return this.value; }

@@ -1,9 +1,10 @@
 import UField from "./un-field";
 import BufferValue from "../buffer-value";
 import ObjectFlags_T from "./un-object-flags";
-import UObject from "./un-object";
+import UObject, { EnumeratedValue } from "./un-object";
 import * as UnProperties from "./un-property/un-properties";
 import FArray, { FIndexArray, FPrimitiveArray } from "./un-array";
+import UNativeRegistry from "./un-native-registry";
 
 class UStruct extends UField {
     declare ["constructor"]: typeof UStruct;
@@ -12,6 +13,11 @@ class UStruct extends UField {
 
     protected firstChildPropId: number;
     public readonly childPropFields = new Map<string, UnProperties.UProperty | UFunction>();
+    public readonly childFunctions = new Array<UFunction>();
+    public readonly childEnums = new Array<UEnum>();
+    public readonly childStructs = new Array<UStruct>();
+    public readonly childConsts = new Array<UConst>();
+    public readonly childStates = new Array<UState>();
 
     public friendlyName: string;
     protected line: number;
@@ -50,6 +56,7 @@ class UStruct extends UField {
 
         }
 
+        debugger;
         throw new Error("Broken");
     }
 
@@ -89,6 +96,7 @@ class UStruct extends UField {
             return true;
         }
 
+        debugger;
         throw new Error("Broken");
     }
 
@@ -124,31 +132,67 @@ class UStruct extends UField {
 
         this.scriptSize = pkg.read(uint32).value;
 
-        if (exp.objectName === "Pawn")
-            debugger;
+        // if (exp.objectName === "Pawn")
+        //     debugger;
 
+        // if (exp.objectName === "Vector")
+        //     debugger;
 
-        this.readScript(pkg);
-
-        this.readHead = pkg.tell();
 
         if (this.firstChildPropId !== 0) {
             let childPropId = this.firstChildPropId;
 
             while (Number.isFinite(childPropId) && childPropId !== 0) {
 
-                const field = pkg.fetchObject<UnProperties.UProperty>(childPropId).loadSelf();
+                // if (childPropId === 4869)
+                //     debugger;
 
-                this.childPropFields.set(field.propertyName, field);
+                const field = pkg.fetchObject<UnProperties.UProperty | UField>(childPropId).loadSelf();
+
+                if (field instanceof UnProperties.UProperty)
+                    this.childPropFields.set(field.propertyName, field);
+                else if (field instanceof UField) {
+                    switch (field.constructor.getConstructorName()) {
+                        case "Function": this.childFunctions.push(field as UFunction); break;
+                        case "Enum": this.childEnums.push(field as UEnum); break;
+                        case "Struct": this.childStructs.push(field as UStruct); break;
+                        case "Const": this.childConsts.push(field as UConst); break;
+                        case "State": this.childStates.push(field as UState); break;
+                        default: debugger; break;
+                    }
+
+                } else {
+                    debugger;
+                }
 
                 childPropId = field.nextFieldId;
             }
+
         }
+
+        // if (exp.objectName === "Pawn")
+        //     debugger;
+
+        this.readScript(pkg);
+
+        this.readHead = pkg.tell();
     }
 
-    protected readScript(pkg: UPackage) { pkg.seek(this.scriptSize); }
+    protected readScript(pkg: UPackage) {
+        const native = pkg.loader.getPackage("native", "Script");
+        const core = pkg.loader.getPackage("core", "Script");
+
+        // if (this.exp.objectName === "GetCollisionExtent")
+        //     debugger;
+
+        while (this.bytecodeLength < this.scriptSize)
+            this.readToken(native, core, pkg, 0);
+    }
 
     public buildClass<T extends UObject = UObject>(pkg: UNativePackage): new () => T {
+        // if (this.exp.objectName === "Vector")
+        //     debugger;
+
         if (this.kls)
             return this.kls as any as new () => T;
 
@@ -211,7 +255,7 @@ class UStruct extends UField {
 
         // @ts-ignore
         const _clsBase = {
-            [this.friendlyName]: class DynamicStruct extends Constructor {
+            [friendlyName]: class DynamicStruct extends Constructor {
                 public static readonly isDynamicClass = true;
                 public static readonly friendlyName = friendlyName;
                 public static readonly hostClass = hostClass;
@@ -219,6 +263,8 @@ class UStruct extends UField {
                 public static readonly inheretenceChain = Object.freeze(inheretenceChain);
 
                 protected newProps: Record<string, string> = {};
+
+                protected static getConstructorName(): string { return friendlyName; }
 
                 constructor() {
                     super();
@@ -238,10 +284,18 @@ class UStruct extends UField {
                             missingProps.push(varname);
                         }
 
-                        if (!(value instanceof BufferValue))
+                        if (value instanceof BufferValue) {
+                            this.propertyDict.set(varname, value);
+                        } else if (value.getConstructorName?.()) {
+                            this.propertyDict.set(varname, new value());
+                        } else if (value instanceof EnumeratedValue) {
+                            this.propertyDict.set(varname, value);
+                        } else if (value instanceof Array) {
+                            this.propertyDict.set(varname, value);
+                        } else {
                             debugger;
+                        }
 
-                        this.propertyDict.set(varname, value);
 
                         // if (value !== undefined || !(varname in this))
                         //     (this as any)[varname] = value;
@@ -293,7 +347,7 @@ class UStruct extends UField {
     protected bytecode: { type: string, value: any, tokenName?: string }[] = [];
     protected bytecodeLength = 0;
 
-    protected readToken(pkg: UPackage, depth: number): ExprToken_T {
+    protected readToken(native: UNativePackage, core: UPackage, pkg: UPackage, depth: number): ExprToken_T {
         if (depth === 64) throw new Error("Too deep");
 
         const uint8 = new BufferValue(BufferValue.uint8);
@@ -305,10 +359,16 @@ class UStruct extends UField {
 
         depth++;
 
+
+
         // debugger;
 
         const tokenValue = pkg.read(uint8).value as ExprToken_T;
         let tokenValue2 = tokenValue;
+
+        const tokenHex = `0x${tokenValue.toString(16)}`;
+
+        // debugger;
 
         const isNativeFunc = UNativeRegistry.hasNativeFunc(tokenValue);
         const tokenName = isNativeFunc ? UNativeRegistry.getNativeFuncName(tokenValue) : ExprToken_T[tokenValue];
@@ -323,7 +383,7 @@ class UStruct extends UField {
         tokenDebug += tokenName + "\r\n";
         this.bytecodePlainText += tokenDebug;
 
-        const tokenHex = `0x${tokenValue.toString(16)}`;
+
 
         if (tokenValue < ExprToken_T.MaxConversion) {
             switch (tokenValue) {
@@ -341,13 +401,13 @@ class UStruct extends UField {
                 case ExprToken_T.GotoLabel:
                 case ExprToken_T.EatString:
                 case ExprToken_T.UnkMember:
-                    this.readToken(pkg, depth);
+                    this.readToken(native, core, pkg, depth);
                     return tokenValue2;
                 case ExprToken_T.Switch:
                 case ExprToken_T.MinConversion:
                     this.bytecode.push({ type: "byte", value: pkg.read(uint8).value as number });
                     this.bytecodeLength = this.bytecodeLength + 1;
-                    this.readToken(pkg, depth);
+                    this.readToken(native, core, pkg, depth);
                     return tokenValue2;
                 case ExprToken_T.Jump:
                     this.bytecode.push({ type: "uint16", value: pkg.read(uint16).value as number });
@@ -358,7 +418,7 @@ class UStruct extends UField {
                 case ExprToken_T.Skip:
                     this.bytecode.push({ type: "uint16", value: pkg.read(uint16).value as number });
                     this.bytecodeLength = this.bytecodeLength + 2;
-                    this.readToken(pkg, depth);
+                    this.readToken(native, core, pkg, depth);
                     return tokenValue2;
                 case ExprToken_T.Stop:
                 case ExprToken_T.Nothing:
@@ -380,7 +440,7 @@ class UStruct extends UField {
                     this.bytecodeLength = this.bytecodeLength + 2;
 
                     if (value !== 0xffff)
-                        this.readToken(pkg, depth);
+                        this.readToken(native, core, pkg, depth);
 
                 } return tokenValue2;
                 case ExprToken_T.LabelTable:
@@ -405,18 +465,18 @@ class UStruct extends UField {
                 case ExprToken_T.LetBool:
                 case ExprToken_T.ArrayElement:
                 case ExprToken_T.FloatToBool:
-                    this.readToken(pkg, depth);
-                    this.readToken(pkg, depth);
+                    this.readToken(native, core, pkg, depth);
+                    this.readToken(native, core, pkg, depth);
                     break;
                 case ExprToken_T.New:
-                    this.readToken(pkg, depth);
-                    this.readToken(pkg, depth);
-                    this.readToken(pkg, depth);
-                    this.readToken(pkg, depth);
+                    this.readToken(native, core, pkg, depth);
+                    this.readToken(native, core, pkg, depth);
+                    this.readToken(native, core, pkg, depth);
+                    this.readToken(native, core, pkg, depth);
                     break;
                 case ExprToken_T.ClassContext:
                 case ExprToken_T.Context:
-                    this.readToken(pkg, depth);
+                    this.readToken(native, core, pkg, depth);
 
                     this.bytecode.push({ type: "uint16", value: pkg.read(uint16).value as number });
                     this.bytecodeLength = this.bytecodeLength + 2;
@@ -424,7 +484,7 @@ class UStruct extends UField {
                     this.bytecode.push({ type: "uint8", value: pkg.read(uint8).value as number });
                     this.bytecodeLength = this.bytecodeLength + 1;
 
-                    this.readToken(pkg, depth);
+                    this.readToken(native, core, pkg, depth);
                     return tokenValue2;
                 case ExprToken_T.MetaCast:
                 case ExprToken_T.DynamicCast:
@@ -434,7 +494,7 @@ class UStruct extends UField {
                     this.bytecode.push({ type: "compat", value: objectIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
 
-                    this.readToken(pkg, depth);
+                    this.readToken(native, core, pkg, depth);
 
                 } return tokenValue2;
                 case ExprToken_T.VirtualFunction:
@@ -444,7 +504,7 @@ class UStruct extends UField {
                     this.bytecode.push({ type: "compat", value: objectIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
 
-                    while (this.readToken(pkg, depth) !== ExprToken_T.EndFunctionParms);
+                    while (this.readToken(native, core, pkg, depth) !== ExprToken_T.EndFunctionParms);
 
                     if (this.bytecodeLength < this.scriptSize) {
                         const pos = pkg.tell();
@@ -465,7 +525,7 @@ class UStruct extends UField {
                     this.bytecode.push({ type: "compat", value: objectIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
 
-                    while (this.readToken(pkg, depth) !== ExprToken_T.EndFunctionParms);
+                    while (this.readToken(native, core, pkg, depth) !== ExprToken_T.EndFunctionParms);
 
                     if (this.bytecodeLength < this.scriptSize) {
                         const pos = pkg.tell();
@@ -512,21 +572,28 @@ class UStruct extends UField {
                     this.bytecode.push({ type: "compat", value: objectIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
                 } return tokenValue2;
-                case ExprToken_T.RotationConst:
+                case ExprToken_T.RotationConst: {
+                    const struct = core.fetchObjectByType<UStruct>("Struct", "Rotator");
+                    const FRotator = struct.buildClass(native);
+
                     this.bytecode.push({ type: "rotator", value: new FRotator().load(pkg) });
                     this.bytecodeLength = this.bytecodeLength + 4 * 3;
-                    return tokenValue2;
-                case ExprToken_T.VectorConst:
+                } return tokenValue2;
+                case ExprToken_T.VectorConst: {
+                    const struct = core.fetchObjectByType<UStruct>("Struct", "Vector");
+                    const FVector = struct.buildClass(native);
+
                     this.bytecode.push({ type: "vector", value: new FVector().load(pkg) });
+
                     this.bytecodeLength = this.bytecodeLength + 4 * 3;
-                    break;
+                } break;
                 case ExprToken_T.ByteConst:
                 case ExprToken_T.IntConstByte:
                     this.bytecode.push({ type: "byte", value: pkg.read(uint8).value as number });
                     this.bytecodeLength = this.bytecodeLength + 1;
                     break;
                 case ExprToken_T.Iterator:
-                    this.readToken(pkg, depth);
+                    this.readToken(native, core, pkg, depth);
                     this.bytecode.push({ type: "uint16", value: pkg.read(uint16).value as number });
                     this.bytecodeLength = this.bytecodeLength + 2;
                     break;
@@ -541,8 +608,8 @@ class UStruct extends UField {
                     this.bytecode.push({ type: "compat", value: objectIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
 
-                    this.readToken(pkg, depth);
-                    this.readToken(pkg, depth);
+                    this.readToken(native, core, pkg, depth);
+                    this.readToken(native, core, pkg, depth);
                 } break;
                 case ExprToken_T.UnicodeStringConst:
                     // do
@@ -558,9 +625,9 @@ class UStruct extends UField {
                     break;
                 case ExprToken_T.BoolToByte:
                 case ExprToken_T.BoolToInt:
-                    this.readToken(pkg, depth);
-                    this.readToken(pkg, depth);
-                    this.readToken(pkg, depth);
+                    this.readToken(native, core, pkg, depth);
+                    this.readToken(native, core, pkg, depth);
+                    this.readToken(native, core, pkg, depth);
                     break;
                 case ExprToken_T.BoolToFloat:
                     // sub_10104296(v3, v11);
@@ -590,7 +657,7 @@ class UStruct extends UField {
                     debugger;
                     throw new Error("do something here");
                     break;
-                default: throw new Error(`Bad token '${tokenValue}'`);
+                default: debugger; throw new Error(`Bad token '${tokenHex}'`);
             }
         } else {
             if (tokenValue >= ExprToken_T.MaxConversion && tokenValue < ExprToken_T.FirstNative) {
@@ -598,7 +665,7 @@ class UStruct extends UField {
                 this.bytecodeLength = this.bytecodeLength + 1;
             }
 
-            while (this.readToken(pkg, depth) !== ExprToken_T.EndFunctionParms);
+            while (this.readToken(native, core, pkg, depth) !== ExprToken_T.EndFunctionParms);
 
             if (this.bytecodeLength < this.scriptSize) {
                 const pos = pkg.tell();
@@ -794,6 +861,8 @@ enum ExprToken_T {
     RotatorToString = 0x59,
     MaxConversion = 0x60,    // Maximum conversion token
     ExtendedNative = 0x60,
+
+    UnkToken0x3f = 0x3f,
 
     UnkToken0x61 = 0x61,
     UnkToken0x62 = 0x62,

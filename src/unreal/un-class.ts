@@ -122,6 +122,9 @@ class UClass extends UState {
             // debugger;
         }
 
+        // if (exp.objectName === "Pawn")
+        //     debugger;
+
         this.readHead = pkg.tell();
         this.readNamedProps(pkg);
     }

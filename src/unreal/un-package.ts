@@ -13,6 +13,7 @@ import ObjectFlags_T from "./un-object-flags";
 import UStruct from "./un-struct";
 import UConst from "./un-const";
 import * as UnProperties from "./un-property/un-properties";
+import UState from "./un-state";
 
 abstract class UPackage extends UEncodedFile {
     public readonly loader: AssetLoader;
@@ -587,6 +588,7 @@ abstract class UNativePackage extends UPackage {
             case "Const": Constructor = UConst; break;
             case "Enum": Constructor = UEnum; break;
             case "Function": Constructor = UFunction; break;
+            case "State": Constructor = UState; break;
 
             case "FloatProperty": Constructor = UnProperties.UFloatProperty; break;
             case "ByteProperty": Constructor = UnProperties.UByteProperty; break;

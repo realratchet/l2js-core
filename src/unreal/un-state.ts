@@ -13,6 +13,7 @@ abstract class UState extends UStruct {
     public readonly isState = true;
 
     protected static getConstructorName() { return "State"; }
+    public toString() { return `State[${this.friendlyName}]`; }
 
     protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
@@ -23,8 +24,8 @@ abstract class UState extends UStruct {
         const uint32 = new BufferValue(BufferValue.uint32);
         const uint16 = new BufferValue(BufferValue.uint16);
 
-        if (exp.objectName === "Pawn")
-            debugger;
+        // if (exp.objectName === "Pawn")
+        //     debugger;
 
         this.probeMask = pkg.read(uint64).value;
         this.ignoreMask = pkg.read(uint64).value;
@@ -35,8 +36,8 @@ abstract class UState extends UStruct {
 
         // debugger;
 
-        if (exp.objectName === "Pawn")
-            debugger;
+        // if (exp.objectName === "Pawn")
+        //     debugger;
     }
 }
 

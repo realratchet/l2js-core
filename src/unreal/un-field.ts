@@ -4,8 +4,8 @@ import UObject from "./un-object";
 abstract class UField extends UObject {
     public superFieldId: number = 0;
     public nextFieldId: number = 0;
-    public superField: UField;
-    public nextField: UField;
+    public _superField: UField;
+    public _nextField: UField;
 
     public readonly isField = true;
     protected static getConstructorName() { return "Field"; }
@@ -22,7 +22,7 @@ abstract class UField extends UObject {
         this.superFieldId = pkg.read(compat32).value;
         this.nextFieldId = pkg.read(compat32).value;
 
-        this.loadSuperfields();
+        // this.loadSuperfields();
     }
 
     protected collectDependencies<T extends UField = typeof this>() {
@@ -39,21 +39,53 @@ abstract class UField extends UObject {
         return dependencyTree;
     }
 
-    protected loadSuperfields() {
+    public get superField() {
+        if (this._superField)
+            return this._superField;
+
         let lastBase: UField = this.loadSelf();
 
         do {
             if (this.superFieldId !== 0)
-                this.superField = this.pkg.fetchObject<UField>(this.superFieldId);
+                this._superField = this.pkg.fetchObject<UField>(this.superFieldId);
 
-            if (this.nextFieldId !== 0)
-                this.nextField = this.pkg.fetchObject<UField>(this.nextFieldId);
-
-            lastBase = lastBase?.loadSelf().superField as UClass;
+            lastBase = lastBase._superField?.loadSelf() as UClass;
         } while (lastBase);
 
-        return this;
+        return this._superField;
     }
+
+    public get nextField() {
+        if (this._nextField)
+            return this._nextField;
+
+        let lastBase: UField = this.loadSelf();
+
+        do {
+            if (this.nextFieldId !== 0)
+                this._nextField = this.pkg.fetchObject<UField>(this.nextFieldId);
+
+            lastBase = lastBase._nextField?.loadSelf() as UClass;
+        } while (lastBase);
+
+        return this._nextField;
+    }
+
+    // protected loadSuperfields() {
+    //     let lastBase: UField = this.loadSelf();
+
+    //     do {
+    //         if (this.superFieldId !== 0)
+    //             this.superField = this.pkg.fetchObject<UField>(this.superFieldId);
+
+    //         if (this.nextFieldId !== 0)
+    //             this.nextField = this.pkg.fetchObject<UField>(this.nextFieldId);
+
+    //         lastBase = lastBase?.loadSelf().superField as UClass;
+    //     } while (lastBase);
+
+    //     return this;
+    // }
 }
 
 export default UField;

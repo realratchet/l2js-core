@@ -49,7 +49,14 @@ abstract class UProperty extends UField {
 
 abstract class UBaseExportProperty<T extends UField> extends UProperty {
     protected valueId: number;
-    public value: T;
+    public _value: T;
+
+    public get value() {
+        if (this.valueId !== 0 && !this._value)
+            this._value = this.pkg.fetchObject(this.valueId);
+
+        return this._value;
+    }
 
     protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
@@ -59,20 +66,11 @@ abstract class UBaseExportProperty<T extends UField> extends UProperty {
         this.valueId = pkg.read(compat32).value;
         this.readHead = pkg.tell();
     }
-
-    public loadSelf() {
-        super.loadSelf();
-
-        if (this.valueId !== 0 && !this.value)
-            this.value = this.pkg.fetchObject(this.valueId);
-
-        return this;
-    }
 }
 
 class ObjectContainer<T extends UObject = UObject> {
     public friendlyName: string;
-    public value: T = null;
+    public _value: T = null;
 
     public constructor(friendlyName: string) {
         if (!friendlyName)
@@ -81,7 +79,7 @@ class ObjectContainer<T extends UObject = UObject> {
         this.friendlyName = friendlyName;
     }
 
-    toString() { return `UObject<${this.friendlyName}>[${this.value}]`; }
+    toString() { return `UObject<${this.friendlyName}>[${this._value}]`; }
 
     public buildContainer() { return new NameContainer(); }
 }
@@ -96,7 +94,7 @@ class ClassContainer {
 
 class UClassProperty extends UObjectProperty {
     protected metaClassId: number;
-    protected metaClass: UClass;
+    protected _metaClass: UClass;
 
     protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
@@ -107,13 +105,11 @@ class UClassProperty extends UObjectProperty {
         this.readHead = pkg.tell();
     }
 
-    public loadSelf() {
-        super.loadSelf();
+    public get metaClass() {
+        if (this.metaClassId !== 0 && !this._metaClass)
+            this._metaClass = this.pkg.fetchObject(this.metaClassId);
 
-        if (this.metaClassId !== 0 && !this.metaClass)
-            this.metaClass = this.pkg.fetchObject(this.metaClassId);
-
-        return this;
+        return this._value;
     }
 
     public buildContainer() {

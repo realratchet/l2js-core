@@ -1,3 +1,4 @@
+import { allFlags, flagBitsToDict } from "../utils/flags";
 import BufferValue from "../buffer-value";
 import UExport from "./un-export";
 import UObject from "./un-object";
@@ -10,8 +11,9 @@ class UFunction extends UStruct {
     protected numParams: number;
     protected operatorPrecendence: number;
     protected returnValueOffset: number;
-    protected funcFlags: FunctionFlags_T;
+    protected _funcFlags: FunctionFlags_T;
     protected replicationOffset: number;
+    protected funcFlags: Record<string, boolean>;
 
     protected static getConstructorName() { return "Function"; }
 
@@ -39,18 +41,16 @@ class UFunction extends UStruct {
         if (verArchive <= 0x40)
             this.returnValueOffset = pkg.read(uint16).value;
 
-        this.funcFlags = pkg.read(uint32).value;
+        this._funcFlags = pkg.read(uint32).value;
+        this.funcFlags = flagBitsToDict(this._funcFlags, FunctionFlags_T as any);
 
-        if (this.allFlags(this.funcFlags, FunctionFlags_T.Net))
+        if (allFlags(this._funcFlags, FunctionFlags_T.Net))
             this.replicationOffset = pkg.read(uint16).value;
 
         this.readHead = pkg.tell();
-
-        // debugger;
     }
 
-    public allFlags(value: FunctionFlags_T, flags: FunctionFlags_T): boolean { return (value & flags) === flags; }
-    public anyFlags(value: FunctionFlags_T, flags: FunctionFlags_T): boolean { return (value & flags) !== 0; }
+    public toString() { return `Function[${this.friendlyName}]`; }
 }
 
 export default UFunction;
