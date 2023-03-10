@@ -17,12 +17,16 @@ class ObjectContainer<T extends UObject = UObject> extends UContainer {
         this.friendlyName = friendlyName;
     }
 
+    public copy(other: ObjectContainer) {
+        // debugger;
+    }
+
     toString() { return `UObject<${this.friendlyName}>[${this._value}]`; }
 }
 
 class ClassContainer extends UContainer {
     public cls: UClass;
-    
+
     public constructor(cls: UClass) {
         super();
 
@@ -31,23 +35,45 @@ class ClassContainer extends UContainer {
 }
 
 class BoolContainer extends UContainer {
-    public value: boolean = false;
+    public value: boolean;
+
+    constructor(value = false) {
+        super();
+
+        this.value = value;
+    }
 
     toString() { return `Bool[${this.value}]`; }
+
+    public copy(other: BoolContainer) { this.value = other.value; }
 }
 
 class NameContainer extends UContainer {
-    public value = "None";
+    public _value: number;
+    protected readonly nameTable: UName[];
+
+    public get value() { return this.nameTable[this._value].name; };
+
+    constructor(nameTable: UName[], value = 0) {
+        super();
+
+        if (!nameTable)
+            debugger;
+
+        this.nameTable = nameTable;
+        this._value = value;
+    }
 
     toString() { return `Name[${this.value}]`; }
 }
 
 class EnumContainer extends UContainer implements IConstructable {
     public value: number;
-    protected readonly enumerations: Readonly<string[]>;
     public readonly name: string;
 
-    constructor(name: string, enumerations: string[] | FNameArray, value: number) {
+    protected readonly enumerations: Readonly<string[]>;
+
+    public constructor(name: string, enumerations: string[] | FNameArray, value: number) {
         super();
 
         this.name = name;
@@ -57,7 +83,7 @@ class EnumContainer extends UContainer implements IConstructable {
         Object.seal(this);
     }
 
-    load(pkg: UPackage, tag?: PropertyTag): this {
+    public load(pkg: UPackage, tag?: PropertyTag): this {
         if (!!tag) {
             debugger;
             throw new Error("Method not implemented.");
@@ -68,10 +94,12 @@ class EnumContainer extends UContainer implements IConstructable {
         return this;
     }
 
-    valueOf(): number { return this.value; }
-    toString() {
+    public valueOf(): number { return this.value; }
+    public toString() {
         return isFinite(this.value) && this.value < this.enumerations.length ? `Enum<${this.name}>[${this.enumerations[this.value]}]` : `Enum<${this.name}>[<invalid '${this.value}']>`;
     }
+
+    public copy(other: EnumContainer) { this.value = other.value; }
 }
 
 export { UContainer, ObjectContainer, ClassContainer, BoolContainer, NameContainer, EnumContainer };

@@ -88,31 +88,31 @@ abstract class UObject implements ISerializable {
 
     protected propertyDict = new Map<string, any>();
 
-    protected setProperty(tag: PropertyTag, value: any) {
-        const varName = this.getPropertyVarName(tag);
-        const { name: propName, arrayIndex } = tag;
+    // protected setProperty(tag: PropertyTag, value: any) {
+    //     const varName = this.getPropertyVarName(tag);
+    //     const { name: propName, arrayIndex } = tag;
 
-        if (!varName)
-            throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${value === null ? "NULL" : typeof (value) === "object" ? value.constructor.name : typeof (value)}'`);
+    //     if (!varName)
+    //         throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${value === null ? "NULL" : typeof (value) === "object" ? value.constructor.name : typeof (value)}'`);
 
-        if (!this.isValidProperty(varName))
-            throw new Error(`Cannot map property '${propName}' -> ${varName}`);
+    //     if (!this.isValidProperty(varName))
+    //         throw new Error(`Cannot map property '${propName}' -> ${varName}`);
 
-        if (tag.arrayIndex < 0 || (tag.arrayIndex > 0 && tag.arrayIndex >= this.getPropCount(tag.name)))
-            throw new Error(`Something went wrong, expected index '${tag.arrayIndex} (max: '${this.getPropCount(tag.name)}')'.`);
+    //     if (tag.arrayIndex < 0 || (tag.arrayIndex > 0 && tag.arrayIndex >= this.getPropCount(tag.name)))
+    //         throw new Error(`Something went wrong, expected index '${tag.arrayIndex} (max: '${this.getPropCount(tag.name)}')'.`);
 
-        const property = this.propertyDict.get(varName);
+    //     const property = this.propertyDict.get(varName);
 
-        debugger;
+    //     debugger;
 
-        if (property instanceof Array) { debugger; (property as Array<any>)[arrayIndex] = value; }
-        else if (property instanceof UnContainers.EnumContainer) { debugger; property.value = value; }
-        else this.propertyDict.set(varName, value);
+    //     if (property instanceof Array) { debugger; (property as Array<any>)[arrayIndex] = value; }
+    //     else if (property instanceof UnContainers.EnumContainer) { debugger; property.value = value; }
+    //     else this.propertyDict.set(varName, value);
 
-        // console.log(`Setting '${this.constructor.name}' property: ${propName}[${arrayIndex}] -> ${typeof (value) === "object" && value !== null ? value.constructor.name : value}`);
+    //     // console.log(`Setting '${this.constructor.name}' property: ${propName}[${arrayIndex}] -> ${typeof (value) === "object" && value !== null ? value.constructor.name : value}`);
 
-        return true;
-    }
+    //     return true;
+    // }
 
     public loadSelf() {
         if (!this.pkg || !this.pkg)
@@ -121,41 +121,41 @@ abstract class UObject implements ISerializable {
         return this.load(this.pkg, this.exp);
     }
 
-    protected readByteProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8)).value); }
-    protected readIntProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32)).value); }
-    protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float)).value); }
-    protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, tag.boolValue); }
-    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.compat32)).value); }
-    protected readNameProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.nameTable[pkg.read(new BufferValue(BufferValue.compat32)).value].name); }
-    protected readStrProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char)).value); }
-    protected readStringProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readArrayProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); }
-    protected readClassProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readVectorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readRotatorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readMapProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readFixedProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readStructProperty(pkg: UPackage, tag: PropertyTag): any {
+    // protected readByteProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8)).value); }
+    // protected readIntProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32)).value); }
+    // protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float)).value); }
+    // protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, tag.boolValue); }
+    // protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.compat32)).value); }
+    // protected readNameProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.nameTable[pkg.read(new BufferValue(BufferValue.compat32)).value].name); }
+    // protected readStrProperty(pkg: UPackage, tag: PropertyTag) { debugger; this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char)).value); }
+    // protected readStringProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readArrayProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); }
+    // protected readClassProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readVectorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readRotatorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readMapProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readFixedProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readStructProperty(pkg: UPackage, tag: PropertyTag): any {
 
-        debugger;
+    //     debugger;
 
-        const core = pkg.loader.getPackage("core", "Script");
-        const native = pkg.loader.getPackage("native", "Script");
+    //     const core = pkg.loader.getPackage("core", "Script");
+    //     const native = pkg.loader.getPackage("native", "Script");
 
-        const expStruct = core.fetchObjectByType<UStruct>("Struct", tag.structName);
-        const StructConstructor = expStruct.buildClass<UStruct>(native);
+    //     const expStruct = core.fetchObjectByType<UStruct>("Struct", tag.structName);
+    //     const StructConstructor = expStruct.buildClass<UStruct>(native);
 
-        const struct = new StructConstructor();
+    //     const struct = new StructConstructor();
 
-        switch (tag.structName) {
-            case "Color": return struct.load(pkg);
-            case "Scale": return struct.load(pkg);
-            case "Vector": return struct.load(pkg);
-            case "Rotator": return struct.load(pkg);
-        }
+    //     switch (tag.structName) {
+    //         case "Color": return struct.load(pkg);
+    //         case "Scale": return struct.load(pkg);
+    //         case "Vector": return struct.load(pkg);
+    //         case "Rotator": return struct.load(pkg);
+    //     }
 
-        throw new Error("Not yet implemented");
-    }
+    //     throw new Error("Not yet implemented");
+    // }
 
     protected loadNative(pkg: UPackage) {
         for (const propVal of this.propertyDict.values()) {
@@ -177,31 +177,60 @@ abstract class UObject implements ISerializable {
         return this;
     }
 
+    protected copy(other: UObject) {
+        debugger;
+    }
+
     protected loadProperty(pkg: UPackage, tag: PropertyTag) {
         const offStart = pkg.tell();
         const offEnd = offStart + tag.dataSize;
 
-        switch (tag.type) {
-            case UNP_PropertyTypes.UNP_ByteProperty: this.readByteProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_IntProperty: this.readIntProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_BoolProperty: this.readBoolProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_FloatProperty: this.readFloatProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_ObjectProperty: this.readObjectProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_NameProperty: this.readNameProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_StrProperty: this.readStrProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_StringProperty: this.readStringProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_ArrayProperty: this.readArrayProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_ClassProperty: this.readClassProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_VectorProperty: this.readVectorProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_RotatorProperty: this.readRotatorProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_MapProperty: this.readMapProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_FixedArrayProperty: this.readFixedProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_StructProperty: this.readStructProperty(pkg, tag); break;
-            default:
-                pkg.seek(tag.dataSize);
-                console.warn(`Unknown data type '${tag.type}' for '${tag.name}' skipping ${tag.dataSize} bytes.`);
-                break;
+        const varName = this.getPropertyVarName(tag);
+        const { name: propName, arrayIndex } = tag;
+
+        if (!varName)
+            throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${tag.getTypeName()}'`);
+
+        if (!this.isValidProperty(varName))
+            throw new Error(`Cannot map property '${propName}' -> ${varName}`);
+
+        const property = this.propertyDict.get(varName);
+
+        if (property instanceof BufferValue) {
+            pkg.read(property);
+        } else if (property instanceof UnContainers.BoolContainer) {
+            property.value = tag.boolValue;
+        } else {
+            debugger;
         }
+
+        // debugger;
+
+        // debugger;
+        // const offStart = pkg.tell();
+        // const offEnd = offStart + tag.dataSize;
+
+        // switch (tag.type) {
+        //     case UNP_PropertyTypes.UNP_ByteProperty: this.readByteProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_IntProperty: this.readIntProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_BoolProperty: this.readBoolProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_FloatProperty: this.readFloatProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_ObjectProperty: this.readObjectProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_NameProperty: this.readNameProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_StrProperty: this.readStrProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_StringProperty: this.readStringProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_ArrayProperty: this.readArrayProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_ClassProperty: this.readClassProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_VectorProperty: this.readVectorProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_RotatorProperty: this.readRotatorProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_MapProperty: this.readMapProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_FixedArrayProperty: this.readFixedProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_StructProperty: this.readStructProperty(pkg, tag); break;
+        //     default:
+        //         pkg.seek(tag.dataSize);
+        //         console.warn(`Unknown data type '${tag.type}' for '${tag.name}' skipping ${tag.dataSize} bytes.`);
+        //         break;
+        // }
 
         pkg.seek(offEnd, "set");
 

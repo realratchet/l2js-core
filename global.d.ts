@@ -4,6 +4,8 @@ type NumberTypes_T = BigNumberTypes_T | PrimitiveNumberTypes_T;
 type StringTypes_T = "char" | "utf16";
 type ValueTypeNames_T = NumberTypes_T | StringTypes_T | "guid" | "buffer";
 
+type UName = import("./src/unreal/un-name").UName;
+
 type ValidTypes_T<T extends ValueTypeNames_T> = {
     bytes?: number;
     signed: boolean;

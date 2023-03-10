@@ -75,6 +75,29 @@ class PropertyTag {
 
         return this;
     }
+
+    public getTypeName() {
+        switch (this.type) {
+            case UNP_PropertyTypes.UNP_ByteProperty: return "Byte";
+            case UNP_PropertyTypes.UNP_IntProperty: return "Int";
+            case UNP_PropertyTypes.UNP_BoolProperty: return "Bool";
+            case UNP_PropertyTypes.UNP_FloatProperty: return "Float";
+            case UNP_PropertyTypes.UNP_ObjectProperty: return "Object";
+            case UNP_PropertyTypes.UNP_NameProperty: return "Name";
+            case UNP_PropertyTypes.UNP_StrProperty: return "Str";
+            case UNP_PropertyTypes.UNP_StringProperty: return "String";
+            case UNP_PropertyTypes.UNP_ArrayProperty: return "Array";
+            case UNP_PropertyTypes.UNP_ClassProperty: return "Class";
+            case UNP_PropertyTypes.UNP_VectorProperty: return "Vector";
+            case UNP_PropertyTypes.UNP_RotatorProperty: return "Rotator";
+            case UNP_PropertyTypes.UNP_MapProperty: return "Map";
+            case UNP_PropertyTypes.UNP_FixedArrayProperty: return "FixedArray";
+            case UNP_PropertyTypes.UNP_StructProperty: return "Struct";
+            default: throw new Error(`Unknwon tag type ${this.type}`)
+        }
+    }
+
+    public toString() { return `PropertyTag[${this.getTypeName()}]`; }
 }
 
 enum UNP_PropertyTypes {

@@ -157,7 +157,7 @@ class UBoolProperty extends UProperty {
 
 
 class UNameProperty extends UProperty {
-    public buildContainer() { return new UnContainers.NameContainer(); }
+    public buildContainer(nameTable: UName[]) { return new UnContainers.NameContainer(nameTable); }
 }
 
 class UByteProperty extends UBaseExportProperty<UEnum> {

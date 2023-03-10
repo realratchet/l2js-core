@@ -54,7 +54,7 @@ abstract class UPackage extends UEncodedFile {
         const signature = await readable._doDecode();
 
         if (signature.value !== 0x9E2A83C1)
-            throw new Error(`Invalid signature: '0x${signature.toString(16).toUpperCase()}' expected '0x9E2A83C1'`);
+            throw new Error(`Invalid signature: '0x${signature.value.toString(16).toUpperCase()}' expected '0x9E2A83C1'`);
 
         const header = new UHeader();
         const uint32 = new BufferValue(BufferValue.uint32);
