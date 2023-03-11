@@ -38,6 +38,8 @@ abstract class UObject implements ISerializable {
     public get bytesUnread() { return this.readTail - this.readHead; }
     public get byteOffset() { return this.readHead - this.readStart; }
 
+    public get objectFlags() { return this.exp ? this.exp.objectFlags : {} };
+
     protected static getConstructorName(): string {
         debugger;
         throw new Error("Must be implemented by inheriting class because JS does not support inheritence chain.");
@@ -220,7 +222,8 @@ abstract class UObject implements ISerializable {
         } else if (property instanceof UnContainers.ObjectContainer) {
             property.load(pkg);
         } else if (property instanceof UObject) {
-            property.load(pkg, tag);
+            if (tag.type === UNP_PropertyTypes.UNP_StructProperty) property.load(pkg);
+            else property.load(pkg, tag);
         } else if (property instanceof UnContainers.NameContainer) {
             property.load(pkg);
         } else {
@@ -276,19 +279,46 @@ abstract class UObject implements ISerializable {
 
         pkg.seek(exp.offset, "set");
 
+        if (flags & ObjectFlags_T.HasStack) {
+            debugger;
+        }
+
+        if (this.exp.objectName === "Location") {
+            console.log(this)
+            console.log(this.objectFlags);
+            console.log(this.propertyFlags);
+            debugger;
+        }
+
+        if (this.exp.objectName === "Region") {
+            console.log(this)
+            console.log(this.objectFlags);
+            console.log(this.propertyFlags);
+            debugger;
+        }
+
         if (flags & ObjectFlags_T.HasStack && exp.size > 0) {
+
             const offset = pkg.tell();
             const compat32 = new BufferValue(BufferValue.compat32);
             const int64 = new BufferValue(BufferValue.int64);
             const int32 = new BufferValue(BufferValue.int32);
 
-            const node = pkg.read(compat32).value;
-            /*const stateNode =*/ pkg.read(compat32).value;
-            /*const probeMask =*/ pkg.read(int64).value;
-            /*const latentAction =*/ pkg.read(int32).value;
+            const nodeId = pkg.read(compat32).value;
+            const stateNodeId = pkg.read(compat32).value;
 
-            if (node !== 0) {
-                /*const offset =*/ pkg.read(compat32).value;
+            const node = pkg.fetchObject(nodeId);
+            const stateNode = pkg.fetchObject(stateNodeId);
+
+            const probeMask = pkg.read(int64).value;
+            const latentAction = pkg.read(int32).value;
+
+            if (node !== null) {
+                const offset = pkg.read(compat32).value;
+
+                if (offset !== -1) {
+                    debugger;
+                }
             }
 
             this.readHeadOffset = pkg.tell() - offset;

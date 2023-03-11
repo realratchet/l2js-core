@@ -162,7 +162,7 @@ class UStruct extends UField {
             if (!(property instanceof UnProperties.UProperty))
                 continue;
 
-            console.log(property);
+            // console.log(property);
 
             if (property.arrayDimensions > 1) {
                 if (!this.defaultProperties.has(tag.name))
@@ -339,8 +339,11 @@ class UStruct extends UField {
         // if (lastNative)
         //     debugger;
 
-        // if (friendlyName === "Vector")
-        //     debugger;
+        if (friendlyName === "Vector")
+            debugger;
+
+        if (friendlyName === "PointRegion")
+            debugger;
 
         // @ts-ignore
         const _clsBase = {
@@ -397,8 +400,8 @@ class UStruct extends UField {
                         //     (this as any)[varname] = value;
                     }
 
-                    if (missingProps.length > 0 && lastNative)
-                        console.warn(`Native type '${friendlyName}' is missing property '${missingProps.join(", ")}'`);
+                    // if (missingProps.length > 0 && lastNative)
+                    //     console.warn(`Native type '${friendlyName}' is missing property '${missingProps.join(", ")}'`);
                 }
 
                 protected getPropertyMap(): Record<string, string> {
