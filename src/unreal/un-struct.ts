@@ -69,7 +69,7 @@ class UStruct extends UField {
     protected readIntProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32))); }
     protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float))); }
     protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.BoolContainer(tag.boolValue)); }
-    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.compat32))); }
+    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.ObjectContainer("<Not Evaled>").load(pkg)); }
     protected readNameProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.NameContainer(pkg.nameTable, pkg.read(new BufferValue(BufferValue.compat32)).value)); }
     protected readStrProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char))); }
     protected readStringProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
@@ -146,6 +146,9 @@ class UStruct extends UField {
 
     protected setProperty(tag: PropertyTag, value: any) {
         let field: UStruct = this;
+
+        if (value === undefined)
+            debugger;
 
 
         while (field) {

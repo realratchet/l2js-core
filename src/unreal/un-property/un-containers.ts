@@ -8,6 +8,8 @@ class ObjectContainer<T extends UObject = UObject> extends UContainer {
     public friendlyName: string;
     public _value: T = null;
 
+    protected valueId = new BufferValue(BufferValue.compat32);
+
     public constructor(friendlyName: string) {
         super();
 
@@ -17,8 +19,14 @@ class ObjectContainer<T extends UObject = UObject> extends UContainer {
         this.friendlyName = friendlyName;
     }
 
-    public copy(other: ObjectContainer) {
-        // debugger;
+    public copy(other: ObjectContainer<T>) {
+        this.valueId.copy(other.valueId);
+    }
+
+    public load(pkg: UPackage) {
+        pkg.read(this.valueId);
+
+        return this;
     }
 
     toString() { return `UObject<${this.friendlyName}>[${this._value}]`; }
@@ -35,8 +43,9 @@ class ClassContainer extends UContainer {
 
     toString() { return `UClass[${this.cls}]`; }
 
-    public copy(other: ClassContainer) {
-        // debugger;
+
+    public copy(other: ClassContainer | ObjectContainer) {
+        //     debugger;
     }
 }
 
@@ -56,7 +65,7 @@ class BoolContainer extends UContainer {
 
 class NameContainer extends UContainer {
     public _value: number;
-    protected readonly nameTable: UName[];
+    protected nameTable: UName[];
 
     public get value() { return this.nameTable[this._value].name; };
 
@@ -71,6 +80,11 @@ class NameContainer extends UContainer {
     }
 
     toString() { return `Name[${this.value}]`; }
+
+    public load(pkg: UPackage) {
+        this.nameTable = pkg.nameTable;
+        this._value = pkg.read(new BufferValue(BufferValue.compat32)).value;
+    }
 }
 
 class EnumContainer extends UContainer implements IConstructable {

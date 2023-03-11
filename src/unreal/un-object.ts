@@ -64,6 +64,9 @@ abstract class UObject implements ISerializable {
     protected readNamedProps(pkg: UPackage) {
         pkg.seek(this.readHead, "set");
 
+        if (this.objectName === "Exp_NMovableSunLight0")
+            debugger;
+
         if (this.readHead < this.readTail) {
             do {
                 const tag = PropertyTag.from(pkg, this.readHead);
@@ -158,12 +161,15 @@ abstract class UObject implements ISerializable {
     // }
 
     protected loadNative(pkg: UPackage) {
-        for (const propVal of this.propertyDict.values()) {
-            if (propVal instanceof BufferValue)
+
+        for (const [propName, propVal] of this.propertyDict.entries()) {
+            if (propVal instanceof BufferValue) {
                 pkg.read(propVal);
-            else if (propVal instanceof UObject) {
+            } else if (propVal instanceof UObject) {
                 propVal.load(pkg);
             } else if (propVal instanceof UnContainers.EnumContainer) {
+                propVal.load(pkg);
+            } else if (propVal instanceof UnContainers.ObjectContainer) {
                 propVal.load(pkg);
             } else {
                 debugger;
@@ -204,6 +210,12 @@ abstract class UObject implements ISerializable {
             pkg.read(property);
         } else if (property instanceof UnContainers.BoolContainer) {
             property.value = tag.boolValue;
+        } else if (property instanceof UnContainers.ObjectContainer) {
+            property.load(pkg);
+        } else if (property instanceof UObject) {
+            property.load(pkg, tag);
+        } else if (property instanceof UnContainers.NameContainer) {
+            property.load(pkg);
         } else {
             debugger;
         }
