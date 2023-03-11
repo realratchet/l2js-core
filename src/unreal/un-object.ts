@@ -63,6 +63,10 @@ abstract class UObject implements ISerializable {
         return dependencyChain.reverse();
     }
 
+    /*
+    NOTE: read Vector, Rotator, Color structs always as binary, or if archive version is 0x1C
+     */
+
     protected readNamedProps(pkg: UPackage) {
         pkg.seek(this.readHead, "set");
 
