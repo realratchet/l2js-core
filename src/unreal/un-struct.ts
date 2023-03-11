@@ -339,14 +339,14 @@ class UStruct extends UField {
         // if (lastNative)
         //     debugger;
 
-        if (friendlyName === "Vector")
-            debugger;
+        // if (friendlyName === "Vector")
+        //     debugger;
 
-        if (friendlyName === "PointRegion")
-            debugger;
+        // if (friendlyName === "PointRegion")
+        //     debugger;
 
-        if (friendlyName === "NMovableSunLight")
-            debugger;
+        // if (friendlyName === "NMovableSunLight")
+        //     debugger;
 
         // @ts-ignore
         const _clsBase = {

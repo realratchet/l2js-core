@@ -226,8 +226,12 @@ abstract class UObject implements ISerializable {
         } else if (property instanceof UnContainers.ObjectContainer) {
             property.load(pkg);
         } else if (property instanceof UObject) {
-            if (tag.type === UNP_PropertyTypes.UNP_StructProperty) property.load(pkg);
-            else property.load(pkg, tag);
+            if (tag.type === UNP_PropertyTypes.UNP_StructProperty) {
+                debugger;
+                if (["Vector", "Rotator", "Color"].includes(property.constructor.getConstructorName()))
+                    property.load(pkg);
+                else property.load(pkg, tag);
+            } else property.load(pkg, tag);
         } else if (property instanceof UnContainers.NameContainer) {
             property.load(pkg);
         } else {
@@ -284,23 +288,23 @@ abstract class UObject implements ISerializable {
 
         pkg.seek(exp.offset, "set");
 
-        if (flags & ObjectFlags_T.HasStack) {
-            debugger;
-        }
+        // if (flags & ObjectFlags_T.HasStack) {
+        //     debugger;
+        // }
 
-        if (this.exp.objectName === "Location") {
-            console.log(this)
-            console.log(this.objectFlags);
-            console.log(this.propertyFlags);
-            debugger;
-        }
+        // if (this.exp.objectName === "Location") {
+        //     console.log(this)
+        //     console.log(this.objectFlags);
+        //     console.log(this.propertyFlags);
+        //     debugger;
+        // }
 
-        if (this.exp.objectName === "Region") {
-            console.log(this)
-            console.log(this.objectFlags);
-            console.log(this.propertyFlags);
-            debugger;
-        }
+        // if (this.exp.objectName === "Region") {
+        //     console.log(this)
+        //     console.log(this.objectFlags);
+        //     console.log(this.propertyFlags);
+        //     debugger;
+        // }
 
         if (flags & ObjectFlags_T.HasStack && exp.size > 0) {
 
