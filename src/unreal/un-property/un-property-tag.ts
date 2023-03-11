@@ -10,7 +10,7 @@ class PropertyTag {
     public dataSize: number;
     public boolValue: boolean;
     public enumName: string;
-    public index: number;
+
 
     static from(pkg: UPackage, offset: number): PropertyTag {
         return new PropertyTag().load(pkg, offset);
@@ -21,12 +21,10 @@ class PropertyTag {
     protected load(pkg: UPackage, offset: number) {
         pkg.seek(offset, "set");
 
-        const index = pkg.read(new BufferValue(BufferValue.compat32));
+        const compat32 = pkg.read(new BufferValue(BufferValue.compat32));
 
-        this.index = index.value;
-
-        const propName = index.value >= 0 && index.value < pkg.nameTable.length
-            ? pkg.nameTable[index.value].name
+        const propName = compat32.value >= 0 && compat32.value < pkg.nameTable.length
+            ? pkg.nameTable[compat32.value].name
             : "None";
 
         this.name = propName;
@@ -38,8 +36,8 @@ class PropertyTag {
         this.type = info & UNP_PropertyMasks.PROPERTY_TYPE_MASK;
 
         if (this.type === UNP_PropertyTypes.UNP_StructProperty) {
-            pkg.read(index);
-            this.structName = pkg.nameTable[index.value].name;
+            pkg.read(compat32);
+            this.structName = pkg.nameTable[compat32.value].name;
         }
 
         switch (info & UNP_PropertyMasks.PROPERTY_SIZE_MASK) {
@@ -56,16 +54,17 @@ class PropertyTag {
         this.arrayIndex = 0;
 
         if (isArray && this.type !== UNP_PropertyTypes.UNP_BoolProperty) {
-            const b = pkg.read(new BufferValue(BufferValue.int8)).value;
+            const int8 = new BufferValue(BufferValue.int8);
+            const b = pkg.read(int8).value;
 
             if (b < 0x80) {
                 this.arrayIndex = b;
             } else {
-                const b2 = pkg.read(new BufferValue(BufferValue.int8)).value;
+                const b2 = pkg.read(int8).value;
 
                 if (b & 0x40) { // really, (b & 0xC0) == 0xC0
-                    const b3 = pkg.read(new BufferValue(BufferValue.int8)).value;
-                    const b4 = pkg.read(new BufferValue(BufferValue.int8)).value;
+                    const b3 = pkg.read(int8).value;
+                    const b4 = pkg.read(int8).value;
                     this.arrayIndex = ((b << 24) | (b2 << 16) | (b3 << 8) | b4) & 0x3FFFFF;
                 } else this.arrayIndex = ((b << 8) | b2) & 0x3FFF;
             }

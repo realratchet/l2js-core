@@ -258,10 +258,11 @@ abstract class UObject implements ISerializable {
         //         break;
         // }
 
-        pkg.seek(offEnd, "set");
 
         if (pkg.tell() < offEnd)
             console.warn(`Unread '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
+
+        pkg.seek(offEnd, "set");
     }
 
     public setExport(pkg: UPackage, exp: UExport) {

@@ -345,6 +345,9 @@ class UStruct extends UField {
         if (friendlyName === "PointRegion")
             debugger;
 
+        if (friendlyName === "NMovableSunLight")
+            debugger;
+
         // @ts-ignore
         const _clsBase = {
             [friendlyName]: class DynamicStruct extends Constructor {

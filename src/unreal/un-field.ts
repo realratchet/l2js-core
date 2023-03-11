@@ -40,7 +40,7 @@ abstract class UField extends UObject {
     }
 
     public get superField() {
-        if (this._superField)
+        if (this._superField !== undefined)
             return this._superField;
 
         let lastBase: UField = this.loadSelf();
@@ -48,6 +48,8 @@ abstract class UField extends UObject {
         do {
             if (this.superFieldId !== 0)
                 this._superField = this.pkg.fetchObject<UField>(this.superFieldId);
+            else
+                this._superField = null;
 
             lastBase = lastBase._superField?.loadSelf() as UClass;
         } while (lastBase);
@@ -56,7 +58,7 @@ abstract class UField extends UObject {
     }
 
     public get nextField() {
-        if (this._nextField)
+        if (this._nextField !== undefined)
             return this._nextField;
 
         let lastBase: UField = this.loadSelf();
@@ -64,28 +66,14 @@ abstract class UField extends UObject {
         do {
             if (this.nextFieldId !== 0)
                 this._nextField = this.pkg.fetchObject<UField>(this.nextFieldId);
+            else
+                this._nextField = null;
 
             lastBase = lastBase._nextField?.loadSelf() as UClass;
         } while (lastBase);
 
         return this._nextField;
     }
-
-    // protected loadSuperfields() {
-    //     let lastBase: UField = this.loadSelf();
-
-    //     do {
-    //         if (this.superFieldId !== 0)
-    //             this.superField = this.pkg.fetchObject<UField>(this.superFieldId);
-
-    //         if (this.nextFieldId !== 0)
-    //             this.nextField = this.pkg.fetchObject<UField>(this.nextFieldId);
-
-    //         lastBase = lastBase?.loadSelf().superField as UClass;
-    //     } while (lastBase);
-
-    //     return this;
-    // }
 }
 
 export default UField;
