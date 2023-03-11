@@ -97,7 +97,9 @@ class PropertyTag {
         }
     }
 
-    public toString() { return `PropertyTag[${this.getTypeName()}]`; }
+    public toString() {
+        return `PropertyTag<${this.getTypeName()}${this.type === UNP_PropertyTypes.UNP_StructProperty ? `<${this.structName}>` : ""}>[${this.name}]`;
+    }
 }
 
 enum UNP_PropertyTypes {

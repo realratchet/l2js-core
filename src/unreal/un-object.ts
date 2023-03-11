@@ -71,6 +71,11 @@ abstract class UObject implements ISerializable {
             do {
                 const tag = PropertyTag.from(pkg, this.readHead);
 
+                if (this.objectName === "Exp_NMovableSunLight0") {
+                    console.log(tag);
+                    debugger;
+                }
+
                 if (!tag.isValid()) break;
 
                 this.loadProperty(pkg, tag);
@@ -78,8 +83,10 @@ abstract class UObject implements ISerializable {
                 this.readHead = pkg.tell();
 
             } while (this.readHead < this.readTail);
-
         }
+
+        if (this.objectName === "Exp_NMovableSunLight0")
+            debugger;
 
         this.readHead = pkg.tell();
     }
