@@ -32,6 +32,12 @@ class ClassContainer extends UContainer {
 
         this.cls = cls;
     }
+
+    toString() { return `UClass[${this.cls}]`; }
+
+    public copy(other: ClassContainer) {
+        // debugger;
+    }
 }
 
 class BoolContainer extends UContainer {

@@ -311,9 +311,6 @@ class UStruct extends UField {
 
                 // debugger;
 
-
-
-
                 // if (this.propertyDict.has(propertyName))
                 //     clsNamedProperties[propertyName] = this.propertyDict.get(propertyName);
                 // else
@@ -385,6 +382,8 @@ class UStruct extends UField {
                         } else if (value instanceof Array) {
                             this.propertyDict.set(varname, value);
                         } else if (value instanceof FPrimitiveArray) {
+                            this.propertyDict.set(varname, value);
+                        } else if (value instanceof UObject) {
                             this.propertyDict.set(varname, value);
                         } else {
                             debugger;
@@ -845,7 +844,7 @@ function buildProperty(pkg: UNativePackage, field: UProperty): any {
         return field.buildContainer();
 
     if (field instanceof UnProperties.UStructProperty)
-        return field.value.buildClass(pkg);
+        return new (field.value.buildClass(pkg))();
 
     if (field instanceof UnProperties.UBoolProperty)
         return field.buildContainer();

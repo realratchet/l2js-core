@@ -178,7 +178,11 @@ abstract class UObject implements ISerializable {
     }
 
     protected copy(other: UObject) {
-        debugger;
+        if (this.constructor !== other.constructor)
+            throw new Error(`'${this.constructor.name}' !== '${other.constructor.name}'`);
+
+        for (const [name, val] of other.propertyDict.entries())
+            this.propertyDict.get(name).copy(val);
     }
 
     protected loadProperty(pkg: UPackage, tag: PropertyTag) {
