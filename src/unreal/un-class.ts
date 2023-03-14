@@ -3,10 +3,6 @@ import BufferValue from "../buffer-value";
 import { flagBitsToDict } from "../utils/flags";
 import { FArray, FIndexArray } from "./un-array";
 import UObject from "./un-object";
-import * as UnContainers from "./un-property/un-containers";
-import ObjectFlags_T from "./un-object-flags";
-import { UProperty } from "./un-property/un-properties";
-import UEnum from "./un-enum";
 
 class FDependencies implements IConstructable {
     protected classId: number;

@@ -4,7 +4,6 @@ import FArray, { FObjectArray, FPrimitiveArray } from "../un-array";
 import UClass from "../un-class";
 import UField from "../un-field";
 import UPackage from "../un-package";
-import * as UnContainers from "../un-property/un-containers";
 import PropertyTag from "./un-property-tag";
 
 abstract class UProperty extends UField {
@@ -112,11 +111,7 @@ abstract class UBaseExportProperty<T extends UField> extends UProperty {
     }
 }
 
-interface IObjectLikeProperty<T extends UnContainers.UContainer> {
-    // buildContainer(): T;
-}
-
-class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<UClass> implements IObjectLikeProperty<UnContainers.ObjectContainer> {
+class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<UClass> {
     protected propertyValuePkg: UPackage;
     protected propertyValueId: number;
     protected _propertyValue: T;
@@ -145,7 +140,7 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
 }
 
 
-class UClassProperty extends UBaseExportProperty<UClass> implements IObjectLikeProperty<UnContainers.ClassContainer>{
+class UClassProperty extends UBaseExportProperty<UClass> {
     protected metaClassId: number;
     protected _metaClass: UClass;
 

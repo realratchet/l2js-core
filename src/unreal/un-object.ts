@@ -2,9 +2,8 @@ import BufferValue from "../buffer-value";
 import UExport from "./un-export";
 import ObjectFlags_T from "./un-object-flags";
 import UPackage from "./un-package";
-import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
-import * as UnContainers from "./un-property/un-containers";
-import FArray from "./un-array";
+import PropertyTag from "./un-property/un-property-tag";
+
 
 abstract class UObject implements ISerializable {
     declare ["constructor"]: typeof UObject;

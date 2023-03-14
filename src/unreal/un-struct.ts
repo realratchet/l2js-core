@@ -2,12 +2,10 @@ import UField from "./un-field";
 import BufferValue from "../buffer-value";
 import ObjectFlags_T from "./un-object-flags";
 import UObject from "./un-object";
-import * as UnContainers from "./un-property/un-containers";
-import * as UnProperties from "./un-property/un-properties";
-import FArray, { FIndexArray, FPrimitiveArray } from "./un-array";
 import UNativeRegistry from "./un-native-registry";
 import UPackage from "./un-package";
-import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
+import PropertyTag from "./un-property/un-property-tag";
+import { UProperty } from "./un-property/un-properties";
 
 class UStruct extends UField {
     declare ["constructor"]: typeof UStruct;
@@ -15,7 +13,7 @@ class UStruct extends UField {
     protected textBufferId: number;
 
     protected firstChildPropId: number;
-    public readonly childPropFields = new Map<string, UnProperties.UProperty>();
+    public readonly childPropFields = new Map<string, UProperty>();
     public readonly childFunctions = new Array<UFunction>();
     public readonly childEnums = new Array<UEnum>();
     public readonly childStructs = new Array<UStruct>();
@@ -178,7 +176,7 @@ class UStruct extends UField {
 
             const property = field.childPropFields.get(tag.name);
 
-            if (!(property instanceof UnProperties.UProperty))
+            if (!(property instanceof UProperty))
                 continue;
 
             if (property.arrayDimensions > 1) {
@@ -242,9 +240,9 @@ class UStruct extends UField {
 
             while (Number.isFinite(childPropId) && childPropId !== 0) {
 
-                const field = pkg.fetchObject<UnProperties.UProperty | UField>(childPropId).loadSelf();
+                const field = pkg.fetchObject<UProperty | UField>(childPropId).loadSelf();
 
-                if (field instanceof UnProperties.UProperty)
+                if (field instanceof UProperty)
                     this.childPropFields.set(field.propertyName, field);
                 else if (field instanceof UField) {
                     switch (field.constructor.getConstructorName()) {
@@ -313,7 +311,7 @@ class UStruct extends UField {
             const { childPropFields, defaultProperties } = base;
 
             for (const field of childPropFields.values()) {
-                if (!(field instanceof UnProperties.UProperty)) continue;
+                if (!(field instanceof UProperty)) continue;
 
                 const propertyName = field.propertyName;
 
