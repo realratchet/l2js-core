@@ -92,7 +92,7 @@ class PropertyTag {
             case UNP_PropertyTypes.UNP_MapProperty: return "Map";
             case UNP_PropertyTypes.UNP_FixedArrayProperty: return "FixedArray";
             case UNP_PropertyTypes.UNP_StructProperty: return "Struct";
-            default: throw new Error(`Unknwon tag type ${this.type}`)
+            default: throw new Error(`Unknwon tag type ${this.type}`);
         }
     }
 

@@ -80,15 +80,22 @@ abstract class UObject implements ISerializable {
             } while (this.readHead < this.readTail);
         }
 
+        if (this.defaultProperties?.size > 0) {
+            for (const [pName, pVal] of this.defaultProperties.entries())
+                console.log(`'${pName}' -> '${pVal}'`);
+
+            // debugger;
+        }
+
         this.readHead = pkg.tell();
     }
 
     protected getPropertyVarName(tag: PropertyTag) { return tag.name; }
-    protected isValidProperty(varName: string) { return this.propertyDict.has(varName); }
+    protected isValidProperty(varName: string) { return this.propertyDict.has(varName) ? this.propertyDict.get(varName) : null; }
 
     protected getPropertyMap() { return {}; }
 
-    protected propertyDict = new Map<string, any>();
+    protected propertyDict = new Map<string, UProperty>();
 
     // protected setProperty(tag: PropertyTag, value: any) {
     //     const varName = this.getPropertyVarName(tag);
@@ -160,21 +167,8 @@ abstract class UObject implements ISerializable {
     // }
 
     protected loadNative(pkg: UPackage) {
-
-        for (const [propName, propVal] of this.propertyDict.entries()) {
-            if (propVal instanceof BufferValue) {
-                pkg.read(propVal);
-            } else if (propVal instanceof UObject) {
-                propVal.load(pkg);
-            } else if (propVal instanceof UnContainers.EnumContainer) {
-                propVal.load(pkg);
-            } else if (propVal instanceof UnContainers.ObjectContainer) {
-                propVal.load(pkg);
-            } else {
-                debugger;
-                throw new Error("Not implemented");
-            }
-        }
+        for (const [propName, propVal] of this.propertyDict.entries())
+            propVal.readProperty(pkg, null);
 
         this.isLoading = false;
         this.isReady = true;
@@ -182,20 +176,21 @@ abstract class UObject implements ISerializable {
         return this;
     }
 
-    protected copy(other: UObject) {
+    protected copy(other: UObject): this {
         if (this.constructor !== other.constructor)
             throw new Error(`'${this.constructor.name}' !== '${other.constructor.name}'`);
 
         for (const [name, val] of other.propertyDict.entries())
             this.propertyDict.get(name).copy(val);
+
+        return this;
     }
 
     protected loadProperty(pkg: UPackage, tag: PropertyTag) {
+        // debugger;
+
         const offStart = pkg.tell();
         const offEnd = offStart + tag.dataSize;
-
-        if (offStart === 157169)
-            debugger;
 
         const varName = this.getPropertyVarName(tag);
         const { name: propName, arrayIndex } = tag;
@@ -208,78 +203,74 @@ abstract class UObject implements ISerializable {
 
         const property = this.propertyDict.get(varName);
 
-        if (tag.structName === "Range")
+        if (property.isSet)
             debugger;
 
-        if (property.isReady)
-            debugger;
+        // if (tag.name === "LightBrightness")
+        //     debugger;
 
-        if (property instanceof BufferValue) {
-            if (property.type.name === "char")
-                debugger;
+        property.readProperty(pkg, tag);
 
-            pkg.read(property);
-        } else if (property instanceof UnContainers.BoolContainer) {
-            property.value = tag.boolValue;
-        } else if (property instanceof UnContainers.ObjectContainer) {
-            property.load(pkg);
-        } else if (property instanceof UObject) {
-            if (tag.type === UNP_PropertyTypes.UNP_StructProperty) {
-                const verArchive = pkg.header.getArchiveFileVersion();
+        // property.
 
-                if (["Vector", "Rotator", "Color"].includes(property.constructor.getConstructorName()) || verArchive < 0x76)
-                    property.load(pkg);
-                else {
-                    if (tag.structName === "Range")
-                        debugger;
-                    property.load(pkg, tag);
-                    if (tag.structName === "Range")
-                        debugger;
-                }
-            } else {
-                if (tag.structName === "Range")
-                    debugger;
-                property.load(pkg, tag);
-                if (tag.structName === "Range")
-                    debugger;
-            }
-        } else if (property instanceof UnContainers.NameContainer) {
-            property.load(pkg);
-        } else if (property instanceof FArray) {
-            property.load(pkg, tag);
-        } else if (property instanceof UnContainers.EnumContainer) {
-            property.load(pkg);
-        } else {
-            debugger;
-        }
+        // if (property instanceof BufferValue) {
+        //     if (property.type.name === "char")
+        //         debugger;
 
-        // debugger;
+        //     pkg.read(property);
+        // } else if (property instanceof UnContainers.BoolContainer) {
+        //     property.value = tag.boolValue;
+        // } else if (property instanceof UnContainers.ObjectContainer) {
+        //     property.load(pkg);
+        // } else if (property instanceof UObject) {
+        //     if (tag.type === UNP_PropertyTypes.UNP_StructProperty) {
+        //         const verArchive = pkg.header.getArchiveFileVersion();
 
-        // debugger;
-        // const offStart = pkg.tell();
-        // const offEnd = offStart + tag.dataSize;
-
-        // switch (tag.type) {
-        //     case UNP_PropertyTypes.UNP_ByteProperty: this.readByteProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_IntProperty: this.readIntProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_BoolProperty: this.readBoolProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_FloatProperty: this.readFloatProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_ObjectProperty: this.readObjectProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_NameProperty: this.readNameProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_StrProperty: this.readStrProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_StringProperty: this.readStringProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_ArrayProperty: this.readArrayProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_ClassProperty: this.readClassProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_VectorProperty: this.readVectorProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_RotatorProperty: this.readRotatorProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_MapProperty: this.readMapProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_FixedArrayProperty: this.readFixedProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_StructProperty: this.readStructProperty(pkg, tag); break;
-        //     default:
-        //         pkg.seek(tag.dataSize);
-        //         console.warn(`Unknown data type '${tag.type}' for '${tag.name}' skipping ${tag.dataSize} bytes.`);
-        //         break;
+        //         if (["Vector", "Rotator", "Color"].includes(property.constructor.getConstructorName()) || verArchive < 0x76)
+        //             property.load(pkg);
+        //         else {
+        //             property.load(pkg, tag);
+        //         }
+        //     } else {
+        //         property.load(pkg, tag);
+        //     }
+        // } else if (property instanceof UnContainers.NameContainer) {
+        //     property.load(pkg);
+        // } else if (property instanceof FArray) {
+        //     property.load(pkg, tag);
+        // } else if (property instanceof UnContainers.EnumContainer) {
+        //     property.load(pkg);
+        // } else {
+        //     debugger;
         // }
+
+        // // debugger;
+
+        // // debugger;
+        // // const offStart = pkg.tell();
+        // // const offEnd = offStart + tag.dataSize;
+
+        // // switch (tag.type) {
+        // //     case UNP_PropertyTypes.UNP_ByteProperty: this.readByteProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_IntProperty: this.readIntProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_BoolProperty: this.readBoolProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_FloatProperty: this.readFloatProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_ObjectProperty: this.readObjectProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_NameProperty: this.readNameProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_StrProperty: this.readStrProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_StringProperty: this.readStringProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_ArrayProperty: this.readArrayProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_ClassProperty: this.readClassProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_VectorProperty: this.readVectorProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_RotatorProperty: this.readRotatorProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_MapProperty: this.readMapProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_FixedArrayProperty: this.readFixedProperty(pkg, tag); break;
+        // //     case UNP_PropertyTypes.UNP_StructProperty: this.readStructProperty(pkg, tag); break;
+        // //     default:
+        // //         pkg.seek(tag.dataSize);
+        // //         console.warn(`Unknown data type '${tag.type}' for '${tag.name}' skipping ${tag.dataSize} bytes.`);
+        // //         break;
+        // // }
 
 
         if (pkg.tell() < offEnd)

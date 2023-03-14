@@ -13,6 +13,11 @@ class FArray<T extends UObject | FNumber<NumberTypes_T> | IConstructable> extend
     public constructor(constr: { new(...pars: any): T }) {
         super();
 
+        if (!constr)
+            debugger;
+
+        new constr();
+
         this.Constructor = constr;
     }
 
@@ -51,6 +56,9 @@ class FArray<T extends UObject | FNumber<NumberTypes_T> | IConstructable> extend
     }
 
     public copy(other: FArray<T>): this {
+        if (!other)
+            debugger;
+
         if (!other)
             return this;
 

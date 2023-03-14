@@ -4,7 +4,7 @@ import UObject from "./un-object";
 abstract class UField extends UObject {
     public superFieldId: number = 0;
     public nextFieldId: number = 0;
-    public _superField: UField;
+    public _superField: typeof this;
     public _nextField: UField;
 
     public readonly isField = true;
@@ -21,8 +21,6 @@ abstract class UField extends UObject {
 
         this.superFieldId = pkg.read(compat32).value;
         this.nextFieldId = pkg.read(compat32).value;
-
-        // this.loadSuperfields();
     }
 
     protected collectDependencies<T extends UField = typeof this>() {
@@ -47,7 +45,7 @@ abstract class UField extends UObject {
 
         do {
             if (this.superFieldId !== 0)
-                this._superField = this.pkg.fetchObject<UField>(this.superFieldId);
+                this._superField = this.pkg.fetchObject<typeof this>(this.superFieldId);
             else
                 this._superField = null;
 

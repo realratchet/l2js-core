@@ -15,7 +15,7 @@ class UStruct extends UField {
     protected textBufferId: number;
 
     protected firstChildPropId: number;
-    public readonly childPropFields = new Map<string, UnProperties.UProperty | UFunction>();
+    public readonly childPropFields = new Map<string, UnProperties.UProperty>();
     public readonly childFunctions = new Array<UFunction>();
     public readonly childEnums = new Array<UEnum>();
     public readonly childStructs = new Array<UStruct>();
@@ -35,101 +35,125 @@ class UStruct extends UField {
     protected static getConstructorName() { return "Struct"; }
     protected defaultProperties = new Map<string, any>();
 
-    protected readArray(pkg: UPackage, tag: PropertyTag) {
-        let field: UStruct = this;
+    // protected readArray(pkg: UPackage, tag: PropertyTag) {
+    //     let field: UStruct = this;
 
-        while (field) {
+    //     while (field) {
 
 
-            if (!field.childPropFields.has(tag.name)) {
-                field = field.superField as any as UStruct;
-                continue;
-            }
+    //         if (!field.childPropFields.has(tag.name)) {
+    //             field = field.superField as any as UStruct;
+    //             continue;
+    //         }
 
-            const property = field.childPropFields.get(tag.name);
+    //         const property = field.childPropFields.get(tag.name);
 
-            debugger;
+    //         debugger;
 
-            const constr = property.createObject();
-            const value = constr(pkg, tag);
+    //         const constr = property.createObject();
+    //         const value = constr(pkg, tag);
 
-            this.setProperty(tag, value);
+    //         this.setProperty(tag, value);
 
-            return true;
+    //         return true;
 
+    //     }
+
+    //     debugger;
+    //     throw new Error("Broken");
+    // }
+
+    protected isValidProperty(varName: string) {
+        // debugger;
+
+        let parent: UStruct = this;
+
+        while (parent?.loadSelf()) {
+            if (parent.childPropFields.has(varName))
+                return parent.childPropFields.get(varName);
+
+            parent = parent.superField;
         }
 
-        debugger;
-        throw new Error("Broken");
+        return null;
     }
 
-    protected isValidProperty(varName: string) { return true; }
+    // protected readByteProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8))); }
+    // protected readIntProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32))); }
+    // protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float))); }
+    // protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.BoolContainer(tag.boolValue)); }
+    // protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.ObjectContainer("<Not Evaled>").load(pkg)); }
+    // protected readNameProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.NameContainer(pkg.nameTable, pkg.read(new BufferValue(BufferValue.compat32)).value)); }
+    // protected readStrProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char))); }
+    // protected readStringProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readArrayProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); }
+    // protected readClassProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readVectorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readRotatorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readMapProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readFixedProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
+    // protected readStructProperty(pkg: UPackage, tag: PropertyTag): any {
+    //     const core = pkg.loader.getPackage("core", "Script");
+    //     const native = pkg.loader.getPackage("native", "Script");
 
-    protected readByteProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8))); }
-    protected readIntProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32))); }
-    protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float))); }
-    protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.BoolContainer(tag.boolValue)); }
-    protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.ObjectContainer("<Not Evaled>").load(pkg)); }
-    protected readNameProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.NameContainer(pkg.nameTable, pkg.read(new BufferValue(BufferValue.compat32)).value)); }
-    protected readStrProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char))); }
-    protected readStringProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readArrayProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); }
-    protected readClassProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readVectorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readRotatorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readMapProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readFixedProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    protected readStructProperty(pkg: UPackage, tag: PropertyTag): any {
-        const core = pkg.loader.getPackage("core", "Script");
-        const native = pkg.loader.getPackage("native", "Script");
+    //     const expStruct = core.fetchObjectByType<UStruct>("Struct", tag.structName);
+    //     const StructConstructor = expStruct.buildClass<UStruct>(native);
 
-        const expStruct = core.fetchObjectByType<UStruct>("Struct", tag.structName);
-        const StructConstructor = expStruct.buildClass<UStruct>(native);
+    //     const struct = new StructConstructor();
+    //     const verArchive = pkg.header.getArchiveFileVersion();
 
-        const struct = new StructConstructor();
-        const verArchive = pkg.header.getArchiveFileVersion();
+    //     if (["Vector", "Rotator", "Color"].includes(tag.structName) || verArchive < 0x76)
+    //         struct.load(pkg);
+    //     else struct.load(pkg, tag);
 
-        if (["Vector", "Rotator", "Color"].includes(tag.structName) || verArchive < 0x76)
-            struct.load(pkg);
-        else struct.load(pkg, tag);
-
-        this.setProperty(tag, struct);
-    }
+    //     this.setProperty(tag, struct);
+    // }
 
     protected loadProperty(pkg: UPackage, tag: PropertyTag): void {
         const offStart = pkg.tell();
         const offEnd = offStart + tag.dataSize;
 
         const varName = this.getPropertyVarName(tag);
-        const { name: propName, arrayIndex } = tag;
+        const { name: propName } = tag;
 
         if (!varName)
             throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${tag.getTypeName()}'`);
 
-        if (!this.isValidProperty(varName))
+        const property = this.isValidProperty(varName);
+
+        // switch (tag.type) {
+        //     case UNP_PropertyTypes.UNP_ByteProperty: this.readByteProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_IntProperty: this.readIntProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_BoolProperty: this.readBoolProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_FloatProperty: this.readFloatProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_ObjectProperty: this.readObjectProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_NameProperty: this.readNameProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_StrProperty: this.readStrProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_StringProperty: this.readStringProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_ArrayProperty: this.readArrayProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_ClassProperty: this.readClassProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_VectorProperty: this.readVectorProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_RotatorProperty: this.readRotatorProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_MapProperty: this.readMapProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_FixedArrayProperty: this.readFixedProperty(pkg, tag); break;
+        //     case UNP_PropertyTypes.UNP_StructProperty: this.readStructProperty(pkg, tag); break;
+        //     default:
+        //         pkg.seek(tag.dataSize);
+        //         console.warn(`Unknown data type '${tag.type}' for '${tag.name}' skipping ${tag.dataSize} bytes.`);
+        //         break;
+        // }
+
+        if (!property)
             throw new Error(`Cannot map property '${propName}' -> ${varName}`);
 
-        switch (tag.type) {
-            case UNP_PropertyTypes.UNP_ByteProperty: this.readByteProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_IntProperty: this.readIntProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_BoolProperty: this.readBoolProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_FloatProperty: this.readFloatProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_ObjectProperty: this.readObjectProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_NameProperty: this.readNameProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_StrProperty: this.readStrProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_StringProperty: this.readStringProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_ArrayProperty: this.readArrayProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_ClassProperty: this.readClassProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_VectorProperty: this.readVectorProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_RotatorProperty: this.readRotatorProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_MapProperty: this.readMapProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_FixedArrayProperty: this.readFixedProperty(pkg, tag); break;
-            case UNP_PropertyTypes.UNP_StructProperty: this.readStructProperty(pkg, tag); break;
-            default:
-                pkg.seek(tag.dataSize);
-                console.warn(`Unknown data type '${tag.type}' for '${tag.name}' skipping ${tag.dataSize} bytes.`);
-                break;
-        }
+
+        // debugger;
+
+        const defaultProperty = property.loadSelf().clone().readProperty(pkg, tag);
+
+        defaultProperty.isDefault = true;
+
+        this.defaultProperties.set(varName, defaultProperty);
 
         pkg.seek(offEnd, "set");
 
@@ -138,11 +162,13 @@ class UStruct extends UField {
     }
 
     protected setProperty(tag: PropertyTag, value: any) {
+        debugger;
+
+
         let field: UStruct = this;
 
         if (value === undefined)
             debugger;
-
 
         while (field) {
             if (!field.childPropFields.has(tag.name)) {
@@ -154,8 +180,6 @@ class UStruct extends UField {
 
             if (!(property instanceof UnProperties.UProperty))
                 continue;
-
-            // console.log(property);
 
             if (property.arrayDimensions > 1) {
                 if (!this.defaultProperties.has(tag.name))
@@ -213,20 +237,10 @@ class UStruct extends UField {
 
         this.scriptSize = pkg.read(uint32).value;
 
-        // if (exp.objectName === "Pawn")
-        //     debugger;
-
-        // if (exp.objectName === "Vector")
-        //     debugger;
-
-
         if (this.firstChildPropId !== 0) {
             let childPropId = this.firstChildPropId;
 
             while (Number.isFinite(childPropId) && childPropId !== 0) {
-
-                // if (childPropId === 4869)
-                //     debugger;
 
                 const field = pkg.fetchObject<UnProperties.UProperty | UField>(childPropId).loadSelf();
 
@@ -250,9 +264,6 @@ class UStruct extends UField {
             }
 
         }
-
-        // if (exp.objectName === "Pawn")
-        //     debugger;
 
         this.readScript(pkg);
 
@@ -283,7 +294,8 @@ class UStruct extends UField {
         if (!this.isReady)
             debugger;
 
-        const clsNamedProperties: Record<string, any> = {};
+        const clsNamedProperties: Record<string, UProperty> = {};
+        const defaultNamedProperties: Record<string, any> = {};
         const inheretenceChain = new Array<string>();
 
         let lastNative: UStruct = null;
@@ -310,17 +322,13 @@ class UStruct extends UField {
                 // if (this.propertyDict.has(propertyName))
                 //     clsNamedProperties[propertyName] = this.propertyDict.get(propertyName);
                 // else
-                clsNamedProperties[propertyName] = buildProperty(pkg, field);
+                clsNamedProperties[propertyName] = field.clone();
             }
 
             // debugger;
 
-            for (const [propertyName, propertyValue] of defaultProperties.entries()) {
-                if (!clsNamedProperties[propertyName].copy)
-                    throw new Error(`Must be copyable '${clsNamedProperties[propertyName].constructor.name}'`);
-
-                clsNamedProperties[propertyName].copy(propertyValue);
-            }
+            for (const [propertyName, propertyValue] of defaultProperties.entries())
+                defaultNamedProperties[propertyName] = propertyValue;
         }
 
         const friendlyName = this.friendlyName;
@@ -364,32 +372,47 @@ class UStruct extends UField {
                     // if (friendlyName === "Vector")
                     //     debugger;
 
-                    for (const [name, value] of Object.entries(clsNamedProperties)) {
-                        const varname = name in oldProps ? oldProps[name] : name;
+                    for (const [propName, propValue] of Object.entries(clsNamedProperties)) {
+                        const varname = propName in oldProps ? oldProps[propName] : propName;
 
-                        if (!(name in oldProps)) {
+                        if (!(propName in oldProps)) {
                             newProps[varname] = varname;
                             missingProps.push(varname);
                         }
 
-                        if (!value)
+                        if (!propValue)
                             debugger;
 
-                        if (value instanceof BufferValue) {
-                            this.propertyDict.set(varname, value.clone());
-                        } else if (value.getConstructorName?.()) {
-                            this.propertyDict.set(varname, new value());
-                        } else if (value instanceof UnContainers.UContainer) {
-                            this.propertyDict.set(varname, value.clone());
-                        } else if (value instanceof Array) {
-                            this.propertyDict.set(varname, value.slice());
-                        } else if (value instanceof FPrimitiveArray) {
-                            this.propertyDict.set(varname, value.clone());
-                        } else if (value instanceof UObject) {
-                            this.propertyDict.set(varname, value.clone());
-                        } else {
-                            debugger;
+                        const value = propValue.clone();
+
+                        // debugger;
+
+                        if (propName in defaultNamedProperties) {
+                            if (!value.copy) {
+                                debugger;
+                                throw new Error(`Must be copyable '${clsNamedProperties[propName].constructor.name}'`);
+                            }
+
+                            value.copy(defaultNamedProperties[propName]);
                         }
+
+                        this.propertyDict.set(varname, value);
+
+                        // if (value instanceof BufferValue) {
+                        //     this.propertyDict.set(varname, value);
+                        // } else if (value.getConstructorName?.()) {
+                        //     this.propertyDict.set(varname, new value());
+                        // } else if (value instanceof UnContainers.UContainer) {
+                        //     this.propertyDict.set(varname, value);
+                        // } else if (value instanceof Array) {
+                        //     this.propertyDict.set(varname, value);
+                        // } else if (value instanceof FPrimitiveArray) {
+                        //     this.propertyDict.set(varname, value);
+                        // } else if (value instanceof UObject) {
+                        //     this.propertyDict.set(varname, value);
+                        // } else {
+                        //     debugger;
+                        // }
 
 
                         // if (value !== undefined || !(varname in this))
@@ -787,76 +810,76 @@ class UStruct extends UField {
 export default UStruct;
 export { UStruct };
 
-function buildStructProperty(pkg: UNativePackage, field: UnProperties.UArrayProperty) {
-    if (field.arrayDimensions !== 1)
-        debugger;
+// function buildStructProperty(pkg: UNativePackage, field: UnProperties.UArrayProperty) {
+//     if (field.arrayDimensions !== 1)
+//         debugger;
 
-    const childProperty = field.value;
+//     const childProperty = field.value;
 
-    if (childProperty.isNumericType) {
-        const dtype = (childProperty as UNumericProperty).constructor.dtype;
-        const arr = new FPrimitiveArray(dtype);
+//     if (childProperty.isNumericType) {
+//         const dtype = (childProperty as UNumericProperty).constructor.dtype;
+//         const arr = new FPrimitiveArray(dtype);
 
-        return arr;
-    }
+//         return arr;
+//     }
 
-    if (childProperty instanceof UnProperties.UStructProperty) {
-        const cls = buildProperty(pkg, childProperty);
-        const arr = new FArray(cls);
+//     if (childProperty instanceof UnProperties.UStructProperty) {
+//         const cls = buildProperty(pkg, childProperty);
+//         const arr = new FArray(cls);
 
-        return arr;
-    }
+//         return arr;
+//     }
 
-    if (childProperty instanceof UnProperties.UObjectProperty) {
-        return new FIndexArray();
-    }
-
-
-    debugger;
-}
-
-function buildNonArrayProperty(pkg: UNativePackage, field: UProperty): any {
-    if (field.isNumericType)
-        return (field as any as IBufferValueProperty).buildBuffer();
-
-    if (field instanceof UnProperties.UNameProperty)
-        return field.buildContainer(pkg.nameTable);
-
-    if (field instanceof UnProperties.UObjectProperty || field instanceof UnProperties.UClassProperty)
-        return field.buildContainer();
-
-    if (field instanceof UnProperties.UByteProperty)
-        return field.buildContainer();
-
-    if (field instanceof UnProperties.UStructProperty)
-        return new (field.value.buildClass(pkg))();
-
-    if (field instanceof UnProperties.UBoolProperty)
-        return field.buildContainer();
-
-    if (field instanceof UnProperties.UStrProperty)
-        return new BufferValue(BufferValue.compat32);
-
-    debugger;
-    throw new Error("Not implemented yet!");
-}
-
-function buildProperty(pkg: UNativePackage, field: UProperty): any {
-    if (field instanceof UnProperties.UArrayProperty)
-        return buildStructProperty(pkg, field);
-
-    if (field.arrayDimensions > 1) {
-        const arr = new Array(field.arrayDimensions);
-
-        for (let i = 0; i < field.arrayDimensions; i++)
-            arr[i] = buildNonArrayProperty(pkg, field);
+//     if (childProperty instanceof UnProperties.UObjectProperty) {
+//         return new FIndexArray();
+//     }
 
 
-        return arr;
-    }
+//     debugger;
+// }
 
-    return buildNonArrayProperty(pkg, field);
-}
+// function buildNonArrayProperty(pkg: UNativePackage, field: UProperty): any {
+//     if (field.isNumericType)
+//         return (field as any as IBufferValueProperty).buildBuffer();
+
+//     if (field instanceof UnProperties.UNameProperty)
+//         return field.buildContainer(pkg.nameTable);
+
+//     if (field instanceof UnProperties.UObjectProperty || field instanceof UnProperties.UClassProperty)
+//         return field.buildContainer();
+
+//     if (field instanceof UnProperties.UByteProperty)
+//         return field.buildContainer();
+
+//     if (field instanceof UnProperties.UStructProperty)
+//         return new (field.value.buildClass(pkg))();
+
+//     if (field instanceof UnProperties.UBoolProperty)
+//         return field.buildContainer();
+
+//     if (field instanceof UnProperties.UStrProperty)
+//         return new BufferValue(BufferValue.compat32);
+
+//     debugger;
+//     throw new Error("Not implemented yet!");
+// }
+
+// function buildProperty(pkg: UNativePackage, field: UProperty): any {
+//     if (field instanceof UnProperties.UArrayProperty)
+//         return buildStructProperty(pkg, field);
+
+//     if (field.arrayDimensions > 1) {
+//         const arr = new Array(field.arrayDimensions);
+
+//         for (let i = 0; i < field.arrayDimensions; i++)
+//             arr[i] = buildNonArrayProperty(pkg, field);
+
+
+//         return arr;
+//     }
+
+//     return buildNonArrayProperty(pkg, field);
+// }
 
 enum ExprToken_T {
     // Variable references

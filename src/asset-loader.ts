@@ -9,6 +9,15 @@ abstract class AssetLoader {
 
     private constructor() { }
 
+    private pkgCore: UPackage;
+    private pkgEngine: UPackage;
+    private pkgNative: UNativePackage;
+
+    public getCorePackage() { return this.pkgCore; }
+    public getEnginePackage() { return this.pkgEngine; }
+    public getNativePackage() { return this.pkgNative; }
+
+
     private init(assetList: IAssetListInfo, { UPackage, UNativePackage }: typeof import("./unreal/un-package")) {
         this.packages.set("native", new Map([["U", this.createNativePackage(UNativePackage)]]))
 
@@ -26,6 +35,10 @@ abstract class AssetLoader {
             packages.set(pkgExt, this.createPackage(UPackage, downloadPath));
 
         }
+
+        this.pkgCore = this.getPackage("core", "Script");
+        this.pkgEngine = this.getPackage("engine", "Script");
+        this.pkgNative = this.getPackage("native", "Script");
 
         return this;
     }
