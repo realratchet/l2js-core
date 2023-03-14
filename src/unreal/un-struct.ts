@@ -80,7 +80,6 @@ class UStruct extends UField {
     protected readMapProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
     protected readFixedProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
     protected readStructProperty(pkg: UPackage, tag: PropertyTag): any {
-
         const core = pkg.loader.getPackage("core", "Script");
         const native = pkg.loader.getPackage("native", "Script");
 
@@ -88,19 +87,13 @@ class UStruct extends UField {
         const StructConstructor = expStruct.buildClass<UStruct>(native);
 
         const struct = new StructConstructor();
+        const verArchive = pkg.header.getArchiveFileVersion();
 
-        switch (tag.structName) {
-            case "Color":
-            case "Scale":
-            case "Vector":
-            case "Rotator":
-                struct.load(pkg);
-                break;
-            default: throw new Error("Not yet implemented");
-        }
+        if (["Vector", "Rotator", "Color"].includes(tag.structName) || verArchive < 0x76)
+            struct.load(pkg);
+        else struct.load(pkg, tag);
 
         this.setProperty(tag, struct);
-
     }
 
     protected loadProperty(pkg: UPackage, tag: PropertyTag): void {
@@ -383,17 +376,17 @@ class UStruct extends UField {
                             debugger;
 
                         if (value instanceof BufferValue) {
-                            this.propertyDict.set(varname, value);
+                            this.propertyDict.set(varname, value.clone());
                         } else if (value.getConstructorName?.()) {
                             this.propertyDict.set(varname, new value());
                         } else if (value instanceof UnContainers.UContainer) {
-                            this.propertyDict.set(varname, value);
+                            this.propertyDict.set(varname, value.clone());
                         } else if (value instanceof Array) {
-                            this.propertyDict.set(varname, value);
+                            this.propertyDict.set(varname, value.slice());
                         } else if (value instanceof FPrimitiveArray) {
-                            this.propertyDict.set(varname, value);
+                            this.propertyDict.set(varname, value.clone());
                         } else if (value instanceof UObject) {
-                            this.propertyDict.set(varname, value);
+                            this.propertyDict.set(varname, value.clone());
                         } else {
                             debugger;
                         }
@@ -822,26 +815,9 @@ function buildStructProperty(pkg: UNativePackage, field: UnProperties.UArrayProp
     debugger;
 }
 
-function buildProperty(pkg: UNativePackage, field: UProperty): any {
-    if (field instanceof UnProperties.UArrayProperty)
-        return buildStructProperty(pkg, field);
-
-    if (field.arrayDimensions > 1) {
-        const arr = new Array(field.arrayDimensions);
-
-        if (field.isNumericType) {
-            for (let i = 0; i < field.arrayDimensions; i++)
-                arr[i] = (field as any as IBufferValueProperty).buildBuffer();
-        } else {
-            debugger;
-        }
-
-        return arr;
-    }
-
+function buildNonArrayProperty(pkg: UNativePackage, field: UProperty): any {
     if (field.isNumericType)
         return (field as any as IBufferValueProperty).buildBuffer();
-
 
     if (field instanceof UnProperties.UNameProperty)
         return field.buildContainer(pkg.nameTable);
@@ -858,8 +834,28 @@ function buildProperty(pkg: UNativePackage, field: UProperty): any {
     if (field instanceof UnProperties.UBoolProperty)
         return field.buildContainer();
 
+    if (field instanceof UnProperties.UStrProperty)
+        return new BufferValue(BufferValue.compat32);
 
     debugger;
+    throw new Error("Not implemented yet!");
+}
+
+function buildProperty(pkg: UNativePackage, field: UProperty): any {
+    if (field instanceof UnProperties.UArrayProperty)
+        return buildStructProperty(pkg, field);
+
+    if (field.arrayDimensions > 1) {
+        const arr = new Array(field.arrayDimensions);
+
+        for (let i = 0; i < field.arrayDimensions; i++)
+            arr[i] = buildNonArrayProperty(pkg, field);
+
+
+        return arr;
+    }
+
+    return buildNonArrayProperty(pkg, field);
 }
 
 enum ExprToken_T {

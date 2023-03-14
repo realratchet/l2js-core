@@ -50,7 +50,11 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
             throw new Error(`Type mismatch source type '${other.type.name}' but expected '${this.type.name}'.`);
 
         this.bytes = new DataView(other.bytes.buffer.slice(0));
+
+        return this;
     }
+
+    public clone() { return new BufferValue(this.type).copy(this); }
 
     public slice(start: number, end: number) {
         const child = new BufferValue(this.type);

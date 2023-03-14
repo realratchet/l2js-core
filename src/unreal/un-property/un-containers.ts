@@ -1,7 +1,8 @@
 import BufferValue from "../../buffer-value";
 
 abstract class UContainer {
-
+    abstract clone(): UContainer;
+    abstract copy(other: UContainer): this;
 }
 
 class ObjectContainer<T extends UObject = UObject> extends UContainer {
@@ -21,7 +22,14 @@ class ObjectContainer<T extends UObject = UObject> extends UContainer {
 
     public copy(other: ObjectContainer<T>) {
         this.valueId.copy(other.valueId);
+
+        return this;
     }
+
+    public clone() {
+        return new ObjectContainer<T>(this.friendlyName).copy(this);
+    }
+
 
     public load(pkg: UPackage) {
         pkg.read(this.valueId);
@@ -33,6 +41,7 @@ class ObjectContainer<T extends UObject = UObject> extends UContainer {
 }
 
 class ClassContainer extends UContainer {
+
     public cls: UClass;
 
     public constructor(cls: UClass) {
@@ -46,6 +55,12 @@ class ClassContainer extends UContainer {
 
     public copy(other: ClassContainer | ObjectContainer) {
         //     debugger;
+
+        return this;
+    }
+
+    public clone() {
+        return new ClassContainer(this.cls).copy(this);
     }
 }
 
@@ -60,11 +75,17 @@ class BoolContainer extends UContainer {
 
     toString() { return `Bool[${this.value}]`; }
 
-    public copy(other: BoolContainer) { this.value = other.value; }
+    public copy(other: BoolContainer) {
+        this.value = other.value;
+        return this;
+    }
+
+    public clone() { return new BoolContainer(this.value); }
 }
 
 class NameContainer extends UContainer {
-    public _value: number;
+
+    protected _value: number;
     protected nameTable: UName[];
 
     public get value() { return this.nameTable[this._value].name; };
@@ -79,12 +100,15 @@ class NameContainer extends UContainer {
         this._value = value;
     }
 
-    toString() { return `Name[${this.value}]`; }
+    public toString() { return `Name[${this.value}]`; }
 
     public load(pkg: UPackage) {
         this.nameTable = pkg.nameTable;
         this._value = pkg.read(new BufferValue(BufferValue.compat32)).value;
     }
+
+    public copy(other: NameContainer): this { throw new Error("Method not implemented."); }
+    public clone() { return new NameContainer(this.nameTable, this._value); }
 }
 
 class EnumContainer extends UContainer implements IConstructable {
@@ -93,7 +117,7 @@ class EnumContainer extends UContainer implements IConstructable {
 
     protected readonly enumerations: Readonly<string[]>;
 
-    public constructor(name: string, enumerations: string[] | FNameArray, value: number) {
+    public constructor(name: string, enumerations: string[] | readonly string[] | FNameArray, value: number) {
         super();
 
         this.name = name;
@@ -119,7 +143,13 @@ class EnumContainer extends UContainer implements IConstructable {
         return isFinite(this.value) && this.value < this.enumerations.length ? `Enum<${this.name}>[${this.enumerations[this.value]}]` : `Enum<${this.name}>[<invalid '${this.value}']>`;
     }
 
-    public copy(other: EnumContainer) { this.value = other.value; }
+    public copy(other: EnumContainer) {
+        this.value = other.value;
+        return this;
+    }
+    public clone() {
+        return new EnumContainer(this.name, this.enumerations, this.value);
+    }
 }
 
 export { UContainer, ObjectContainer, ClassContainer, BoolContainer, NameContainer, EnumContainer };

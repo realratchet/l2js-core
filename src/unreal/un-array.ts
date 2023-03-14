@@ -50,7 +50,7 @@ class FArray<T extends UObject | FNumber<NumberTypes_T> | IConstructable> extend
         return this;
     }
 
-    public clone(other: FArray<T>): this {
+    public copy(other: FArray<T>): this {
         if (!other)
             return this;
 
@@ -61,6 +61,8 @@ class FArray<T extends UObject | FNumber<NumberTypes_T> | IConstructable> extend
 
         return this;
     }
+
+    public clone(): FArray<T> { return new FArray(this.Constructor).copy(this); }
 }
 
 class FIndexArray extends FArray<FNumber<"compat32">> {
@@ -85,7 +87,7 @@ class FNameArray extends Array<string> implements IConstructable {
 
     public loadSelf(): this { return this; }
 
-    public clone(other: FNameArray): this {
+    public copy(other: FNameArray): this {
         if (!other)
             return this;
 
@@ -96,6 +98,8 @@ class FNameArray extends Array<string> implements IConstructable {
 
         return this;
     }
+
+    public clone(): FNameArray { return new FNameArray().copy(this); }
 }
 
 class FPrimitiveArray<T extends NumberTypes_T> implements IConstructable {

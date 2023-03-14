@@ -4,6 +4,7 @@ import ObjectFlags_T from "./un-object-flags";
 import UPackage from "./un-package";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
 import * as UnContainers from "./un-property/un-containers";
+import FArray from "./un-array";
 
 abstract class UObject implements ISerializable {
     declare ["constructor"]: typeof UObject;
@@ -47,7 +48,7 @@ abstract class UObject implements ISerializable {
 
     public static get inheritenceChain() {
         if (this === UObject)
-            return ["Object"]
+            return ["Object"];
 
         let base = this as any;
         const dependencyChain = new Array<string>();
@@ -63,24 +64,12 @@ abstract class UObject implements ISerializable {
         return dependencyChain.reverse();
     }
 
-    /*
-    NOTE: read Vector, Rotator, Color structs always as binary, or if archive version is 0x1C
-     */
-
     protected readNamedProps(pkg: UPackage) {
         pkg.seek(this.readHead, "set");
-
-        if (this.objectName === "Exp_NMovableSunLight0")
-            debugger;
 
         if (this.readHead < this.readTail) {
             do {
                 const tag = PropertyTag.from(pkg, this.readHead);
-
-                if (this.objectName === "Exp_NMovableSunLight0") {
-                    console.log(tag);
-                    debugger;
-                }
 
                 if (!tag.isValid()) break;
 
@@ -90,9 +79,6 @@ abstract class UObject implements ISerializable {
 
             } while (this.readHead < this.readTail);
         }
-
-        if (this.objectName === "Exp_NMovableSunLight0")
-            debugger;
 
         this.readHead = pkg.tell();
     }
@@ -208,6 +194,9 @@ abstract class UObject implements ISerializable {
         const offStart = pkg.tell();
         const offEnd = offStart + tag.dataSize;
 
+        if (offStart === 157169)
+            debugger;
+
         const varName = this.getPropertyVarName(tag);
         const { name: propName, arrayIndex } = tag;
 
@@ -219,7 +208,16 @@ abstract class UObject implements ISerializable {
 
         const property = this.propertyDict.get(varName);
 
+        if (tag.structName === "Range")
+            debugger;
+
+        if (property.isReady)
+            debugger;
+
         if (property instanceof BufferValue) {
+            if (property.type.name === "char")
+                debugger;
+
             pkg.read(property);
         } else if (property instanceof UnContainers.BoolContainer) {
             property.value = tag.boolValue;
@@ -227,12 +225,29 @@ abstract class UObject implements ISerializable {
             property.load(pkg);
         } else if (property instanceof UObject) {
             if (tag.type === UNP_PropertyTypes.UNP_StructProperty) {
-                debugger;
-                if (["Vector", "Rotator", "Color"].includes(property.constructor.getConstructorName()))
+                const verArchive = pkg.header.getArchiveFileVersion();
+
+                if (["Vector", "Rotator", "Color"].includes(property.constructor.getConstructorName()) || verArchive < 0x76)
                     property.load(pkg);
-                else property.load(pkg, tag);
-            } else property.load(pkg, tag);
+                else {
+                    if (tag.structName === "Range")
+                        debugger;
+                    property.load(pkg, tag);
+                    if (tag.structName === "Range")
+                        debugger;
+                }
+            } else {
+                if (tag.structName === "Range")
+                    debugger;
+                property.load(pkg, tag);
+                if (tag.structName === "Range")
+                    debugger;
+            }
         } else if (property instanceof UnContainers.NameContainer) {
+            property.load(pkg);
+        } else if (property instanceof FArray) {
+            property.load(pkg, tag);
+        } else if (property instanceof UnContainers.EnumContainer) {
             property.load(pkg);
         } else {
             debugger;
@@ -269,6 +284,10 @@ abstract class UObject implements ISerializable {
 
         if (pkg.tell() < offEnd)
             console.warn(`Unread '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
+
+        if (pkg.tell() > offEnd)
+            throw new Error(`Reader exceeded by '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
+
 
         pkg.seek(offEnd, "set");
     }
@@ -369,12 +388,18 @@ abstract class UObject implements ISerializable {
         // if (exp.objectName === "DefaultTexture")
         //     debugger;
 
+        if (this.isReady)
+            debugger;
+
         this.preLoad(pkg, exp);
 
         if (!isFinite(this.readHead))
             debugger;
 
         if (!isFinite(this.readTail))
+            debugger;
+
+        if (this.isReady)
             debugger;
 
         if ((this.readTail - this.readHead) > 0) {
