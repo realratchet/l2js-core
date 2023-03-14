@@ -278,7 +278,9 @@ class UStrProperty extends UNumericProperty<"char"> {
 }
 
 class UDelegateProperty extends UProperty {
-
+    public readProperty(pkg: UPackage, tag: PropertyTag): UProperty {
+        throw new Error("Method not implemented.");
+    }
 }
 
 
