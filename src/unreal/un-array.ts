@@ -79,6 +79,42 @@ class FIndexArray extends FArray<FNumber<"compat32">> {
     }
 }
 
+class FObjectArray<T extends UObject = UObject> extends Array<T> implements IConstructable {
+    protected indexArray = new FIndexArray();
+
+    public load(pkg: UPackage, tag?: PropertyTag): this {
+        this.indexArray.load(pkg, tag);
+
+        let i = 0;
+
+        for (const index of this.indexArray)
+            this[i++] = pkg.fetchObject<T>(index.value);
+
+        return this;
+    }
+
+    public loadSelf(): this {
+        for (const obj of this)
+            obj.loadSelf();
+
+        return this;
+    }
+
+    public copy(other: FObjectArray<T>): this {
+        if (!other)
+            return this;
+
+        this.indexArray = other.indexArray;
+
+        for (const v of other)
+            this.push(v);
+
+        return this;
+    }
+
+    public clone(): FObjectArray<T> { return new FObjectArray<T>().copy(this); }
+}
+
 class FNameArray extends Array<string> implements IConstructable {
     protected indexArray = new FIndexArray();
 
@@ -180,4 +216,4 @@ class FPrimitiveArray<T extends NumberTypes_T> implements IConstructable {
 }
 
 export default FArray;
-export { FArray, FIndexArray, FNameArray, FPrimitiveArray };
+export { FArray, FIndexArray, FNameArray, FPrimitiveArray, FObjectArray };

@@ -1,6 +1,6 @@
 import BufferValue from "../../buffer-value";
 import { flagBitsToDict } from "../../utils/flags";
-import FArray, { FPrimitiveArray } from "../un-array";
+import FArray, { FObjectArray, FPrimitiveArray } from "../un-array";
 import UClass from "../un-class";
 import UField from "../un-field";
 import UPackage from "../un-package";
@@ -360,7 +360,7 @@ class UByteProperty extends UBaseExportProperty<UEnum> {
 }
 
 class UArrayProperty extends UBaseExportProperty<UProperty> {
-    protected propertyValue: FArray<any> | FPrimitiveArray<any> = null;
+    protected propertyValue: FArray<any> | FPrimitiveArray<any> | FObjectArray<any> = null;
 
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
@@ -372,6 +372,8 @@ class UArrayProperty extends UBaseExportProperty<UProperty> {
 
         if (type instanceof UStructProperty)
             this.propertyValue = new FArray(type.value.buildClass(pkg.loader.getNativePackage())).load(pkg, tag);
+        else if (type instanceof UObjectProperty)
+            this.propertyValue = new FObjectArray().load(pkg, tag);
         else {
             debugger;
             throw new Error("Not yet implemented!");
