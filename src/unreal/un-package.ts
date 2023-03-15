@@ -344,7 +344,7 @@ abstract class UPackage extends UEncodedFile {
 
             if (!objbase && objname !== "Object") {
                 debugger;
-                pkg = this.loader.getPackage("Core", "Script");
+                pkg = this.loader.getCorePackage();
 
                 if (!pkg.isDecoded()) throw new Error(`Package must be decoded: 'Core'`);
 
@@ -491,7 +491,8 @@ abstract class UPackage extends UEncodedFile {
 
     public newObject<T extends UObject = UObject>(objclass: UClass | ObjectConstructor): T {
         if (objclass instanceof UClass) {
-            const Constructor = objclass.buildClass<T>(this.loader.getPackage("native", "Script") as UNativePackage);
+            const native = this.loader.getNativePackage();
+            const Constructor = objclass.buildClass<T>(native);
 
             return new Constructor();
         }

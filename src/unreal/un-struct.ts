@@ -76,37 +76,6 @@ class UStruct extends UField {
         return null;
     }
 
-    // protected readByteProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.uint8))); }
-    // protected readIntProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.int32))); }
-    // protected readFloatProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.float))); }
-    // protected readBoolProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.BoolContainer(tag.boolValue)); }
-    // protected readObjectProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.ObjectContainer("<Not Evaled>").load(pkg)); }
-    // protected readNameProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, new UnContainers.NameContainer(pkg.nameTable, pkg.read(new BufferValue(BufferValue.compat32)).value)); }
-    // protected readStrProperty(pkg: UPackage, tag: PropertyTag) { this.setProperty(tag, pkg.read(new BufferValue(BufferValue.char))); }
-    // protected readStringProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    // protected readArrayProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); }
-    // protected readClassProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    // protected readVectorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    // protected readRotatorProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    // protected readMapProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    // protected readFixedProperty(pkg: UPackage, tag: PropertyTag) { debugger; throw new Error("Not yet implemented"); } // Never used?
-    // protected readStructProperty(pkg: UPackage, tag: PropertyTag): any {
-    //     const core = pkg.loader.getPackage("core", "Script");
-    //     const native = pkg.loader.getPackage("native", "Script");
-
-    //     const expStruct = core.fetchObjectByType<UStruct>("Struct", tag.structName);
-    //     const StructConstructor = expStruct.buildClass<UStruct>(native);
-
-    //     const struct = new StructConstructor();
-    //     const verArchive = pkg.header.getArchiveFileVersion();
-
-    //     if (["Vector", "Rotator", "Color"].includes(tag.structName) || verArchive < 0x76)
-    //         struct.load(pkg);
-    //     else struct.load(pkg, tag);
-
-    //     this.setProperty(tag, struct);
-    // }
-
     protected loadProperty(pkg: UPackage, tag: PropertyTag): void {
         const offStart = pkg.tell();
         const offEnd = offStart + tag.dataSize;
@@ -119,33 +88,8 @@ class UStruct extends UField {
 
         const property = this.isValidProperty(varName);
 
-        // switch (tag.type) {
-        //     case UNP_PropertyTypes.UNP_ByteProperty: this.readByteProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_IntProperty: this.readIntProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_BoolProperty: this.readBoolProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_FloatProperty: this.readFloatProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_ObjectProperty: this.readObjectProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_NameProperty: this.readNameProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_StrProperty: this.readStrProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_StringProperty: this.readStringProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_ArrayProperty: this.readArrayProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_ClassProperty: this.readClassProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_VectorProperty: this.readVectorProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_RotatorProperty: this.readRotatorProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_MapProperty: this.readMapProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_FixedArrayProperty: this.readFixedProperty(pkg, tag); break;
-        //     case UNP_PropertyTypes.UNP_StructProperty: this.readStructProperty(pkg, tag); break;
-        //     default:
-        //         pkg.seek(tag.dataSize);
-        //         console.warn(`Unknown data type '${tag.type}' for '${tag.name}' skipping ${tag.dataSize} bytes.`);
-        //         break;
-        // }
-
         if (!property)
             throw new Error(`Cannot map property '${propName}' -> ${varName}`);
-
-
-        // debugger;
 
         const defaultProperty = property.loadSelf().clone().readProperty(pkg, tag);
 
@@ -269,11 +213,8 @@ class UStruct extends UField {
     }
 
     protected readScript(pkg: UPackage) {
-        const native = pkg.loader.getPackage("native", "Script");
-        const core = pkg.loader.getPackage("core", "Script");
-
-        // if (this.exp.objectName === "GetCollisionExtent")
-        //     debugger;
+        const native = pkg.loader.getNativePackage();
+        const core = pkg.loader.getCorePackage();
 
         while (this.bytecodeLength < this.scriptSize)
             this.readToken(native, core, pkg, 0);

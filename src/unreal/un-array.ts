@@ -16,8 +16,6 @@ class FArray<T extends UObject | FNumber<NumberTypes_T> | IConstructable> extend
         if (!constr)
             debugger;
 
-        new constr();
-
         this.Constructor = constr;
     }
 

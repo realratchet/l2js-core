@@ -121,7 +121,7 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
-        if (this.arrayDimensions !== 1 && tag.arrayIndex !== 0)
+        if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
             debugger;
 
         this.propertyValuePkg = pkg;
@@ -184,7 +184,7 @@ class UClassProperty extends UBaseExportProperty<UClass> {
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
-        if (this.arrayDimensions !== 1 && tag.arrayIndex !== 0)
+        if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
             debugger;
 
         this.propertyValuePkg = pkg;
@@ -208,7 +208,7 @@ class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportPr
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
-        if (this.arrayDimensions !== 1 && tag.arrayIndex !== 0)
+        if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
             debugger;
 
         const native = pkg.loader.getNativePackage();
@@ -242,7 +242,7 @@ abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag?.name || null;
 
-        if (this.arrayDimensions !== 1 && tag.arrayIndex !== 0)
+        if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
             debugger;
 
         this.propertyValue = pkg.read(new BufferValue<T>(this.constructor.dtype)).value;
@@ -263,7 +263,7 @@ class UFloatProperty extends UNumericProperty<"float"> {
 class UIntProperty extends UNumericProperty<"int32"> {
     public static dtype = BufferValue.int32;
 
-    // public static readProperty(pkg: UPackage) { return readProperty(pkg, this.dtype); }
+    declare ["constructor"]: typeof UNumericProperty & typeof UIntProperty;
 }
 
 class UStrProperty extends UNumericProperty<"char"> {
@@ -278,13 +278,11 @@ class UDelegateProperty extends UProperty {
     }
 }
 
-
-
 class UBoolProperty extends UProperty {
     protected propertyValue: boolean;
 
     public readProperty(_pkg: UPackage, tag: PropertyTag) {
-        if (this.arrayDimensions !== 1 && tag.arrayIndex !== 0)
+        if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
             debugger;
 
         this.propertyValue = tag.boolValue;
@@ -305,7 +303,7 @@ class UNameProperty extends UProperty {
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
-        if (this.arrayDimensions !== 1 && tag.arrayIndex !== 0)
+        if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
             debugger;
 
         this.propertyValuePkg = pkg;
@@ -331,7 +329,7 @@ class UByteProperty extends UBaseExportProperty<UEnum> {
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag?.name || null;
 
-        if (this.arrayDimensions !== 1 && tag.arrayIndex !== 0)
+        if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
             debugger;
 
         this.propertyValue = pkg.read(new BufferValue(this.constructor.dtype)).value;
@@ -362,7 +360,7 @@ class UArrayProperty extends UBaseExportProperty<UProperty> {
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
-        if (this.arrayDimensions !== 1 && tag.arrayIndex !== 0)
+        if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
             debugger;
 
         const type = this.value.loadSelf();
