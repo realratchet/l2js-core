@@ -64,12 +64,24 @@ abstract class UObject implements ISerializable {
         return dependencyChain.reverse();
     }
 
-    protected readNamedProps(pkg: UPackage) {
+    protected readNamedProps(pkg: UPackage, _exp: UExport) {
         pkg.seek(this.readHead, "set");
+
 
         if (this.readHead < this.readTail) {
             do {
+                // if (_exp.objectName === "NMovableSunLight0")
+                //     debugger;
+
                 const tag = PropertyTag.from(pkg, this.readHead);
+
+                // if (this.exp.objectName.includes("NMovableSunLight")) {
+                //     console.log(`${this.exp.objectName} -> ${tag.name} ${this.readHead - this.readStart} of ${this.byteCount}`);
+
+                //     if (!tag.isValid())
+                //         debugger;
+
+                // }
 
                 if (!tag.isValid()) break;
 
@@ -164,6 +176,7 @@ abstract class UObject implements ISerializable {
             this.setExport(pkg, exp);
 
         pkg.seek(exp.offset, "set");
+        this.setReadPointers(exp);
 
         if (flags & ObjectFlags_T.HasStack && exp.size > 0) {
 
@@ -190,13 +203,16 @@ abstract class UObject implements ISerializable {
             }
         }
 
-        this.setReadPointers(exp);
+       this.readHead = pkg.tell();
     }
 
     public load(pkg: UPackage): this;
     public load(pkg: UPackage, info: UExport): this;
     public load(pkg: UPackage, info: PropertyTag): this;
     public load(pkg: UPackage, info?: any) {
+        // if (info?.objectName === "NMovableSunLight0")
+        //     debugger;
+
         if (info instanceof UExport)
             return this.loadWithExport(pkg, info);
 
@@ -248,13 +264,14 @@ abstract class UObject implements ISerializable {
         return this;
     }
 
-    protected doLoad(pkg: UPackage, exp: UExport): void { this.readNamedProps(pkg); }
+    protected doLoad(pkg: UPackage, exp: UExport): void { this.readNamedProps(pkg, exp); }
 
     protected postLoad(pkg: UPackage, exp: UExport): void {
         this.readHead = pkg.tell();
 
         if (this.skipRemaining) this.readHead = this.readTail;
         if (this.bytesUnread > 0 && this.careUnread) {
+            debugger;
             const constructorName = (this.constructor as any).isDynamicClass ? `${(this.constructor as any).friendlyName}[Dynamic]` : this.constructor.name;
             console.warn(`Unread '${this.objectName}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}'`);
         }

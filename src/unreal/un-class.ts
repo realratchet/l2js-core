@@ -124,7 +124,7 @@ class UClass extends UState {
 
         this.readHead = pkg.tell();
 
-        this.readNamedProps(pkg);
+        this.readNamedProps(pkg, exp);
     }
 
     public toString() { return `Class[${this.friendlyName}]`; }

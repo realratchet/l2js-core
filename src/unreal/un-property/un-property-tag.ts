@@ -97,6 +97,8 @@ class PropertyTag {
     }
 
     public toString() {
+        if (this.name === "None")
+            return `PropertyTag[None]`;
         return `PropertyTag<${this.getTypeName()}${this.type === UNP_PropertyTypes.UNP_StructProperty ? `<${this.structName}>` : ""}>[${this.name}]`;
     }
 }

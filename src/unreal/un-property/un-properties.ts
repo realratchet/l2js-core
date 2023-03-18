@@ -6,7 +6,7 @@ import UField from "../un-field";
 import UPackage from "../un-package";
 import PropertyTag from "./un-property-tag";
 
-abstract class UProperty extends UField {
+abstract class UProperty<T1 = any, T2 = T1> extends UField {
     // declare ["constructor"]: typeof UProperty;
 
     public arrayDimensions: number;
@@ -20,6 +20,8 @@ abstract class UProperty extends UField {
     protected replicationOffset: number;
     protected categoryNameId: number;
     protected categoryName: string;
+
+    protected _propertyValue: T1[];
 
     // public readonly isNumericType: boolean = false;
 
@@ -48,10 +50,20 @@ abstract class UProperty extends UField {
         if (this.flags & PropertyFlags_T.Net)
             this.replicationOffset = pkg.read(uint16).value;
 
+        this._propertyValue = new Array<any>(this.arrayDimensions);
+
         this.readHead = pkg.tell();
     }
 
-    public copy(other: UProperty) {
+    public getPropertyValue(index: number = null): T2 | T2[] {
+        return this.arrayDimensions === 1
+            ? this._propertyValue[0] as any as T2
+            : index === null
+                ? this._propertyValue as any as T2[]
+                : this._propertyValue[index] as any as T2;
+    }
+
+    public copy(other: UProperty<T1, T2>) {
         this.isReady = other.isReady;
         this.isLoading = other.isLoading;
         this.isDefault = other.isDefault;
@@ -63,6 +75,8 @@ abstract class UProperty extends UField {
         this.categoryName = other.categoryName;
         this.replicationOffset = other.replicationOffset;
 
+        this._propertyValue = new Array(this.arrayDimensions);
+
         this.pkg = other.pkg;
         this.exp = other.exp;
 
@@ -71,7 +85,7 @@ abstract class UProperty extends UField {
 
     public clone() {
 
-        const Constructor = this.constructor as any as new () => UProperty;
+        const Constructor = this.constructor as any as new () => UProperty<T1, T2>;
         const clone = new Constructor();
 
         clone.copy(this);
@@ -79,12 +93,16 @@ abstract class UProperty extends UField {
         return clone;
     }
 
-    public abstract readProperty(pkg: UPackage, tag: PropertyTag): UProperty;
+    public abstract readProperty(pkg: UPackage, tag: PropertyTag): UProperty<T1, T2>;
+
+    public toString(className: string, classTemplate: string, value: string) {
+        return `${className}${classTemplate ? `<${classTemplate}>` : ""}[${this.arrayDimensions > 1 ? value : "..."}]${this.arrayDimensions > 1 ? `(${this.arrayDimensions})` : ""}`;
+    }
 }
 
-abstract class UBaseExportProperty<T extends UField> extends UProperty {
+abstract class UBaseExportProperty<T1 extends UField, T2 = T1, T3 = T2> extends UProperty<T2, T3> {
     protected valueId: number;
-    public _value: T;
+    public _value: T1;
 
     public get value() {
         if (this.valueId !== 0 && !this._value)
@@ -102,7 +120,7 @@ abstract class UBaseExportProperty<T extends UField> extends UProperty {
         this.readHead = pkg.tell();
     }
 
-    public copy(other: UBaseExportProperty<T>): this {
+    public copy(other: UBaseExportProperty<T1, T2, T3>): this {
         super.copy(other);
 
         this.valueId = other.valueId;
@@ -111,12 +129,8 @@ abstract class UBaseExportProperty<T extends UField> extends UProperty {
     }
 }
 
-class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<UClass> {
+class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<UClass, number, T> {
     protected propertyValuePkg: UPackage;
-    protected propertyValueId: number;
-    protected _propertyValue: T;
-
-    protected get propertyValue() { return this.propertyValuePkg.fetchObject<T>(this.propertyValueId); }
 
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
@@ -125,36 +139,41 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
             debugger;
 
         this.propertyValuePkg = pkg;
-        this.propertyValueId = pkg.read(new BufferValue(BufferValue.compat32)).value;
+        this._propertyValue[tag.arrayIndex] = pkg.read(new BufferValue(BufferValue.compat32)).value;
         this.isSet = true;
 
         return this;
     }
 
+    public getPropertyValue(index: number = null) {
+        return this.arrayDimensions === 1
+            ? this.propertyValuePkg.fetchObject<T>(this._propertyValue[0])
+            : index === null
+                ? this._propertyValue.map(i => this.propertyValuePkg.fetchObject<T>(i))
+                : this.propertyValuePkg.fetchObject<T>(this._propertyValue[index]);
+    }
+
     public toString() {
         const friendlyName = this.valueId === 0 ? null : (this._value?.friendlyName || "<eval>");
-        const object = this.propertyValueId === 0 ? null : (this._propertyValue || "<eval>");
+        const object = this.arrayDimensions === 1 ? this._propertyValue[0] === 0 ? null : (this.getPropertyValue(0).toString() || "<eval>") : null;
 
-        return `ObjectProperty<${friendlyName}>[${object}]`;
+        return super.toString("ObjectProperty", friendlyName, object);
     }
 }
 
 
-class UClassProperty extends UBaseExportProperty<UClass> {
+class UClassProperty extends UBaseExportProperty<UClass, number, UClass> {
     protected metaClassId: number;
     protected _metaClass: UClass;
 
     protected propertyValuePkg: UPackage;
-    protected propertyValueId: number = 0;
-    protected _propertyValue: UClass = null;
 
-    protected get propertyValue() {
-        if (this._propertyValue)
-            return this._propertyValue;
-
-        this._propertyValue = this.propertyValuePkg.fetchObject<UClass>(this.propertyValueId).loadSelf();
-
-        return this._propertyValue;
+    public getPropertyValue(index: number = null) {
+        return this.arrayDimensions === 1
+            ? this.propertyValuePkg.fetchObject<UClass>(this._propertyValue[0])
+            : index === null
+                ? this._propertyValue.map(i => this.propertyValuePkg.fetchObject<UClass>(i))
+                : this.propertyValuePkg.fetchObject<UClass>(this._propertyValue[index]);
     }
 
     protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
@@ -188,23 +207,21 @@ class UClassProperty extends UBaseExportProperty<UClass> {
             debugger;
 
         this.propertyValuePkg = pkg;
-        this.propertyValueId = pkg.read(new BufferValue(BufferValue.compat32)).value;
+        this._propertyValue[tag.arrayIndex] = pkg.read(new BufferValue(BufferValue.compat32)).value;
         this.isSet = true;
 
         return this;
     }
 
     public toString() {
-        return `ClassProperty[${this.propertyValueId === 0
-            ? null
-            : this._propertyValue?.friendlyName || "<eval>"
-            }]`;
+        const friendlyName = this.valueId === 0 ? null : (this._value?.friendlyName || "<eval>");
+        const object = this.arrayDimensions === 1 ? this._propertyValue[0] === 0 ? null : (this.getPropertyValue(0).toString() || "<eval>") : null;
+
+        return super.toString("ClassProperty", friendlyName, object);
     }
 }
 
-class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportProperty<UStruct> {
-    protected propertyValue: T = null;
-
+class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportProperty<UStruct, T, T> {
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
@@ -220,7 +237,7 @@ class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportPr
 
         struct.load(pkg, isNative ? null : tag);
 
-        this.propertyValue = struct;
+        this._propertyValue[tag.arrayIndex] = struct;
         this.isSet = true;
 
         return this;
@@ -228,16 +245,14 @@ class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportPr
 
     public toString() {
         const friendlyName = this.valueId === 0 ? null : (this._value?.friendlyName || "<eval>");
-        const object = this.propertyValue || null;
+        const object = this.arrayDimensions === 1 ? this._propertyValue[0] ? null : (this.getPropertyValue(0).toString() || "<eval>") : null;
 
-        return `StructProperty<${friendlyName}>[${object}]`;
+        return super.toString("StructProperty", friendlyName, object);
     }
 }
 
-abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends UProperty implements IBufferValueProperty<T> {
+abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends UProperty<ReturnType<T>, ReturnType<T>> implements IBufferValueProperty<T> {
     declare ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<T> };
-
-    protected propertyValue: ReturnType<T>;
 
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag?.name || null;
@@ -245,13 +260,15 @@ abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends
         if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
             debugger;
 
-        this.propertyValue = pkg.read(new BufferValue<T>(this.constructor.dtype)).value;
+        this._propertyValue[tag?.arrayIndex || null] = pkg.read(new BufferValue<T>(this.constructor.dtype)).value;
         this.isSet = true;
 
         return this;
     }
 
-    public toString() { return `${this.constructor.name}[${this.propertyValue}]`; }
+    public toString() {
+        return super.toString(this.constructor.name, undefined, this.arrayDimensions === 1 ? this._propertyValue[0].toString() : null);
+    }
 }
 
 class UFloatProperty extends UNumericProperty<"float"> {
@@ -272,33 +289,31 @@ class UStrProperty extends UNumericProperty<"char"> {
     declare ["constructor"]: typeof UNumericProperty & typeof UStrProperty;
 }
 
-class UDelegateProperty extends UProperty {
-    public readProperty(pkg: UPackage, tag: PropertyTag): UProperty {
+class UDelegateProperty extends UProperty<any, any> {
+    public readProperty(pkg: UPackage, tag: PropertyTag): UProperty<any, any> {
         throw new Error("Method not implemented.");
     }
 }
 
-class UBoolProperty extends UProperty {
-    protected propertyValue: boolean;
-
+class UBoolProperty extends UProperty<boolean, boolean> {
     public readProperty(_pkg: UPackage, tag: PropertyTag) {
         if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
             debugger;
 
-        this.propertyValue = tag.boolValue;
+        this._propertyValue[tag.arrayIndex] = tag.boolValue;
 
         return this;
     }
 
-    toString() { return `BoolProperty[${this.propertyValue}]`; }
+    toString() {
+        return super.toString("BoolProperty", undefined, this.arrayDimensions === 1 ? this._propertyValue[0].toString() : null);
+    }
 }
 
 
 
-class UNameProperty extends UProperty {
+class UNameProperty extends UProperty<number, string> {
     protected propertyValuePkg: UPackage;
-    protected propertyValueId: number;
-    protected propertyValue: string;
 
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
@@ -307,24 +322,34 @@ class UNameProperty extends UProperty {
             debugger;
 
         this.propertyValuePkg = pkg;
-        this.propertyValueId = pkg.read(new BufferValue(BufferValue.compat32)).value;
-        this.propertyValue = pkg.nameTable[this.propertyValueId].name;
+        this._propertyValue[tag.arrayIndex] = pkg.read(new BufferValue(BufferValue.compat32)).value;
         this.isSet = true;
 
         return this;
     }
 
-    public toString() { return `NameProperty[${this.propertyValue}]`; }
+    public getPropertyValue(index: number = null) {
+        const nameTable = this.propertyValuePkg.nameTable;
 
+        return this.arrayDimensions === 1
+            ? nameTable[this._propertyValue[0]].name
+            : index === null
+                ? this._propertyValue.map(i => nameTable[i].name)
+                : nameTable[this._propertyValue[index]].name;
+    }
+
+    public toString() {
+        const object = this.arrayDimensions === 1 ? this._propertyValue[0] === 0 ? null : (this.getPropertyValue(0).toString() || "<eval>") : null;
+
+        return super.toString("NameProperty", undefined, object);
+    }
 }
 
-class UByteProperty extends UBaseExportProperty<UEnum> {
+class UByteProperty extends UBaseExportProperty<UEnum, number, number> {
 
     declare ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<"uint8"> };
 
     public static dtype = BufferValue.uint8;
-
-    protected propertyValue: number;
 
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag?.name || null;
@@ -332,30 +357,43 @@ class UByteProperty extends UBaseExportProperty<UEnum> {
         if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
             debugger;
 
-        this.propertyValue = pkg.read(new BufferValue(this.constructor.dtype)).value;
+        this._propertyValue[tag?.arrayIndex || 0] = pkg.read(new BufferValue(this.constructor.dtype)).value;
         this.isSet = true;
 
         return this;
     }
 
     public toString() {
-        const value = this.propertyValue;
+        if (!this.valueId) {
+            if (this.arrayDimensions > 1)
+                return super.toString("ByteProperty", undefined, undefined);
 
-        if (!this.valueId) return `ByteProperty[${value}]`;
+            return super.toString("ByteProperty", undefined, this._propertyValue[0].toString());
+        }
 
-        if (!this._value) return `ByteProperty<<eval>>[${value}]`;
+        if (!this._value) {
+            if (this.arrayDimensions > 1)
+                return super.toString("ByteProperty", "<eval>", undefined);
+
+            return super.toString("ByteProperty", "<eval>", this._propertyValue[0].toString());
+        }
 
         const name = this._value?.friendlyName;
         const enumerations = this._value.names;
 
-        return isFinite(value) && value < enumerations.length
-            ? `ByteProperty<${name}>[${enumerations[value]}]`
-            : `ByteProperty<${name}>[<invalid '${value}']>`;
+        if (this.arrayDimensions > 1)
+            return super.toString("ByteProperty", name, this._propertyValue[0].toString());
+
+        const value = this._propertyValue[0];
+        const valueName = isFinite(value) && value < enumerations.length ? enumerations[value] : `<invalid '${value}'>`;
+
+        return super.toString("ByteProperty", name, valueName);
     }
 }
 
-class UArrayProperty extends UBaseExportProperty<UProperty> {
-    protected propertyValue: FArray<any> | FPrimitiveArray<any> | FObjectArray<any> = null;
+type ArrayType = FArray<any> | FPrimitiveArray<any> | FObjectArray<any>;
+
+class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>, ArrayType, ArrayType> {
 
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
@@ -366,9 +404,9 @@ class UArrayProperty extends UBaseExportProperty<UProperty> {
         const type = this.value.loadSelf();
 
         if (type instanceof UStructProperty)
-            this.propertyValue = new FArray(type.value.buildClass(pkg.loader.getNativePackage())).load(pkg, tag);
+            this._propertyValue[tag.arrayIndex] = new FArray(type.value.buildClass(pkg.loader.getNativePackage())).load(pkg, tag);
         else if (type instanceof UObjectProperty)
-            this.propertyValue = new FObjectArray().load(pkg, tag);
+            this._propertyValue[tag.arrayIndex] = new FObjectArray().load(pkg, tag);
         else {
             debugger;
             throw new Error("Not yet implemented!");
