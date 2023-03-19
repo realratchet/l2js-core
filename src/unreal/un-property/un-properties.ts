@@ -225,8 +225,8 @@ class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportPr
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
-        if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
-            debugger;
+        // if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
+        //     debugger;
 
         const native = pkg.loader.getNativePackage();
         const verArchive = pkg.header.getArchiveFileVersion();
@@ -260,7 +260,9 @@ abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends
         if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
             debugger;
 
-        this._propertyValue[tag?.arrayIndex || null] = pkg.read(new BufferValue<T>(this.constructor.dtype)).value;
+        const str = pkg.read(new BufferValue<T>(this.constructor.dtype));
+
+        this._propertyValue[tag?.arrayIndex || 0] = str.value;
         this.isSet = true;
 
         return this;
@@ -407,7 +409,13 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
             this._propertyValue[tag.arrayIndex] = new FArray(type.value.buildClass(pkg.loader.getNativePackage())).load(pkg, tag);
         else if (type instanceof UObjectProperty)
             this._propertyValue[tag.arrayIndex] = new FObjectArray().load(pkg, tag);
-        else {
+        else if (type instanceof UIntProperty) {
+            this._propertyValue[tag.arrayIndex] = new FPrimitiveArray(BufferValue.int32).load(pkg, tag);
+        } else if (type instanceof UFloatProperty) {
+            this._propertyValue[tag.arrayIndex] = new FPrimitiveArray(BufferValue.float).load(pkg, tag);
+        } else if (type instanceof UByteProperty) {
+            this._propertyValue[tag.arrayIndex] = new FPrimitiveArray(BufferValue.uint8).load(pkg, tag);
+        } else {
             debugger;
             throw new Error("Not yet implemented!");
         }

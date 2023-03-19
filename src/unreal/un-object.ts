@@ -75,6 +75,9 @@ abstract class UObject implements ISerializable {
 
                 const tag = PropertyTag.from(pkg, this.readHead);
 
+                if (tag.name === "VisibleGroups" && _exp.objectName === "LevelInfo0")
+                    debugger;
+
                 // if (this.exp.objectName.includes("NMovableSunLight")) {
                 //     console.log(`${this.exp.objectName} -> ${tag.name} ${this.readHead - this.readStart} of ${this.byteCount}`);
 
@@ -134,7 +137,7 @@ abstract class UObject implements ISerializable {
         const offEnd = offStart + tag.dataSize;
 
         const varName = this.getPropertyVarName(tag);
-        const { name: propName, arrayIndex } = tag;
+        const { name: propName } = tag;
 
         if (!varName)
             throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${tag.getTypeName()}'`);
@@ -144,11 +147,11 @@ abstract class UObject implements ISerializable {
 
         const property = this.propertyDict.get(varName);
 
-        if (property.isSet)
-            debugger;
+        // if (property.isSet)
+        //     debugger;
 
-        if (property.arrayDimensions !== 1 || tag.arrayIndex !== 0)
-            debugger;
+        // if (property.arrayDimensions !== 1 || tag.arrayIndex !== 0)
+        //     debugger;
 
         property.readProperty(pkg, tag);
 
@@ -203,7 +206,7 @@ abstract class UObject implements ISerializable {
             }
         }
 
-       this.readHead = pkg.tell();
+        this.readHead = pkg.tell();
     }
 
     public load(pkg: UPackage): this;
@@ -273,7 +276,7 @@ abstract class UObject implements ISerializable {
         if (this.bytesUnread > 0 && this.careUnread) {
             debugger;
             const constructorName = (this.constructor as any).isDynamicClass ? `${(this.constructor as any).friendlyName}[Dynamic]` : this.constructor.name;
-            console.warn(`Unread '${this.objectName}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}'`);
+            console.warn(`Unread '${this.objectName}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}', only ${this.readHead - this.readStart} bytes read.`);
         }
 
         if (UObject.CLEANUP_NAMESPACE) {
