@@ -260,9 +260,7 @@ abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends
         if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
             debugger;
 
-        const str = pkg.read(new BufferValue<T>(this.constructor.dtype));
-
-        this._propertyValue[tag?.arrayIndex || 0] = str.value;
+        this._propertyValue[tag?.arrayIndex || 0] = pkg.read(new BufferValue<T>(this.constructor.dtype)).value;
         this.isSet = true;
 
         return this;
@@ -285,10 +283,25 @@ class UIntProperty extends UNumericProperty<"int32"> {
     declare ["constructor"]: typeof UNumericProperty & typeof UIntProperty;
 }
 
-class UStrProperty extends UNumericProperty<"char"> {
-    public static dtype = BufferValue.char;
+class UStrProperty extends UProperty<string, string> {
+    public readProperty(pkg: UPackage, tag: PropertyTag) {
+        this.propertyName = tag?.name || null;
 
-    declare ["constructor"]: typeof UNumericProperty & typeof UStrProperty;
+        if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
+            debugger;
+
+        if (!tag)
+            debugger;
+
+        this._propertyValue[tag.arrayIndex] = pkg.read(BufferValue.allocBytes(tag.dataSize)).string;
+        this.isSet = true;
+
+        return this;
+    }
+
+    public toString() {
+        return super.toString(this.constructor.name, undefined, this.arrayDimensions === 1 ? this._propertyValue[0].toString() : null);
+    }
 }
 
 class UDelegateProperty extends UProperty<any, any> {

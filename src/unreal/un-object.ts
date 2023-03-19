@@ -70,21 +70,7 @@ abstract class UObject implements ISerializable {
 
         if (this.readHead < this.readTail) {
             do {
-                // if (_exp.objectName === "NMovableSunLight0")
-                //     debugger;
-
                 const tag = PropertyTag.from(pkg, this.readHead);
-
-                if (tag.name === "VisibleGroups" && _exp.objectName === "LevelInfo0")
-                    debugger;
-
-                // if (this.exp.objectName.includes("NMovableSunLight")) {
-                //     console.log(`${this.exp.objectName} -> ${tag.name} ${this.readHead - this.readStart} of ${this.byteCount}`);
-
-                //     if (!tag.isValid())
-                //         debugger;
-
-                // }
 
                 if (!tag.isValid()) break;
 
@@ -113,7 +99,7 @@ abstract class UObject implements ISerializable {
     }
 
     protected loadNative(pkg: UPackage) {
-        for (const [propName, propVal] of this.propertyDict.entries())
+        for (const propVal of this.propertyDict.values())
             propVal.readProperty(pkg, null);
 
         this.isLoading = false;
@@ -160,7 +146,6 @@ abstract class UObject implements ISerializable {
 
         if (pkg.tell() > offEnd)
             throw new Error(`Reader exceeded by '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
-
 
         pkg.seek(offEnd, "set");
     }
