@@ -94,9 +94,10 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     }
 
     public abstract readProperty(pkg: UPackage, tag: PropertyTag): UProperty<T1, T2>;
+    public toJSON(): any { throw new Error("Not yet implemented!"); }
 
     public toString(className: string, classTemplate: string, value: string) {
-        return `${className}${classTemplate ? `<${classTemplate}>` : ""}[${this.arrayDimensions > 1 ? value : "..."}]${this.arrayDimensions > 1 ? `(${this.arrayDimensions})` : ""}`;
+        return `${className}${classTemplate ? `<${classTemplate}>` : ""}[${this.arrayDimensions === 1 ? value : "..."}]${this.arrayDimensions > 1 ? `(${this.arrayDimensions})` : ""}`;
     }
 }
 
@@ -268,6 +269,13 @@ abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends
 
     public toString() {
         return super.toString(this.constructor.name, undefined, this.arrayDimensions === 1 ? this.propertyValue[0].toString() : null);
+    }
+
+    public toJSON() {
+        return {
+            type: this.constructor.dtype.name,
+            value: this.propertyValue
+        };
     }
 }
 
