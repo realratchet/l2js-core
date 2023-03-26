@@ -278,7 +278,7 @@ abstract class UObject implements ISerializable {
         for (const [propName, propValue] of this.propertyDict.entries()) {
             properties[propName] = propValue.toJSON();
 
-            debugger;
+            // debugger;
         }
 
         debugger;
