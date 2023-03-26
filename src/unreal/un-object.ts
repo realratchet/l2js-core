@@ -285,8 +285,6 @@ abstract class UObject implements ISerializable {
             // debugger;
         }
 
-        debugger;
-
         return {
             type: this.constructor.name,
             value: properties

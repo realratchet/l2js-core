@@ -1,6 +1,6 @@
 import BufferValue from "../../buffer-value";
 import { flagBitsToDict } from "../../utils/flags";
-import FArray, { FObjectArray, FPrimitiveArray } from "../un-array";
+import FArray, { FIndexArray, FObjectArray, FPrimitiveArray } from "../un-array";
 import UClass from "../un-class";
 import UField from "../un-field";
 import UObject from "../un-object";
@@ -171,9 +171,6 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
-        if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
-            debugger;
-
         pkg.read(this.propertyValue[tag.arrayIndex]);
         this.propertyValuePkg = pkg;
         this.isSet = true;
@@ -338,9 +335,6 @@ abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends
     public readProperty(pkg: UPackage, tag: PropertyTag) {
         this.propertyName = tag?.name || null;
 
-        if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
-            debugger;
-
         pkg.read(this.propertyValue[tag?.arrayIndex || 0]);
         this.propertyValuePkg = pkg;
         this.isSet = true;
@@ -420,6 +414,8 @@ class UStrProperty extends UProperty<BufferValue<"buffer">, string> {
     }
 
     public toJSON(): any {
+        console.log(this.getPropertyValue());
+
         return {
             type: "string",
             value: this.getPropertyValue()
@@ -626,7 +622,7 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
         } else if (type instanceof UIntProperty || type instanceof UFloatProperty) {
             value = type.constructor.name;
         } else if (type instanceof UByteProperty) {
-            debugger;
+            value = type.constructor.name;
         } else {
             debugger;
             throw new Error("Not yet implemented!");
@@ -636,21 +632,29 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
     }
 
     public toJSON(): any {
-        this.toString();
-
         const type = this.value.loadSelf();
         const unserialized = this.getPropertyValue();
+        const extras: Record<string, any> = {};
         let value = null;
+
+        if (this.arrayDimensions !== 1)
+            debugger;
 
         if (unserialized !== null) {
             if (type instanceof UStructProperty)
                 value = unserialized.map(v => v?.toJSON() || null);
-            else if (type instanceof UObjectProperty)
-                debugger;
-            else if (type instanceof UIntProperty || type instanceof UFloatProperty) {
-                debugger;
+            else if (type instanceof UObjectProperty) {
+                value = (unserialized as FObjectArray).getIndexList();
+                extras.package = pathToPkgName(this.propertyValuePkg.path);
+            } else if (type instanceof UIntProperty || type instanceof UFloatProperty) {
+                value = (unserialized as FPrimitiveArray<"uint32" | "float">).getTypedArray();
             } else if (type instanceof UByteProperty) {
-                debugger;
+                if (type.valueId !== 0) {
+                    debugger;
+                    throw new Error("Not yet implemented!");
+                } else {
+                    value = (unserialized as FPrimitiveArray<"uint8">).getTypedArray();
+                }
             } else {
                 debugger;
                 throw new Error("Not yet implemented!");
@@ -659,7 +663,8 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
 
         return {
             type: "list",
-            value
+            value,
+            ...extras
         };
     }
 

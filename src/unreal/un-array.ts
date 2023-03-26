@@ -91,6 +91,8 @@ class FObjectArray<T extends UObject = UObject> extends Array<T> implements ICon
         return this;
     }
 
+    public getIndexList(): number[] { return this.indexArray.map(v => v.value); }
+
     public loadSelf(): this {
         for (const obj of this)
             obj.loadSelf();
