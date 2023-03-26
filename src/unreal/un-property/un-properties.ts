@@ -407,7 +407,23 @@ class UStrProperty extends UProperty<BufferValue<"buffer">, string> {
     }
 
     public toString() {
-        return super.toString(this.constructor.name, undefined, this.arrayDimensions === 1 ? this.propertyValue[0].toString() : null);
+        return super.toString(this.constructor.name, undefined, this.arrayDimensions === 1 ? this.propertyValue[0].string : null);
+    }
+
+    public getPropertyValue(index: number = null): string | string[] {
+        const value = super.getPropertyValue(index) as any as BufferValue<"buffer"> | BufferValue<"buffer">[];
+
+        if (value instanceof Array)
+            return value.map(v => v.string);
+
+        return value.string;
+    }
+
+    public toJSON(): any {
+        return {
+            type: "string",
+            value: this.getPropertyValue()
+        };
     }
 }
 
@@ -624,10 +640,11 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
 
         const type = this.value.loadSelf();
         const unserialized = this.getPropertyValue();
+        let value = null;
 
         if (unserialized !== null) {
             if (type instanceof UStructProperty)
-                debugger;
+                value = unserialized.map(v => v?.toJSON() || null);
             else if (type instanceof UObjectProperty)
                 debugger;
             else if (type instanceof UIntProperty || type instanceof UFloatProperty) {
@@ -642,7 +659,7 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
 
         return {
             type: "list",
-            value: null
+            value
         };
     }
 
