@@ -89,7 +89,11 @@ abstract class UObject implements ISerializable {
 
     protected getPropertyMap() { return {}; }
 
+    public clone(): UObject {
+        const Constructor = this.constructor as any as new () => UObject;
 
+        return new Constructor().copy(this);
+    }
 
     public loadSelf() {
         if (!this.pkg || !this.pkg)

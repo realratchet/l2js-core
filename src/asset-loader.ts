@@ -135,6 +135,8 @@ function pathToPkgName(path: string): [string, SupportedExtensions_T] {
     return [_path.basename(path, ext), extUpper];
 }
 
+export { pathToPkgName };
+
 function getPackage(allPackages: Map<string, Map<SupportedExtensions_T, UPackage>>, pkgName: string, impType: string): UPackage {
     const packages = allPackages.get(pkgName.toLowerCase());
     const validExts = impToTypes.get(impType);
