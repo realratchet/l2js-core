@@ -202,9 +202,6 @@ abstract class UObject implements ISerializable {
     public load(pkg: UPackage, info: UExport): this;
     public load(pkg: UPackage, info: PropertyTag): this;
     public load(pkg: UPackage, info?: any) {
-        // if (info?.objectName === "NMovableSunLight0")
-        //     debugger;
-
         if (info instanceof UExport)
             return this.loadWithExport(pkg, info);
 
@@ -258,7 +255,7 @@ abstract class UObject implements ISerializable {
 
     protected doLoad(pkg: UPackage, exp: UExport): void { this.readNamedProps(pkg, exp); }
 
-    protected postLoad(pkg: UPackage, exp: UExport): void {
+    protected postLoad(pkg: UPackage, _exp: UExport): void {
         this.readHead = pkg.tell();
 
         if (this.skipRemaining) this.readHead = this.readTail;

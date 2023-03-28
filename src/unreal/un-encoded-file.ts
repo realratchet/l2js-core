@@ -56,8 +56,8 @@ abstract class UEncodedFile implements IEncodedFile {
         return new DataView(this.buffer, byteOffset + this.contentOffset, byteLength)
     }
 
-    read(target: number): BufferValue<"buffer">;
-    read<T extends ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
+    public read(target: number): BufferValue<"buffer">;
+    public read<T extends ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
 
     public read(target: any) {
         this.ensureReadable();
@@ -226,6 +226,8 @@ abstract class UEncodedFile implements IEncodedFile {
             resolve(signature);
         });
     }
+
+    public abstract toBuffer(): ArrayBuffer;
 }
 
 export default UEncodedFile;

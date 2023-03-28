@@ -17,7 +17,7 @@ abstract class AssetLoader {
     public getEnginePackage() { return this.pkgEngine; }
     public getNativePackage() { return this.pkgNative; }
 
-
+    // @ts-ignore
     private init(assetList: IAssetListInfo, { UPackage, UNativePackage }: typeof import("./unreal/un-package")) {
         this.packages.set("native", new Map([["U", this.createNativePackage(UNativePackage)]]))
 
