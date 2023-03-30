@@ -379,9 +379,9 @@ class UIntProperty extends UNumericProperty<"int32"> {
     declare ["constructor"]: typeof UNumericProperty & typeof UIntProperty;
 }
 
-class UStrProperty extends UProperty<BufferValue<"buffer">, string> {
-    protected makeDefault(): BufferValue<"buffer"> {
-        return BufferValue.allocBytes(0);
+class UStrProperty extends UProperty<BufferValue<"char">, string> {
+    protected makeDefault(): BufferValue<"char"> {
+        return new BufferValue(BufferValue.char);
     }
 
     public readProperty(pkg: UPackage, tag: PropertyTag) {
@@ -393,7 +393,11 @@ class UStrProperty extends UProperty<BufferValue<"buffer">, string> {
         if (!tag)
             debugger;
 
-        this.propertyValue[tag.arrayIndex] = pkg.read(BufferValue.allocBytes(tag.dataSize));
+        pkg.read(this.propertyValue[tag.arrayIndex]);
+
+        if (this.propertyValue[tag.arrayIndex].string.length + 2 != tag.dataSize)
+            debugger;
+
         this.propertyValuePkg = pkg;
         this.isSet = true;
 

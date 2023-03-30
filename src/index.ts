@@ -10,3 +10,10 @@ export { UExport } from "./unreal/un-export";
 export { UImport } from "./unreal/un-import";
 
 export { UObject } from "./unreal/un-object";
+
+import * as decoders from "./crypto/decryption/decoders";
+import * as encoders from "./crypto/encryption/encoders";
+
+const crypto = Object.freeze({ encoders, decoders });
+
+export { crypto };

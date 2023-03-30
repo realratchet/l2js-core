@@ -1,5 +1,5 @@
 import BufferValue from "../buffer-value";
-import * as decoders from "../decryption/decoders";
+import * as decoders from "../crypto/decryption/decoders";
 import * as _gmp from "gmp-wasm";
 
 let gmp: _gmp.GMPLib = null;
@@ -12,6 +12,9 @@ interface IEncodedFile {
 abstract class UEncodedFile implements IEncodedFile {
     public readonly path: string;
     public readonly isReadable = false;
+
+    protected moduloCryptKey: number;
+    protected signature: number;
 
     protected handle: this = null;
     protected promiseDecoding: Promise<BufferValue>;
@@ -76,22 +79,6 @@ abstract class UEncodedFile implements IEncodedFile {
             throw new Error("Invalid argument");
         }
     }
-
-    // public read(target: BufferValue<T> | number) {
-    //     this.ensureReadable();
-
-    //     if (typeof (target) === "number") {
-    //         const _target = BufferValue.allocBytes(target);
-
-    //         this.offset += _target.readValue(this.buffer, this.offset);
-
-    //         return _target;
-    //     } else {
-    //         this.offset += target.readValue(this.buffer, this.offset);
-
-    //         return target;
-    //     }
-    // }
 
     public tell() { return this.offset - this.contentOffset; }
 
@@ -196,14 +183,14 @@ abstract class UEncodedFile implements IEncodedFile {
 
                 if (version.startsWith("1")) {
 
-                    const cryptKey = 0xC1 ^ this.read(new BufferValue(BufferValue.uint8)).value;
+                    this.moduloCryptKey = this.read(new BufferValue(BufferValue.uint8)).value;
 
                     this.contentOffset = HEADER_SIZE;
                     this.seek(0, "set");
 
                     tStart = performance.now();
 
-                    this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), cryptKey);
+                    this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), this.moduloCryptKey);
 
                     this.read(signature);
                 } else if (version.startsWith("4")) {
@@ -223,6 +210,7 @@ abstract class UEncodedFile implements IEncodedFile {
                 console.log(`'${this.path}' loaded in ${performance.now() - tStart} ms`);
             }
 
+            this.signature = signature.value;
             resolve(signature);
         });
     }

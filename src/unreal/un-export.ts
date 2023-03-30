@@ -14,7 +14,7 @@ class UExport<T extends UObject = UObject> {
     public _flags: ObjectFlags_T;
     public objectFlags: Readonly<Record<ObjectFlags_T, boolean>>;
 
-    public size: number;
+    public size: number = 0;
     public offset: number;
 
     public object: T = null;

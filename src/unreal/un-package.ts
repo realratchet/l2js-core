@@ -62,6 +62,15 @@ abstract class UPackage extends UEncodedFile {
         const int32 = new BufferValue(BufferValue.uint32);
 
         header.version = readable.read(uint32).value;
+
+        // const v = new DataView(new ArrayBuffer(4));
+        // v.setUint32(0, header.version, true);
+        // const b = new BufferValue(BufferValue.uint32);
+
+        // b.bytes = v;
+
+        // debugger;
+
         header.packageFlags = readable.read(int32).value;
         header.nameCount = readable.read(int32).value;
         header.nameOffset = readable.read(int32).value;
@@ -112,10 +121,9 @@ abstract class UPackage extends UEncodedFile {
             }
         }
 
-        const [nameTable, nameHash] = readable.loadNames(header);
-
-        const exports = readable.loadExports(header, nameTable);
-        const imports = readable.loadImports(header, nameTable);
+        const [nameTable, nameHash] = readable.loadNameTable(header);
+        const imports = readable.loadImportTable(header, nameTable);
+        const exports = readable.loadExportTable(header, nameTable);
 
         readable.exports = exports;
         readable.imports = imports;
@@ -157,7 +165,6 @@ abstract class UPackage extends UEncodedFile {
                     }
                 }
             }
-
 
             addPackageDependendency(nameTable, nameHash, imports, "Native")
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "State");
@@ -216,7 +223,7 @@ abstract class UPackage extends UEncodedFile {
         return this;
     }
 
-    protected loadNames(header: UHeader): [UName[], Map<string, number>] {
+    protected loadNameTable(header: UHeader): [UName[], Map<string, number>] {
         this.seek(header.nameOffset, "set");
 
         const nameTable: UName[] = [];
@@ -238,7 +245,7 @@ abstract class UPackage extends UEncodedFile {
         return [nameTable, nameHash];
     }
 
-    protected loadExports(header: UHeader, nameTable: UName[]) {
+    protected loadExportTable(header: UHeader, nameTable: UName[]) {
         this.seek(header.exportOffset, "set");
 
         const exports: UExport[] = [];
@@ -268,11 +275,11 @@ abstract class UPackage extends UEncodedFile {
         return exports;
     }
 
-    protected loadImports(header: UHeader, nameTable: UName[]) {
+    protected loadImportTable(header: UHeader, nameTable: UName[]) {
         this.seek(header.importOffset, "set");
 
         const imports: UImport[] = [];
-        const index = new BufferValue(BufferValue.compat32);
+        const compat32 = new BufferValue(BufferValue.compat32);
         const int32 = new BufferValue(BufferValue.int32);
 
         for (let i = 0, ic = header.importCount; i < ic; i++) {
@@ -280,18 +287,15 @@ abstract class UPackage extends UEncodedFile {
 
             uimport.index = i;
 
-            this.read(index);
-            uimport.idClassPackage = index.value;
+            uimport.idClassPackage = this.read(compat32).value;
             uimport.classPackage = nameTable[uimport.idClassPackage].name;
 
-            this.read(index);
-            uimport.idClassName = index.value;
+            uimport.idClassName = this.read(compat32).value;
             uimport.className = nameTable[uimport.idClassName].name;
 
             uimport.idPackage = this.read(int32).value;
 
-            this.read(index);
-            uimport.idObjectName = index.value;
+            uimport.idObjectName = this.read(compat32).value;
             uimport.objectName = nameTable[uimport.idObjectName].name;
 
             imports.push(uimport);
