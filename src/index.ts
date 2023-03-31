@@ -17,3 +17,10 @@ import * as encoders from "./crypto/encryption/encoders";
 const crypto = Object.freeze({ encoders, decoders });
 
 export { crypto };
+
+import * as UnProperties from "./unreal/un-property/un-properties";
+export { UNP_PropertyMasks, UNP_PropertyTypes, UNP_DataTypeSizes } from "./unreal/un-property/un-property-tag";
+
+
+
+export { UnProperties };

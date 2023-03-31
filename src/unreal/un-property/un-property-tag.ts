@@ -40,15 +40,17 @@ class PropertyTag {
             this.structName = pkg.nameTable[compat32.value].name;
         }
 
+
+
         switch (info & UNP_PropertyMasks.PROPERTY_SIZE_MASK) {
-            case 0x00: this.dataSize = 1; break;
-            case 0x10: this.dataSize = 2; break;
-            case 0x20: this.dataSize = 4; break;
-            case 0x30: this.dataSize = 12; break;
-            case 0x40: this.dataSize = 16; break;
-            case 0x50: this.dataSize = pkg.read(new BufferValue(BufferValue.uint8)).value; break;
-            case 0x60: this.dataSize = pkg.read(new BufferValue(BufferValue.uint16)).value; break;
-            case 0x70: this.dataSize = pkg.read(new BufferValue(BufferValue.uint32)).value; break;
+            case UNP_DataTypeSizes.StaticSize1: this.dataSize = 1; break;
+            case UNP_DataTypeSizes.StaticSize2: this.dataSize = 2; break;
+            case UNP_DataTypeSizes.StaticSize4: this.dataSize = 4; break;
+            case UNP_DataTypeSizes.StaticSize12: this.dataSize = 12; break;
+            case UNP_DataTypeSizes.StaticSize16: this.dataSize = 16; break;
+            case UNP_DataTypeSizes.DynamicSizeUint8: this.dataSize = pkg.read(new BufferValue(BufferValue.uint8)).value; break;
+            case UNP_DataTypeSizes.DynamicSizeUint16: this.dataSize = pkg.read(new BufferValue(BufferValue.uint16)).value; break;
+            case UNP_DataTypeSizes.DynamicSizeUint32: this.dataSize = pkg.read(new BufferValue(BufferValue.uint32)).value; break;
         }
 
         this.arrayIndex = 0;
@@ -127,5 +129,16 @@ enum UNP_PropertyMasks {
     PROPERTY_ARRAY_MASK /**/ = 0x80
 };
 
+enum UNP_DataTypeSizes {
+    StaticSize1 = 0x00,
+    StaticSize2 = 0x10,
+    StaticSize4 = 0x20,
+    StaticSize12 = 0x30,
+    StaticSize16 = 0x40,
+    DynamicSizeUint8 = 0x50,
+    DynamicSizeUint16 = 0x60,
+    DynamicSizeUint32 = 0x70,
+};
+
 export default PropertyTag;
-export { PropertyTag, UNP_PropertyTypes, UNP_PropertyMasks };
+export { PropertyTag, UNP_PropertyTypes, UNP_PropertyMasks, UNP_DataTypeSizes };

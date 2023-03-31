@@ -28,7 +28,7 @@ abstract class UObject implements ISerializable {
     protected isReady = false;
 
     protected pkg: UPackage;
-    protected propertyDict = new Map<string, UProperty>();
+    public readonly propertyDict = new Map<string, UProperty>();
 
     protected setReadPointers(exp: UExport) {
         this.readStart = this.readHead = exp.offset;
@@ -66,7 +66,6 @@ abstract class UObject implements ISerializable {
 
     protected readNamedProps(pkg: UPackage, _exp: UExport) {
         pkg.seek(this.readHead, "set");
-
 
         if (this.readHead < this.readTail) {
             do {
@@ -144,6 +143,7 @@ abstract class UObject implements ISerializable {
         //     debugger;
 
         property.readProperty(pkg, tag);
+        property.isDefault = false;
 
         if (pkg.tell() < offEnd)
             console.warn(`Unread '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
