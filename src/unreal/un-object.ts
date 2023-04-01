@@ -67,18 +67,29 @@ abstract class UObject implements ISerializable {
     protected readNamedProps(pkg: UPackage, _exp: UExport) {
         pkg.seek(this.readHead, "set");
 
+        // if (this.constructor.name === "PointRegion")
+        //     debugger;
+
+        // console.log(_exp.size);
+
         if (this.readHead < this.readTail) {
             do {
                 const tag = PropertyTag.from(pkg, this.readHead);
 
+                console.log(tag.toString());
+
                 if (!tag.isValid()) break;
 
-                this.loadProperty(pkg, tag);
+                // this.loadProperty(pkg, tag);
+
+                pkg.seek(tag.dataSize);
 
                 this.readHead = pkg.tell();
 
             } while (this.readHead < this.readTail);
         }
+
+        debugger;
 
         this.readHead = pkg.tell();
     }
@@ -136,6 +147,9 @@ abstract class UObject implements ISerializable {
 
         const property = this.propertyDict.get(varName);
 
+        // if (property.constructor.name === "StructProperty")
+        //     debugger;
+
         // if (property.isSet)
         //     debugger;
 
@@ -143,7 +157,7 @@ abstract class UObject implements ISerializable {
         //     debugger;
 
         property.readProperty(pkg, tag);
-        property.isDefault = false;
+        property.isDefault[tag?.arrayIndex || 0] = false;
 
         if (pkg.tell() < offEnd)
             console.warn(`Unread '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);

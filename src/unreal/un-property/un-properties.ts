@@ -15,15 +15,15 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public propertyName: string;
     public propertyFlags: Readonly<Record<string, boolean>>;
 
-    public isSet = false;
-    public isDefault = false;
-
+    
     protected flags: number;
     protected replicationOffset: number;
     protected categoryNameId: number;
     protected categoryName: string;
-
-    protected propertyValue: T1[];
+    
+    public isSet: boolean[];
+    public isDefault: boolean[];
+    public propertyValue: T1[];
     protected propertyValuePkg: UPackage;
 
     // public readonly isNumericType: boolean = false;
@@ -55,6 +55,9 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
         this.propertyValue = new Array<T1>(this.arrayDimensions);
         this.propertyValuePkg = pkg;
+        
+        this.isSet = new Array(this.arrayDimensions).fill(false);
+        this.isDefault = new Array(this.arrayDimensions).fill(false);
 
         for (let i = 0; i < this.arrayDimensions; i++) {
             this.propertyValue[i] = this.makeDefault();
@@ -80,7 +83,8 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public copy(other: UProperty<T1, T2>) {
         this.isReady = other.isReady;
         this.isLoading = other.isLoading;
-        this.isDefault = other.isDefault;
+        this.isDefault = other.isDefault.slice();
+        this.isSet = other.isSet.slice();
 
         this.arrayDimensions = other.arrayDimensions;
         this.flags = other.flags;
@@ -173,7 +177,7 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
 
         pkg.read(this.propertyValue[tag.arrayIndex]);
         this.propertyValuePkg = pkg;
-        this.isSet = true;
+        this.isSet[tag.arrayIndex] = true;
 
         return this;
     }
@@ -259,7 +263,7 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
 
         this.propertyValuePkg = pkg;
         pkg.read(this.propertyValue[tag.arrayIndex]);
-        this.isSet = true;
+        this.isSet[tag.arrayIndex] = true;
 
         return this;
     }
@@ -301,7 +305,7 @@ class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportPr
 
         this.propertyValue[tag.arrayIndex] = struct;
         this.propertyValuePkg = pkg;
-        this.isSet = true;
+        this.isSet[tag.arrayIndex] = true;
 
         return this;
     }
@@ -337,7 +341,7 @@ abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends
 
         pkg.read(this.propertyValue[tag?.arrayIndex || 0]);
         this.propertyValuePkg = pkg;
-        this.isSet = true;
+        this.isSet[tag?.arrayIndex || 0] = true;
 
         return this;
     }
@@ -399,7 +403,7 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
             debugger;
 
         this.propertyValuePkg = pkg;
-        this.isSet = true;
+        this.isSet[tag.arrayIndex] = true;
 
         return this;
     }
@@ -475,7 +479,7 @@ class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
 
         this.propertyValuePkg = pkg;
         pkg.read(this.propertyValue[tag.arrayIndex]);
-        this.isSet = true;
+        this.isSet[tag.arrayIndex] = true;
 
         return this;
     }
@@ -522,7 +526,7 @@ class UByteProperty extends UBaseExportProperty<UEnum, BufferValue<"uint8">, num
 
         pkg.read(this.propertyValue[tag?.arrayIndex || 0]);
         this.propertyValuePkg = pkg;
-        this.isSet = true;
+        this.isSet[tag?.arrayIndex || 0] = true;
 
         return this;
     }

@@ -93,7 +93,7 @@ class UStruct extends UField {
 
         const defaultProperty = property.loadSelf().clone().readProperty(pkg, tag);
 
-        defaultProperty.isDefault = true;
+        defaultProperty.isDefault[tag?.arrayIndex || 0] = true;
 
         this.defaultProperties.set(varName, defaultProperty);
 
