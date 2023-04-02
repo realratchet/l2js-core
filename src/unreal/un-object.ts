@@ -72,24 +72,121 @@ abstract class UObject implements ISerializable {
 
         // console.log(_exp.size);
 
+        // if (this.objectName === "Exp_NMovableSunLight0") {
+        //     debugger;
+
+        //     for (const prop of this.propertyDict.values()) {
+        //         for (let i = 0; i < prop.arrayDimensions; i++) {
+        //             if (!prop.isSet[i] || prop.isDefault[i])
+        //                 continue;
+
+        //             console.log((prop as any).toString(), i);
+        //         }
+        //     }
+
+        //     debugger;
+        // }
+
+        // if (this.objectName === "Exp_NMovableSunLight0") {
+        //     debugger;
+        // }
+
         if (this.readHead < this.readTail) {
             do {
+                const offset = pkg.tell();
                 const tag = PropertyTag.from(pkg, this.readHead);
-
-                console.log(tag.toString());
 
                 if (!tag.isValid()) break;
 
-                // this.loadProperty(pkg, tag);
+                // if (this.objectName === "Exp_NMovableSunLight0")
+                //     debugger;
 
-                pkg.seek(tag.dataSize);
+
+
+                this.loadProperty(pkg, tag);
+
+                // if (this.objectName === "Exp_NMovableSunLight0")
+                if (this.objectName === "Exp_Region[Struct]")
+                    console.log("Reading property: ", this.objectName, tag.name, tag.dataSize, pkg.tell() - offset);
+
+
+                // if (this.objectName === "Exp_NMovableSunLight0") {
+                //     debugger;
+                // }
+
+                // if (this.objectName === "Exp_NMovableSunLight0") {
+                //     console.log(tag.toString());
+
+                //     debugger;
+
+
+                //     for (const prop of this.propertyDict.values()) {
+                //         if (prop.propertyName === "LightBrightness")
+                //             debugger;
+
+                //         for (let i = 0; i < prop.arrayDimensions; i++) {
+
+
+                //             if (!prop.isSet[i] || prop.isDefault[i])
+                //                 continue;
+
+                //             const str = (prop as any).toString();
+
+                //             console.log(str, i);
+                //         }
+                //     }
+
+                //     debugger;
+                // }
+
+                // pkg.seek(tag.dataSize);
 
                 this.readHead = pkg.tell();
 
             } while (this.readHead < this.readTail);
         }
 
-        debugger;
+        /*
+                PropertyTag<Byte>[LightEffect](size=1)
+                PropertyTag<Bool>[bSunlightColor](size=0)
+                PropertyTag<Bool>[bStatic](size=0)
+                PropertyTag<Object>[Texture](size=2)
+                PropertyTag<Bool>[bIgnoredRange](size=0)
+                PropertyTag<Bool>[bMovable](size=0)
+                PropertyTag<Bool>[bDirectional](size=0)
+            */
+
+        /*
+            Reading property:  Exp_NMovableSunLight0 LightBrightness 4
+            Reading property:  Exp_NMovableSunLight0 bDynamicActorFilterState 0
+            Reading property:  Exp_NMovableSunLight0 Level 1
+            Reading property:  Exp_NMovableSunLight0 Region 13
+            Reading property:  Exp_NMovableSunLight0 Tag 2
+            Reading property:  Exp_NMovableSunLight0 bSunAffect 0
+            Reading property:  Exp_NMovableSunLight0 PhysicsVolume 2
+            Reading property:  Exp_NMovableSunLight0 Location 12
+            Reading property:  Exp_NMovableSunLight0 Rotation 12
+            Reading property:  Exp_NMovableSunLight0 DrawScale 4
+            Reading property:  Exp_NMovableSunLight0 SwayRotationOrig 12
+            Reading property:  Exp_NMovableSunLight0 TexModifyInfo 32
+        */
+
+        // if (this.objectName === "Exp_NMovableSunLight0") {
+        //     debugger;
+
+        //     for (const prop of this.propertyDict.values()) {
+        //         for (let i = 0; i < prop.arrayDimensions; i++) {
+        //             if (!prop.isSet[i] || prop.isDefault[i])
+        //                 continue;
+
+        //             console.log((prop as any).toString(), i);
+        //         }
+        //     }
+
+        //     debugger;
+        // }
+
+        // debugger;
 
         this.readHead = pkg.tell();
     }

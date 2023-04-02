@@ -15,12 +15,12 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public propertyName: string;
     public propertyFlags: Readonly<Record<string, boolean>>;
 
-    
+
     protected flags: number;
     protected replicationOffset: number;
     protected categoryNameId: number;
     protected categoryName: string;
-    
+
     public isSet: boolean[];
     public isDefault: boolean[];
     public propertyValue: T1[];
@@ -32,6 +32,10 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
         super.preLoad(pkg, exp);
 
         this.propertyName = exp.objectName;
+
+        // if (this.propertyName === "LightBrightness")
+        //     debugger;
+
     }
 
     protected doLoad(pkg: UPackage, exp: UExport): void {
@@ -55,7 +59,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
         this.propertyValue = new Array<T1>(this.arrayDimensions);
         this.propertyValuePkg = pkg;
-        
+
         this.isSet = new Array(this.arrayDimensions).fill(false);
         this.isDefault = new Array(this.arrayDimensions).fill(false);
 
@@ -81,10 +85,17 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     }
 
     public copy(other: UProperty<T1, T2>) {
+        // if (other.propertyName === "LightBrightness")
+        //     debugger;
+
+        if (this.constructor.name !== other.constructor.name)
+            throw new Error("Invalid constructor");
+
         this.isReady = other.isReady;
         this.isLoading = other.isLoading;
         this.isDefault = other.isDefault.slice();
-        this.isSet = other.isSet.slice();
+        // this.isSet = other.isSet.slice();
+        this.isSet = new Array(other.arrayDimensions).fill(false);
 
         this.arrayDimensions = other.arrayDimensions;
         this.flags = other.flags;
@@ -136,9 +147,8 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public abstract readProperty(pkg: UPackage, tag: PropertyTag): UProperty<T1, T2>;
     public toJSON() { throw new Error("Not implemented message."); }
 
-
     public toString(className: string, classTemplate: string, value: string) {
-        return `${className}${classTemplate ? `<${classTemplate}>` : ""}[${this.arrayDimensions === 1 ? value : "..."}]${this.arrayDimensions > 1 ? `(${this.arrayDimensions})` : ""}`;
+        return `${className}${classTemplate ? `<${classTemplate}>` : ""}[${this.arrayDimensions === 1 ? value : "..."}]${this.arrayDimensions > 1 ? `(${this.arrayDimensions})` : ""}(${this.propertyName})`;
     }
 }
 
@@ -452,6 +462,8 @@ class UBoolProperty extends UProperty<boolean, boolean> {
 
         this.propertyValuePkg = pkg;
         this.propertyValue[tag.arrayIndex] = tag.boolValue;
+        this.isSet[tag.arrayIndex] = true;
+        this.propertyName = tag.name;
 
         return this;
     }
