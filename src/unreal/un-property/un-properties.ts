@@ -432,8 +432,6 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
     }
 
     public toJSON(): any {
-        console.log(this.getPropertyValue());
-
         return {
             type: "string",
             value: this.getPropertyValue()
@@ -629,6 +627,8 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
             debugger;
             throw new Error("Not yet implemented!");
         }
+
+        this.isSet[tag.arrayIndex] = true;
 
         return this;
     }

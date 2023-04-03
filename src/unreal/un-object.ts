@@ -3,6 +3,7 @@ import UExport from "./un-export";
 import ObjectFlags_T from "./un-object-flags";
 import UPackage from "./un-package";
 import PropertyTag from "./un-property/un-property-tag";
+import UStack from "./un-stack";
 
 
 abstract class UObject implements ISerializable {
@@ -10,12 +11,14 @@ abstract class UObject implements ISerializable {
 
     public static readonly CLEANUP_NAMESPACE = true;
     public static readonly isSerializable = true;
+    public static UNREAD_AS_NATIVE = false;
 
     public readonly isObject = true;
 
     public objectName = "Exp_None";
     public exportIndex?: number = null;
     public exp?: UExport = null;
+    public stack?: UStack = null;
 
     protected skipRemaining = false;
     protected careUnread = true;
@@ -29,6 +32,7 @@ abstract class UObject implements ISerializable {
 
     protected pkg: UPackage;
     public readonly propertyDict = new Map<string, UProperty>();
+    public nativeBytes?: BufferValue<"buffer"> = null;
 
     protected setReadPointers(exp: UExport) {
         this.readStart = this.readHead = exp.offset;
@@ -87,12 +91,18 @@ abstract class UObject implements ISerializable {
         //     debugger;
         // }
 
-        // if (this.objectName === "Exp_NMovableSunLight0") {
+        // if (this.objectName === "Exp_SpriteEmitter0")
         //     debugger;
-        // }
+
+        // if (this.objectName === "Exp_ColorMultiplierRange[Struct<RangeVector>]")
+        //     debugger;
+
 
         if (this.readHead < this.readTail) {
             do {
+                // if (this.objectName === "Exp_TexModifyInfo[Struct]")
+                //     debugger;
+
                 const offset = pkg.tell();
                 const tag = PropertyTag.from(pkg, this.readHead);
 
@@ -106,7 +116,10 @@ abstract class UObject implements ISerializable {
                 this.loadProperty(pkg, tag);
 
                 // if (this.objectName === "Exp_NMovableSunLight0")
-                if (this.objectName === "Exp_Region[Struct]")
+                // if (this.objectName === "Exp_Region[Struct]")
+                // if (this.objectName === "Exp_TexModifyInfo[Struct]")
+                // if (this.objectName === "Exp_SpriteEmitter0")
+                if (this.objectName === "Exp_ColorMultiplierRange[Struct<RangeVector>]")
                     console.log("Reading property: ", this.objectName, tag.name, tag.dataSize, pkg.tell() - offset);
 
 
@@ -283,27 +296,7 @@ abstract class UObject implements ISerializable {
 
         if (flags & ObjectFlags_T.HasStack && exp.size > 0) {
 
-            const offset = pkg.tell();
-            const compat32 = new BufferValue(BufferValue.compat32);
-            const int64 = new BufferValue(BufferValue.int64);
-            const int32 = new BufferValue(BufferValue.int32);
-
-            const nodeId = pkg.read(compat32).value;
-            const stateNodeId = pkg.read(compat32).value;
-
-            const node = pkg.fetchObject(nodeId);
-            const stateNode = pkg.fetchObject(stateNodeId);
-
-            const probeMask = pkg.read(int64).value;
-            const latentAction = pkg.read(int32).value;
-
-            if (node !== null) {
-                const offset = pkg.read(compat32).value;
-
-                if (offset !== -1) {
-                    debugger;
-                }
-            }
+            this.stack = UStack.loadStack(pkg);
         }
 
         this.readHead = pkg.tell();
@@ -325,7 +318,7 @@ abstract class UObject implements ISerializable {
     protected loadWithPropertyTag(pkg: UPackage, tag: PropertyTag): this {
         const exp = new UExport();
 
-        exp.objectName = `${tag.name}[Struct]`;
+        exp.objectName = `${tag.name}[Struct<${tag.structName}>]`;
         exp.offset = pkg.tell();
         exp.size = tag.dataSize;
         exp.isFake = true;
@@ -369,9 +362,13 @@ abstract class UObject implements ISerializable {
     protected postLoad(pkg: UPackage, _exp: UExport): void {
         this.readHead = pkg.tell();
 
+        if (UObject.UNREAD_AS_NATIVE && this.bytesUnread > 0)
+            this.nativeBytes = pkg.read(BufferValue.allocBytes(this.readTail - this.readHead));
+
+
         if (this.skipRemaining) this.readHead = this.readTail;
         if (this.bytesUnread > 0 && this.careUnread) {
-            debugger;
+            // debugger;
             const constructorName = (this.constructor as any).isDynamicClass ? `${(this.constructor as any).friendlyName}[Dynamic]` : this.constructor.name;
             console.warn(`Unread '${this.objectName}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}', only ${this.readHead - this.readStart} bytes read.`);
         }

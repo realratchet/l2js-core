@@ -9,6 +9,7 @@ class FArray<T extends UObject | FNumber<NumberTypes_T> | IConstructable> extend
 
     public getElemCount() { return this.length; }
     public getElem(idx: number): T { return this[idx]; }
+    public getConstructor() { return this.Constructor; }
 
     public constructor(constr: { new(...pars: any): T }) {
         super();
@@ -201,12 +202,16 @@ class FPrimitiveArray<T extends NumberTypes_T> implements IConstructable {
         return this;
     }
 
+    public getArrayBufferSlice() {
+        return this.array.buffer.slice(this.array.byteOffset, this.array.byteOffset + this.getByteLength());
+    }
+
     public getTypedArray() {
         try {
             return new this.Constructor.dtype(this.array.buffer, this.array.byteOffset, this.getElemCount());
         } catch (e) {
             if (e.message.includes("should be a multiple of"))
-                return new this.Constructor.dtype(this.array.buffer.slice(this.array.byteOffset, this.array.byteOffset + this.getByteLength()));
+                return new this.Constructor.dtype(this.getArrayBufferSlice());
 
             throw e;
         }

@@ -224,3 +224,5 @@ interface IBufferValueProperty<T extends ValueTypeNames_T = ValueTypeNames_T> {
     // readonly isNumericType: true;
     // buildBuffer(): BufferValue<T>;
 }
+
+type UStack = import("./src/unreal/un-stack").UStack;
