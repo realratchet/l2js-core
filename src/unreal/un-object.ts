@@ -71,135 +71,19 @@ abstract class UObject implements ISerializable {
     protected readNamedProps(pkg: UPackage, _exp: UExport) {
         pkg.seek(this.readHead, "set");
 
-        // if (this.constructor.name === "PointRegion")
-        //     debugger;
-
-        // console.log(_exp.size);
-
-        // if (this.objectName === "Exp_NMovableSunLight0") {
-        //     debugger;
-
-        //     for (const prop of this.propertyDict.values()) {
-        //         for (let i = 0; i < prop.arrayDimensions; i++) {
-        //             if (!prop.isSet[i] || prop.isDefault[i])
-        //                 continue;
-
-        //             console.log((prop as any).toString(), i);
-        //         }
-        //     }
-
-        //     debugger;
-        // }
-
-        // if (this.objectName === "Exp_SpriteEmitter0")
-        //     debugger;
-
-        // if (this.objectName === "Exp_ColorMultiplierRange[Struct<RangeVector>]")
-        //     debugger;
-
-
         if (this.readHead < this.readTail) {
             do {
-                // if (this.objectName === "Exp_TexModifyInfo[Struct]")
-                //     debugger;
-
-                const offset = pkg.tell();
                 const tag = PropertyTag.from(pkg, this.readHead);
 
                 if (!tag.isValid()) break;
 
-                // if (this.objectName === "Exp_NMovableSunLight0")
-                //     debugger;
-
-
 
                 this.loadProperty(pkg, tag);
-
-                // if (this.objectName === "Exp_NMovableSunLight0")
-                // if (this.objectName === "Exp_Region[Struct]")
-                // if (this.objectName === "Exp_TexModifyInfo[Struct]")
-                // if (this.objectName === "Exp_SpriteEmitter0")
-                if (this.objectName === "Exp_ColorMultiplierRange[Struct<RangeVector>]")
-                    console.log("Reading property: ", this.objectName, tag.name, tag.dataSize, pkg.tell() - offset);
-
-
-                // if (this.objectName === "Exp_NMovableSunLight0") {
-                //     debugger;
-                // }
-
-                // if (this.objectName === "Exp_NMovableSunLight0") {
-                //     console.log(tag.toString());
-
-                //     debugger;
-
-
-                //     for (const prop of this.propertyDict.values()) {
-                //         if (prop.propertyName === "LightBrightness")
-                //             debugger;
-
-                //         for (let i = 0; i < prop.arrayDimensions; i++) {
-
-
-                //             if (!prop.isSet[i] || prop.isDefault[i])
-                //                 continue;
-
-                //             const str = (prop as any).toString();
-
-                //             console.log(str, i);
-                //         }
-                //     }
-
-                //     debugger;
-                // }
-
-                // pkg.seek(tag.dataSize);
 
                 this.readHead = pkg.tell();
 
             } while (this.readHead < this.readTail);
         }
-
-        /*
-                PropertyTag<Byte>[LightEffect](size=1)
-                PropertyTag<Bool>[bSunlightColor](size=0)
-                PropertyTag<Bool>[bStatic](size=0)
-                PropertyTag<Object>[Texture](size=2)
-                PropertyTag<Bool>[bIgnoredRange](size=0)
-                PropertyTag<Bool>[bMovable](size=0)
-                PropertyTag<Bool>[bDirectional](size=0)
-            */
-
-        /*
-            Reading property:  Exp_NMovableSunLight0 LightBrightness 4
-            Reading property:  Exp_NMovableSunLight0 bDynamicActorFilterState 0
-            Reading property:  Exp_NMovableSunLight0 Level 1
-            Reading property:  Exp_NMovableSunLight0 Region 13
-            Reading property:  Exp_NMovableSunLight0 Tag 2
-            Reading property:  Exp_NMovableSunLight0 bSunAffect 0
-            Reading property:  Exp_NMovableSunLight0 PhysicsVolume 2
-            Reading property:  Exp_NMovableSunLight0 Location 12
-            Reading property:  Exp_NMovableSunLight0 Rotation 12
-            Reading property:  Exp_NMovableSunLight0 DrawScale 4
-            Reading property:  Exp_NMovableSunLight0 SwayRotationOrig 12
-            Reading property:  Exp_NMovableSunLight0 TexModifyInfo 32
-        */
-
-        // if (this.objectName === "Exp_NMovableSunLight0") {
-        //     debugger;
-
-        //     for (const prop of this.propertyDict.values()) {
-        //         for (let i = 0; i < prop.arrayDimensions; i++) {
-        //             if (!prop.isSet[i] || prop.isDefault[i])
-        //                 continue;
-
-        //             console.log((prop as any).toString(), i);
-        //         }
-        //     }
-
-        //     debugger;
-        // }
-
-        // debugger;
 
         this.readHead = pkg.tell();
     }
@@ -256,15 +140,6 @@ abstract class UObject implements ISerializable {
             throw new Error(`Cannot map property '${propName}' -> ${varName}`);
 
         const property = this.propertyDict.get(varName);
-
-        // if (property.constructor.name === "StructProperty")
-        //     debugger;
-
-        // if (property.isSet)
-        //     debugger;
-
-        // if (property.arrayDimensions !== 1 || tag.arrayIndex !== 0)
-        //     debugger;
 
         property.readProperty(pkg, tag);
         property.isDefault[tag?.arrayIndex || 0] = false;
@@ -368,7 +243,6 @@ abstract class UObject implements ISerializable {
 
         if (this.skipRemaining) this.readHead = this.readTail;
         if (this.bytesUnread > 0 && this.careUnread) {
-            // debugger;
             const constructorName = (this.constructor as any).isDynamicClass ? `${(this.constructor as any).friendlyName}[Dynamic]` : this.constructor.name;
             console.warn(`Unread '${this.objectName}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}', only ${this.readHead - this.readStart} bytes read.`);
         }
@@ -386,8 +260,6 @@ abstract class UObject implements ISerializable {
 
         for (const [propName, propValue] of this.propertyDict.entries()) {
             properties[propName] = propValue.toJSON();
-
-            // debugger;
         }
 
         return {
