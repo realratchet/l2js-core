@@ -38,12 +38,27 @@ abstract class AssetLoader {
 
         this.pkgCore = this.getPackage("core", "Script");
         this.pkgEngine = this.getPackage("engine", "Script");
-        this.pkgNative = this.getPackage("native", "Script");
+        this.pkgNative = this.getPackage("native");
 
         return this;
     }
 
-    public getPackage<T extends string | "native">(pkgName: T, impType: string): ReturnType<T> {
+    public getPackage<T extends string | "native">(packagePath: T): ReturnType<T>;
+    public getPackage<T extends string | "native">(pkgName: T, impType?: string): ReturnType<T>;
+
+    public getPackage<T extends string | "native">(pkgName: T, impType?: string): ReturnType<T> {
+
+        if (arguments.length === 1) {
+            if (pkgName === "native")
+                return getPackage(this.packages, pkgName, "Script") as UNativePackage;
+
+            const [_pkgName, _pkgExt] = pathToPkgName(pkgName);
+            const potentialPkgs = this.packages.get(_pkgName);
+            const pkg = potentialPkgs.get(_pkgExt);
+
+            return pkg as any;
+        }
+
         const pkg = getPackage(this.packages, pkgName, impType);
 
         if (pkg === null)
