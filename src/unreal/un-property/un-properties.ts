@@ -217,7 +217,8 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
         return {
             type: "object",
             package: pathToPkgName(this.propertyValuePkg.path),
-            value: this.arrayDimensions === 1 ? values[0] : values
+            value: this.arrayDimensions === 1 ? values[0] : values,
+            category: this.categoryName
         };
     }
 }
@@ -292,7 +293,8 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
         return {
             type: "class",
             package: pathToPkgName(this.propertyValuePkg.path),
-            value: this.arrayDimensions === 1 ? values[0] : values
+            value: this.arrayDimensions === 1 ? values[0] : values,
+            category: this.categoryName
         };
     }
 }
@@ -338,7 +340,8 @@ class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportPr
         return {
             type: "struct",
             name: this.value.friendlyName,
-            value
+            value,
+            category: this.categoryName
         };
     }
 }
@@ -376,7 +379,8 @@ abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends
     public toJSON() {
         return {
             type: this.constructor.dtype.name,
-            value: this.getPropertyValue()
+            value: this.getPropertyValue(),
+            category: this.categoryName
         };
     }
 }
@@ -434,7 +438,8 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
     public toJSON(): any {
         return {
             type: "string",
-            value: this.getPropertyValue()
+            value: this.getPropertyValue(),
+            category: this.categoryName
         };
     }
 }
@@ -473,7 +478,8 @@ class UBoolProperty extends UProperty<boolean, boolean> {
     public toJSON(): any {
         return {
             type: "boolean",
-            value: this.getPropertyValue()
+            value: this.getPropertyValue(),
+            category: this.categoryName
         };
     }
 }
@@ -517,7 +523,8 @@ class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
     public toJSON(): any {
         return {
             type: "name",
-            value: this.getPropertyValue()
+            value: this.getPropertyValue(),
+            category: this.categoryName
         };
     }
 }
@@ -586,7 +593,8 @@ class UByteProperty extends UBaseExportProperty<UEnum, BufferValue<"uint8">, num
             return {
                 type: "enum",
                 names,
-                value: this.getPropertyValue()
+                value: this.getPropertyValue(),
+                category: this.categoryName
             };
         }
 
@@ -684,7 +692,8 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
         return {
             type: "list",
             value,
-            ...extras
+            ...extras,
+            category: this.categoryName
         };
     }
 

@@ -258,12 +258,14 @@ abstract class UObject implements ISerializable {
     public toJSON(): any {
         const properties: Record<string, any> = {};
 
-        for (const [propName, propValue] of this.propertyDict.entries()) {
+        for (const [propName, propValue] of this.propertyDict.entries())
             properties[propName] = propValue.toJSON();
-        }
 
         return {
             type: this.constructor.name,
+            name: this.exp?.objectName || this.objectName || "None",
+            index: this.exportIndex || null,
+            filename: this.pkg?.path || null,
             value: properties
         };
     }
