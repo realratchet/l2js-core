@@ -592,6 +592,7 @@ class UByteProperty extends UBaseExportProperty<UEnum, BufferValue<"uint8">, num
 
             return {
                 type: "enum",
+                enumName: this.value.friendlyName,
                 names,
                 value: this.getPropertyValue(),
                 category: this.categoryName
