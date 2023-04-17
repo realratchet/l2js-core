@@ -308,7 +308,7 @@ abstract class UPackage extends UEncodedFile {
         return index < 0
             ? this.imports[-index - 1].objectName as string
             : index > 0
-                ? this.exports[index].objectName as string
+                ? this.exports[index - 1].objectName as string
                 : null;
     }
 

@@ -74,8 +74,8 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
 
             length.readValue(buffer, offset);
 
-            if (length.value === 1 || length.value === 0)
-                debugger;
+            // if (length.value === 1 || length.value === 0)
+            //     debugger;
 
             byteOffset = length.value > 0 ? length.type.bytes + 1 : 1;
             offset = offset + byteOffset - 1;

@@ -212,12 +212,15 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
     }
 
     public toJSON() {
+        const pkg = this.propertyValuePkg;
         const values = this.propertyValue.map(v => v.value);
+        const names = values.map(v => pkg.getPackageName(v));
 
         return {
             type: "object",
-            package: pathToPkgName(this.propertyValuePkg.path),
+            package: pathToPkgName(pkg.path),
             value: this.arrayDimensions === 1 ? values[0] : values,
+            names: this.arrayDimensions === 1 ? names[0] : names,
             category: this.categoryName
         };
     }
