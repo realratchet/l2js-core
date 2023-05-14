@@ -221,7 +221,9 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
             package: pathToPkgName(pkg.path),
             value: this.arrayDimensions === 1 ? values[0] : values,
             names: this.arrayDimensions === 1 ? names[0] : names,
-            category: this.categoryName
+            category: this.categoryName,
+            isSet: this.isSet,
+            isDefault: this.isDefault
         };
     }
 }
@@ -297,7 +299,9 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
             type: "class",
             package: pathToPkgName(this.propertyValuePkg.path),
             value: this.arrayDimensions === 1 ? values[0] : values,
-            category: this.categoryName
+            category: this.categoryName,
+            isSet: this.isSet,
+            isDefault: this.isDefault
         };
     }
 }
@@ -344,7 +348,9 @@ class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportPr
             type: "struct",
             name: this.value.friendlyName,
             value,
-            category: this.categoryName
+            category: this.categoryName,
+            isSet: this.isSet,
+            isDefault: this.isDefault
         };
     }
 }
@@ -383,7 +389,9 @@ abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends
         return {
             type: this.constructor.dtype.name,
             value: this.getPropertyValue(),
-            category: this.categoryName
+            category: this.categoryName,
+            isSet: this.isSet,
+            isDefault: this.isDefault
         };
     }
 }
@@ -416,7 +424,7 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
 
         pkg.read(this.propertyValue[tag.arrayIndex]);
 
-        if (this.propertyValue[tag.arrayIndex].string.length + 2 != tag.dataSize)
+        if (this.propertyValue[tag.arrayIndex].string.length + 2 !== tag.dataSize)
             debugger;
 
         this.propertyValuePkg = pkg;
@@ -442,7 +450,9 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
         return {
             type: "string",
             value: this.getPropertyValue(),
-            category: this.categoryName
+            category: this.categoryName,
+            isSet: this.isSet,
+            isDefault: this.isDefault
         };
     }
 }
@@ -482,7 +492,9 @@ class UBoolProperty extends UProperty<boolean, boolean> {
         return {
             type: "boolean",
             value: this.getPropertyValue(),
-            category: this.categoryName
+            category: this.categoryName,
+            isSet: this.isSet,
+            isDefault: this.isDefault
         };
     }
 }
@@ -527,7 +539,9 @@ class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
         return {
             type: "name",
             value: this.getPropertyValue(),
-            category: this.categoryName
+            category: this.categoryName,
+            isSet: this.isSet,
+            isDefault: this.isDefault
         };
     }
 }
@@ -598,13 +612,17 @@ class UByteProperty extends UBaseExportProperty<UEnum, BufferValue<"uint8">, num
                 enumName: this.value.friendlyName,
                 names,
                 value: this.getPropertyValue(),
-                category: this.categoryName
+                category: this.categoryName,
+                isSet: this.isSet,
+                isDefault: this.isDefault
             };
         }
 
         return {
             type: this.constructor.dtype.name,
-            value: this.getPropertyValue()
+            value: this.getPropertyValue(),
+            isSet: this.isSet,
+            isDefault: this.isDefault
         };
     }
 }
@@ -668,36 +686,43 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
         const unserialized = this.getPropertyValue();
         const extras: Record<string, any> = {};
         let value = null;
+        let dtype = null;
 
         if (this.arrayDimensions !== 1)
             debugger;
 
-        if (unserialized !== null) {
-            if (type instanceof UStructProperty)
-                value = unserialized.map(v => v?.toJSON() || null);
-            else if (type instanceof UObjectProperty) {
-                value = (unserialized as FObjectArray).getIndexList();
-                extras.package = pathToPkgName(this.propertyValuePkg.path);
-            } else if (type instanceof UIntProperty || type instanceof UFloatProperty) {
-                value = (unserialized as FPrimitiveArray<"uint32" | "float">).getTypedArray();
-            } else if (type instanceof UByteProperty) {
-                if (type.valueId !== 0) {
-                    debugger;
-                    throw new Error("Not yet implemented!");
-                } else {
-                    value = (unserialized as FPrimitiveArray<"uint8">).getTypedArray();
-                }
-            } else {
+        if (type instanceof UStructProperty) {
+            value = unserialized?.map(v => v?.toJSON() || null) || [];
+            dtype = "struct";
+        } else if (type instanceof UObjectProperty) {
+            value = (unserialized as FObjectArray)?.getIndexList() || [];
+            extras.package = pathToPkgName(this.propertyValuePkg.path);
+            extras.names = value !== null ? value.map(v => this.propertyValuePkg.getPackageName(v)) : [];
+            dtype = "object";
+        } else if (type instanceof UIntProperty || type instanceof UFloatProperty) {
+            value = (unserialized as FPrimitiveArray<"int32" | "float">)?.getTypedArray() || [];
+            dtype = (type instanceof UIntProperty) ? "int32" : "float";
+        } else if (type instanceof UByteProperty) {
+            if (type.valueId !== 0) {
                 debugger;
                 throw new Error("Not yet implemented!");
+            } else {
+                value = (unserialized as FPrimitiveArray<"uint8">)?.getTypedArray() || [];
+                extras.type = "uint8";
             }
+        } else {
+            debugger;
+            throw new Error("Not yet implemented!");
         }
 
         return {
-            type: "list",
+            type: dtype,
+            dynamic: true,
             value,
             ...extras,
-            category: this.categoryName
+            category: this.categoryName,
+            isSet: this.isSet,
+            isDefault: this.isDefault
         };
     }
 
