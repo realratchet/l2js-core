@@ -263,9 +263,9 @@ abstract class UObject implements ISerializable {
 
         return {
             type: this.constructor.name,
-            name: this.exp?.objectName || this.objectName || "None",
-            index: this.exportIndex || null,
-            filename: this.pkg?.path || null,
+            name: this.exp?.objectName ?? this.objectName ?? "None",
+            index: this.exportIndex ?? null,
+            filename: this.pkg?.path ?? null,
             value: properties
         };
     }
