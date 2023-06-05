@@ -118,8 +118,11 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
                     this.propertyValue[i] = prop;
                 else if (prop instanceof UObject) {
                     this.propertyValue[i] = prop.clone() as T1;
+                } else if (prop instanceof BooleanValue) {
+                    this.propertyValue[i] = prop.clone() as T1;
                 } else {
                     debugger;
+                    throw new Error("Not implemented")
                 }
             } else if (dtype === "boolean") {
                 this.propertyValue[i] = prop;
@@ -467,9 +470,18 @@ class UDelegateProperty extends UProperty<any, any> {
     }
 }
 
-class UBoolProperty extends UProperty<boolean, boolean> {
-    protected makeDefault(): boolean {
-        return false;
+class BooleanValue {
+    public value: boolean;
+
+    public constructor(value: boolean = false) { this.value = value; }
+    public clone() { return new BooleanValue(this.value); }
+
+    toString() { return `Boolean[${this.value}]`; }
+}
+
+class UBoolProperty extends UProperty<BooleanValue, boolean> {
+    protected makeDefault(): BooleanValue {
+        return new BooleanValue();
     }
 
     public readProperty(pkg: UPackage, tag: PropertyTag) {
@@ -477,15 +489,24 @@ class UBoolProperty extends UProperty<boolean, boolean> {
             debugger;
 
         this.propertyValuePkg = pkg;
-        this.propertyValue[tag.arrayIndex] = tag.boolValue;
+        this.propertyValue[tag.arrayIndex].value = tag.boolValue;
         this.isSet[tag.arrayIndex] = true;
         this.propertyName = tag.name;
 
         return this;
     }
 
+    public getPropertyValue(index: number = null): boolean | boolean[] {
+        const value = super.getPropertyValue(index) as any as BooleanValue | BooleanValue[];
+
+        if (value instanceof Array)
+            return value.map(v => v.value);
+
+        return value.value;
+    }
+
     public toString() {
-        return super.toString("BoolProperty", undefined, this.arrayDimensions === 1 ? this.propertyValue[0].toString() : null);
+        return super.toString("BoolProperty", undefined, this.arrayDimensions === 1 ? this.propertyValue[0].value.toString() : null);
     }
 
     public toJSON(): any {
@@ -728,7 +749,7 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
 
 }
 
-export { UProperty, UNumericProperty, UFloatProperty, UIntProperty, UStrProperty, UDelegateProperty, UBoolProperty, UNameProperty, UObjectProperty, UClassProperty, UStructProperty, UByteProperty, UArrayProperty };
+export { UProperty, UNumericProperty, UFloatProperty, UIntProperty, UStrProperty, UDelegateProperty, UBoolProperty, UNameProperty, UObjectProperty, UClassProperty, UStructProperty, UByteProperty, UArrayProperty, BooleanValue };
 
 enum PropertyFlags_T {
     Edit = 0x00000001,          // Property is user - settable in the editor.
