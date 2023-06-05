@@ -99,6 +99,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
         this.arrayDimensions = other.arrayDimensions;
         this.flags = other.flags;
+        this.propertyName = other.propertyName;
         this.propertyFlags = other.propertyFlags;
         this.categoryNameId = other.categoryNameId;
         this.categoryName = other.categoryName;
