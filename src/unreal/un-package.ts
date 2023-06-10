@@ -14,7 +14,7 @@ import UStruct from "./un-struct";
 import UConst from "./un-const";
 import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
-import { flagBitsToDict } from "src/utils/flags";
+import { flagBitsToDict } from "../utils/flags";
 
 
 abstract class AUPackage extends UEncodedFile {
