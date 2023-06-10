@@ -15,7 +15,7 @@ abstract class UState extends UStruct {
     protected static getConstructorName() { return "State"; }
     public toString() { return `State[${this.friendlyName}]`; }
 
-    protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
+    protected doLoad(pkg: C.AUPackage, exp: C.UExport<C.UObject>): void {
         super.doLoad(pkg, exp);
 
         this.readHead = pkg.tell();

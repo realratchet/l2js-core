@@ -1,5 +1,5 @@
 import BufferValue from "../buffer-value";
-import UPackage from "./un-package";
+import AUPackage from "./un-package";
 
 class UStack {
 
@@ -11,7 +11,7 @@ class UStack {
 
     private constructor() { }
 
-    public static loadStack(pkg: UPackage) {
+    public static loadStack(pkg: AUPackage) {
         const compat32 = new BufferValue(BufferValue.compat32);
         const int64 = new BufferValue(BufferValue.int64);
         const int32 = new BufferValue(BufferValue.int32);

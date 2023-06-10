@@ -1,22 +1,21 @@
 const expIsPrintable = /^[^\x00-\x1F\x80-\x9F]$/i;
-const int32: ValidTypes_T<"int32"> = { bytes: 4, signed: true, name: "int32", dtype: Int32Array };
-const float: ValidTypes_T<"float"> = { bytes: 4, signed: true, name: "float", dtype: Float32Array };
-const compat32: ValidTypes_T<"compat32"> = { bytes: 4, signed: true, name: "compat32" };
-const uint32: ValidTypes_T<"uint32"> = { bytes: 4, signed: false, name: "uint32", dtype: Uint32Array };
-const int64: ValidTypes_T<"int64"> = { bytes: 8, signed: true, name: "int64", dtype: BigInt64Array };
-const uint64: ValidTypes_T<"uint64"> = { bytes: 8, signed: false, name: "uint64", dtype: BigUint64Array };
-const int8: ValidTypes_T<"int8"> = { bytes: 1, signed: true, name: "int8", dtype: Int8Array };
-const uint8: ValidTypes_T<"uint8"> = { bytes: 1, signed: false, name: "uint8", dtype: Uint8Array };
-const int16: ValidTypes_T<"int16"> = { bytes: 2, signed: true, name: "int16", dtype: Int16Array };
-const uint16: ValidTypes_T<"uint16"> = { bytes: 2, signed: false, name: "uint16", dtype: Uint16Array };
-const guid: ValidTypes_T<"guid"> = { bytes: 4 * 4, signed: true, name: "guid" };
-const char: ValidTypes_T<"char"> = { bytes: NaN, signed: true, name: "char" };
-const utf16: ValidTypes_T<"utf16"> = { bytes: NaN, signed: true, name: "utf16" };
+const int32: C.ValidTypes_T<"int32"> = { bytes: 4, signed: true, name: "int32", dtype: Int32Array };
+const float: C.ValidTypes_T<"float"> = { bytes: 4, signed: true, name: "float", dtype: Float32Array };
+const compat32: C.ValidTypes_T<"compat32"> = { bytes: 4, signed: true, name: "compat32" };
+const uint32: C.ValidTypes_T<"uint32"> = { bytes: 4, signed: false, name: "uint32", dtype: Uint32Array };
+const int64: C.ValidTypes_T<"int64"> = { bytes: 8, signed: true, name: "int64", dtype: BigInt64Array };
+const uint64: C.ValidTypes_T<"uint64"> = { bytes: 8, signed: false, name: "uint64", dtype: BigUint64Array };
+const int8: C.ValidTypes_T<"int8"> = { bytes: 1, signed: true, name: "int8", dtype: Int8Array };
+const uint8: C.ValidTypes_T<"uint8"> = { bytes: 1, signed: false, name: "uint8", dtype: Uint8Array };
+const int16: C.ValidTypes_T<"int16"> = { bytes: 2, signed: true, name: "int16", dtype: Int16Array };
+const uint16: C.ValidTypes_T<"uint16"> = { bytes: 2, signed: false, name: "uint16", dtype: Uint16Array };
+const guid: C.ValidTypes_T<"guid"> = { bytes: 4 * 4, signed: true, name: "guid" };
+const char: C.ValidTypes_T<"char"> = { bytes: NaN, signed: true, name: "char" };
+const utf16: C.ValidTypes_T<"utf16"> = { bytes: NaN, signed: true, name: "utf16" };
 
 const decoderUTF16 = new TextDecoder("utf-16");
 
-
-class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
+class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
     public static readonly uint64 = uint64;
     public static readonly int64 = int64;
     public static readonly compat32 = compat32;
@@ -33,14 +32,14 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
 
     public bytes: DataView;
 
-    private type: ValidTypes_T<T>;
+    private type: C.ValidTypes_T<T>;
     public readonly endianess: "big" | "little" = "little";
 
     static allocBytes(bytes: number): BufferValue<"buffer"> {
         return new BufferValue<"buffer">(Object.freeze({ bytes: bytes, signed: true, name: "buffer" }));
     }
 
-    constructor(type?: ValidTypes_T<T>) {
+    constructor(type?: C.ValidTypes_T<T>) {
         this.type = Object.assign({}, type);
         this.bytes = new DataView(new ArrayBuffer(isFinite(this.type.bytes) ? this.type.bytes : 0));
     }
@@ -230,6 +229,6 @@ export { BufferValue };
 
 type SetValueFun_T = "setBigInt64" | "setBigUint64" | "setInt32" | "setFloat32" | "setUint32" | "setInt16" | "setUint16" | "setInt8" | "setUint8";
 type GetValueFun_T = "getBigInt64" | "getBigUint64" | "getFloat32" | "getUint32" | "getInt32" | "getInt8" | "getUint8" | "getInt16" | "getUint16";
-type ReturnType<T extends ValueTypeNames_T> = T extends NumberTypes_T
-    ? T extends BigNumberTypes_T ? bigint : number
-    : T extends StringTypes_T ? string : DataView;
+type ReturnType<T extends C.ValueTypeNames_T> = T extends C.NumberTypes_T
+    ? T extends C.BigNumberTypes_T ? bigint : number
+    : T extends C.StringTypes_T ? string : DataView;

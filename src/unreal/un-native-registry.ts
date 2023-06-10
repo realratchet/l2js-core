@@ -1,8 +1,6 @@
 import registerNativeFuncs from "./un-operators";
 
-const NATIVE: Record<string, any> = {
-};
-
+const NATIVE: Record<string, any> = {};
 const NATIVE_FUNCS: Record<string, Function> = {};
 
 const UNativeRegistry = new class UNativeRegistry implements INativeRegistry {
@@ -38,3 +36,5 @@ registerNativeFuncs(UNativeRegistry);
 
 export default UNativeRegistry;
 export { UNativeRegistry };
+
+type INativeRegistry = C.INativeRegistry;

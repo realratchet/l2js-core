@@ -2,7 +2,7 @@ import { allFlags, flagBitsToDict } from "../utils/flags";
 import BufferValue from "../buffer-value";
 import UExport from "./un-export";
 import UObject from "./un-object";
-import UPackage from "./un-package";
+import AUPackage from "./un-package";
 import UStruct from "./un-struct";
 
 class UFunction extends UStruct {
@@ -17,7 +17,7 @@ class UFunction extends UStruct {
 
     protected static getConstructorName() { return "Function"; }
 
-    protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
+    protected doLoad(pkg: AUPackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
         this.readHead = pkg.tell();

@@ -8,13 +8,13 @@ class UEnum extends UField {
 
     protected static getConstructorName() { return "Enum"; }
 
-    protected preLoad(pkg: UPackage, exp: UExport<UObject>): void {
+    protected preLoad(pkg: C.AUPackage, exp: UExport<C.UObject>): void {
         super.preLoad(pkg, exp);
 
         this.friendlyName = exp.objectName;
     }
 
-    protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
+    protected doLoad(pkg: C.AUPackage, exp: UExport<C.UObject>): void {
         super.doLoad(pkg, exp);
 
         this.names.load(pkg);

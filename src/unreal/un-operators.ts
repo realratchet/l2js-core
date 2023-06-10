@@ -1,6 +1,6 @@
 function fn_not_implemented(...args: any[]) { throw new Error(`Called non-implemented function with arguments: ${JSON.stringify(args, undefined, 4)}`) };
 
-function registerNativeFuncs(registry: INativeRegistry) {
+function registerNativeFuncs(registry: C.INativeRegistry) {
     const native = registry.registerNativeFunc.bind(registry);
 
     // boolean operators

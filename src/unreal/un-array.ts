@@ -1,10 +1,10 @@
-import UPackage from "./un-package";
+import AUPackage from "./un-package";
 import BufferValue from "../buffer-value";
 import PropertyTag from "./un-property/un-property-tag";
 import UExport from "./un-export";
 import FNumber from "./un-number";
 
-class FArray<T extends UObject | FNumber<NumberTypes_T> | IConstructable> extends Array<T> implements IConstructable {
+class FArray<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> extends Array<T> implements IConstructable {
     protected Constructor: { new(...pars: any): T };
 
     public getElemCount() { return this.length; }
@@ -22,7 +22,7 @@ class FArray<T extends UObject | FNumber<NumberTypes_T> | IConstructable> extend
 
     public map<T2>(fnMap: (value: T, index: number, array: T[]) => T2): T2[] { return [...this].map(fnMap); }
 
-    public load(pkg: UPackage, tag?: PropertyTag): this {
+    public load(pkg: AUPackage, tag?: PropertyTag): this {
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
         const count = pkg.read(new BufferValue(BufferValue.compat32)).value;
@@ -78,10 +78,10 @@ class FIndexArray extends FArray<FNumber<"compat32">> {
     }
 }
 
-class FObjectArray<T extends UObject = UObject> extends Array<T> implements IConstructable {
+class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements IConstructable {
     protected indexArray = new FIndexArray();
 
-    public load(pkg: UPackage, tag?: PropertyTag): this {
+    public load(pkg: AUPackage, tag?: PropertyTag): this {
         this.indexArray.load(pkg, tag);
 
         let i = 0;
@@ -119,7 +119,7 @@ class FObjectArray<T extends UObject = UObject> extends Array<T> implements ICon
 class FNameArray extends Array<string> implements IConstructable {
     protected indexArray = new FIndexArray();
 
-    public load(pkg: UPackage, tag?: PropertyTag): this {
+    public load(pkg: AUPackage, tag?: PropertyTag): this {
         this.indexArray.load(pkg, tag);
 
         let i = 0;
@@ -147,9 +147,9 @@ class FNameArray extends Array<string> implements IConstructable {
     public clone(): FNameArray { return new FNameArray().copy(this); }
 }
 
-class FPrimitiveArray<T extends NumberTypes_T> implements IConstructable {
+class FPrimitiveArray<T extends C.NumberTypes_T> implements IConstructable {
     protected array: DataView;
-    protected Constructor: ValidTypes_T<T>;
+    protected Constructor: C.ValidTypes_T<T>;
 
     public getElemCount() { return this.array ? this.array.byteLength / this.Constructor.bytes : 0; }
     public getElem(idx: number): number {
@@ -175,11 +175,11 @@ class FPrimitiveArray<T extends NumberTypes_T> implements IConstructable {
 
     }
 
-    public constructor(constr: ValidTypes_T<T>) { this.Constructor = constr; }
+    public constructor(constr: C.ValidTypes_T<T>) { this.Constructor = constr; }
 
     public map<T>(fnMap: (value: any, index: number, array: any[]) => T): T[] { return [...(this as any as Array<T>)].map(fnMap); }
 
-    public load(pkg: UPackage, tag?: PropertyTag): this {
+    public load(pkg: AUPackage, tag?: PropertyTag): this {
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
         const count = pkg.read(new BufferValue(BufferValue.compat32));

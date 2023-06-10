@@ -12,13 +12,13 @@ class PropertyTag {
     public enumName: string;
 
 
-    static from(pkg: UPackage, offset: number): PropertyTag {
+    static from(pkg: C.AUPackage, offset: number): PropertyTag {
         return new PropertyTag().load(pkg, offset);
     }
 
     public isValid() { return !this.name || this.name !== "None"; }
 
-    protected load(pkg: UPackage, offset: number) {
+    protected load(pkg: C.AUPackage, offset: number) {
         pkg.seek(offset, "set");
 
         const compat32 = pkg.read(new BufferValue(BufferValue.compat32));

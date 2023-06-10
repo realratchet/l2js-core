@@ -16,8 +16,8 @@ import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
 
 
-abstract class UPackage extends UEncodedFile {
-    public readonly loader: AssetLoader;
+abstract class AUPackage extends UEncodedFile {
+    public readonly loader: C.AAssetLoader;
 
     public exports: UExport[];
     public imports: UImport[];
@@ -35,7 +35,7 @@ abstract class UPackage extends UEncodedFile {
 
     public isDecoded() { return !!this.buffer; }
 
-    constructor(loader: AssetLoader, path: string) {
+    constructor(loader: C.AAssetLoader, path: string) {
         super(path);
 
         this.loader = loader;
@@ -345,7 +345,7 @@ abstract class UPackage extends UEncodedFile {
 
         } else {
             let objbase = entry.idSuper === 0 ? null : this.fetchObject(entry.idSuper) as UClass;
-            let pkg: UPackage = this;
+            let pkg: AUPackage = this;
 
             if (!objbase && objname !== "Object") {
                 debugger;
@@ -508,8 +508,8 @@ abstract class UPackage extends UEncodedFile {
     }
 }
 
-abstract class UNativePackage extends UPackage {
-    constructor(loader: AssetLoader) { super(loader, "__native__.u"); }
+abstract class AUNativePackage extends AUPackage {
+    constructor(loader: C.AAssetLoader) { super(loader, "__native__.u"); }
 
     public async decode(): Promise<this> {
         if (this.buffer) return this;
@@ -583,9 +583,9 @@ abstract class UNativePackage extends UPackage {
     }
 
     public getStructConstructor<T extends typeof UObject = typeof UObject>(constructorName: string): new () => T { return UObject as any; }
-    protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T { return UObject as any; }
+    protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(constructorName: C.NativeTypes_T): new () => T { return UObject as any; }
 
-    public getConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T {
+    public getConstructor<T extends typeof UObject = typeof UObject>(constructorName: C.NativeTypes_T): new () => T {
         let Constructor: any;
 
         switch (constructorName) {
@@ -614,7 +614,7 @@ abstract class UNativePackage extends UPackage {
         return Constructor;
     }
 
-    protected registerNativeClass(className: NativeTypes_T, baseClass: NativeTypes_T | "None" = "None"): void {
+    protected registerNativeClass(className: C.NativeTypes_T, baseClass: C.NativeTypes_T | "None" = "None"): void {
         if (!this.nameHash.has(className)) {
             const name = new UName();
 
@@ -641,8 +641,8 @@ abstract class UNativePackage extends UPackage {
     }
 }
 
-export default UPackage;
-export { UPackage, UNativePackage };
+export default AUPackage;
+export { AUPackage, AUNativePackage };
 
 function registerNameTable(nameTable: UName[], nameHash: Map<string, number>, value: string) {
     if (nameHash.has(value)) return nameHash.get(value);

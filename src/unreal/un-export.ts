@@ -1,7 +1,7 @@
 import * as FlagUtils from "../utils/flags";
 import ObjectFlags_T from "./un-object-flags";
 
-class UExport<T extends UObject = UObject> {
+class UExport<T extends C.UObject = C.UObject> {
     public index: number;
 
     public idClass: number;

@@ -3,7 +3,7 @@ import BufferValue from "../buffer-value";
 import ObjectFlags_T from "./un-object-flags";
 import UObject from "./un-object";
 import UNativeRegistry from "./un-native-registry";
-import UPackage from "./un-package";
+import AUPackage from "./un-package";
 import PropertyTag from "./un-property/un-property-tag";
 import { UProperty } from "./un-property/un-properties";
 
@@ -14,11 +14,11 @@ class UStruct extends UField {
 
     protected firstChildPropId: number;
     public readonly childPropFields = new Map<string, UProperty>();
-    public readonly childFunctions = new Array<UFunction>();
-    public readonly childEnums = new Array<UEnum>();
+    public readonly childFunctions = new Array<C.UFunction>();
+    public readonly childEnums = new Array<C.UEnum>();
     public readonly childStructs = new Array<UStruct>();
-    public readonly childConsts = new Array<UConst>();
-    public readonly childStates = new Array<UState>();
+    public readonly childConsts = new Array<C.UConst>();
+    public readonly childStates = new Array<C.UState>();
 
     public friendlyName: string;
     protected line: number;
@@ -33,7 +33,7 @@ class UStruct extends UField {
     protected static getConstructorName() { return "Struct"; }
     protected defaultProperties = new Map<string, any>();
 
-    // protected readArray(pkg: UPackage, tag: PropertyTag) {
+    // protected readArray(pkg: AUPackage, tag: PropertyTag) {
     //     let field: UStruct = this;
 
     //     while (field) {
@@ -76,7 +76,7 @@ class UStruct extends UField {
         return null;
     }
 
-    protected loadProperty(pkg: UPackage, tag: PropertyTag): void {
+    protected loadProperty(pkg: AUPackage, tag: PropertyTag): void {
         const offStart = pkg.tell();
         const offEnd = offStart + tag.dataSize;
 
@@ -147,7 +147,7 @@ class UStruct extends UField {
         throw new Error("Broken");
     }
 
-    protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
+    protected doLoad(pkg: AUPackage, exp: C.UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
         this.readHead = pkg.tell();
@@ -190,11 +190,11 @@ class UStruct extends UField {
                     this.childPropFields.set(field.propertyName, field);
                 else if (field instanceof UField) {
                     switch (field.constructor.getConstructorName()) {
-                        case "Function": this.childFunctions.push(field as UFunction); break;
-                        case "Enum": this.childEnums.push(field as UEnum); break;
-                        case "Struct": this.childStructs.push(field as UStruct); break;
-                        case "Const": this.childConsts.push(field as UConst); break;
-                        case "State": this.childStates.push(field as UState); break;
+                        case "Function": this.childFunctions.push(field as C.UFunction); break;
+                        case "Enum": this.childEnums.push(field as C.UEnum); break;
+                        case "Struct": this.childStructs.push(field as C.UStruct); break;
+                        case "Const": this.childConsts.push(field as C.UConst); break;
+                        case "State": this.childStates.push(field as C.UState); break;
                         default: debugger; break;
                     }
 
@@ -212,7 +212,7 @@ class UStruct extends UField {
         this.readHead = pkg.tell();
     }
 
-    protected readScript(pkg: UPackage) {
+    protected readScript(pkg: AUPackage) {
         const native = pkg.loader.getNativePackage();
         const core = pkg.loader.getCorePackage();
 
@@ -220,7 +220,7 @@ class UStruct extends UField {
             this.readToken(native, core, pkg, 0);
     }
 
-    public buildClass<T extends UObject = UObject>(pkg: UNativePackage): new () => T {
+    public buildClass<T extends UObject = UObject>(pkg: C.AUNativePackage): new () => T {
         // if (this.exp.objectName === "Vector")
         //     debugger;
 
@@ -273,7 +273,7 @@ class UStruct extends UField {
         const friendlyName = this.friendlyName;
         const hostClass = this;
         const Constructor = lastNative
-            ? pkg.getConstructor(lastNative.friendlyName as NativeTypes_T) as any as typeof UObject
+            ? pkg.getConstructor(lastNative.friendlyName as C.NativeTypes_T) as any as typeof UObject
             : pkg.getStructConstructor(this.friendlyName) as any as typeof UObject;
 
         // if (lastNative)
@@ -404,7 +404,7 @@ class UStruct extends UField {
     protected bytecode: { type: string, value: any, tokenName?: string }[] = [];
     protected bytecodeLength = 0;
 
-    protected readToken(native: UNativePackage, core: UPackage, pkg: UPackage, depth: number): ExprToken_T {
+    protected readToken(native: C.AUNativePackage, core: AUPackage, pkg: AUPackage, depth: number): ExprToken_T {
         if (depth === 64) throw new Error("Too deep");
 
         const uint8 = new BufferValue(BufferValue.uint8);
@@ -933,7 +933,7 @@ class FLabelField implements IConstructable {
     public name: string = "None";
     public offset: number;
 
-    public load(pkg: UPackage): this {
+    public load(pkg: AUPackage): this {
         const compat32 = new BufferValue(BufferValue.compat32);
         const uint32 = new BufferValue(BufferValue.uint32);
 

@@ -4,7 +4,7 @@ import FArray, { FIndexArray, FObjectArray, FPrimitiveArray } from "../un-array"
 import UClass from "../un-class";
 import UField from "../un-field";
 import UObject from "../un-object";
-import UPackage from "../un-package";
+import AUPackage from "../un-package";
 import PropertyTag from "./un-property-tag";
 import { pathToPkgName } from "../../asset-loader";
 
@@ -24,11 +24,11 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public isSet: boolean[];
     public isDefault: boolean[];
     public propertyValue: T1[];
-    protected propertyValuePkg: UPackage;
+    protected propertyValuePkg: AUPackage;
 
     // public readonly isNumericType: boolean = false;
 
-    protected preLoad(pkg: UPackage, exp: UExport): void {
+    protected preLoad(pkg: AUPackage, exp: C.UExport): void {
         super.preLoad(pkg, exp);
 
         this.propertyName = exp.objectName;
@@ -38,7 +38,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
     }
 
-    protected doLoad(pkg: UPackage, exp: UExport): void {
+    protected doLoad(pkg: AUPackage, exp: C.UExport): void {
         super.doLoad(pkg, exp);
 
         this.readHead = pkg.tell();
@@ -148,7 +148,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
         return clone;
     }
 
-    public abstract readProperty(pkg: UPackage, tag: PropertyTag): UProperty<T1, T2>;
+    public abstract readProperty(pkg: AUPackage, tag: PropertyTag): UProperty<T1, T2>;
     public toJSON() { throw new Error("Not implemented message."); }
 
     public toString(className: string, classTemplate: string, value: string) {
@@ -167,7 +167,7 @@ abstract class UBaseExportProperty<T1 extends UField, T2 = T1, T3 = T2> extends 
         return this._value;
     }
 
-    protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
+    protected doLoad(pkg: AUPackage, exp: C.UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
         const compat32 = new BufferValue(BufferValue.compat32);
@@ -186,7 +186,7 @@ abstract class UBaseExportProperty<T1 extends UField, T2 = T1, T3 = T2> extends 
 }
 
 class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<UClass, BufferValue<"compat32">, T> {
-    public readProperty(pkg: UPackage, tag: PropertyTag) {
+    public readProperty(pkg: AUPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
         pkg.read(this.propertyValue[tag.arrayIndex]);
@@ -251,7 +251,7 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
                 : this.propertyValuePkg.fetchObject<UClass>(this.propertyValue[index].value);
     }
 
-    protected doLoad(pkg: UPackage, exp: UExport<UObject>): void {
+    protected doLoad(pkg: AUPackage, exp: C.UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
         const compat32 = new BufferValue(BufferValue.compat32);
@@ -275,7 +275,7 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
         return this;
     }
 
-    public readProperty(pkg: UPackage, tag: PropertyTag) {
+    public readProperty(pkg: AUPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
         if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
@@ -310,8 +310,8 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
     }
 }
 
-class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportProperty<UStruct, T, T> {
-    public readProperty(pkg: UPackage, tag: PropertyTag) {
+class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportProperty<C.UStruct, T, T> {
+    public readProperty(pkg: AUPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
         // if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
@@ -359,10 +359,10 @@ class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportPr
     }
 }
 
-abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends UProperty<BufferValue<T>, ReturnType<T>> implements IBufferValueProperty<T> {
-    declare ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<T> };
+abstract class UNumericProperty<T extends C.NumberTypes_T | C.StringTypes_T> extends UProperty<BufferValue<T>, ReturnType<T>> implements IBufferValueProperty<T> {
+    declare ["constructor"]: typeof UNumericProperty & { dtype: C.ValidTypes_T<T> };
 
-    public readProperty(pkg: UPackage, tag: PropertyTag) {
+    public readProperty(pkg: AUPackage, tag: PropertyTag) {
         this.propertyName = tag?.name || null;
 
         pkg.read(this.propertyValue[tag?.arrayIndex || 0]);
@@ -417,7 +417,7 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
         return new BufferValue(BufferValue.char);
     }
 
-    public readProperty(pkg: UPackage, tag: PropertyTag) {
+    public readProperty(pkg: AUPackage, tag: PropertyTag) {
         this.propertyName = tag?.name || null;
 
         if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
@@ -462,7 +462,7 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
 }
 
 class UDelegateProperty extends UProperty<any, any> {
-    public readProperty(pkg: UPackage, tag: PropertyTag): UProperty<any, any> {
+    public readProperty(pkg: AUPackage, tag: PropertyTag): UProperty<any, any> {
         throw new Error("Method not implemented.");
     }
 
@@ -485,7 +485,7 @@ class UBoolProperty extends UProperty<BooleanValue, boolean> {
         return new BooleanValue();
     }
 
-    public readProperty(pkg: UPackage, tag: PropertyTag) {
+    public readProperty(pkg: AUPackage, tag: PropertyTag) {
         if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
             debugger;
 
@@ -524,7 +524,7 @@ class UBoolProperty extends UProperty<BooleanValue, boolean> {
 
 
 class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
-    public readProperty(pkg: UPackage, tag: PropertyTag) {
+    public readProperty(pkg: AUPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
         if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
@@ -568,13 +568,13 @@ class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
     }
 }
 
-class UByteProperty extends UBaseExportProperty<UEnum, BufferValue<"uint8">, number> {
+class UByteProperty extends UBaseExportProperty<C.UEnum, BufferValue<"uint8">, number> {
 
-    declare ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<"uint8"> };
+    declare ["constructor"]: typeof UNumericProperty & { dtype: C.ValidTypes_T<"uint8"> };
 
     public static dtype = BufferValue.uint8;
 
-    public readProperty(pkg: UPackage, tag: PropertyTag) {
+    public readProperty(pkg: AUPackage, tag: PropertyTag) {
         this.propertyName = tag?.name || null;
 
         if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
@@ -656,7 +656,7 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
         return null;
     }
 
-    public readProperty(pkg: UPackage, tag: PropertyTag) {
+    public readProperty(pkg: AUPackage, tag: PropertyTag) {
         this.propertyName = tag.name;
         this.propertyValuePkg = pkg;
 
@@ -777,6 +777,8 @@ enum PropertyFlags_T {
     NeedCtorLink = 0x00400000   // Fields need construction / destruction
 };
 
-type ReturnType<T extends ValueTypeNames_T> = T extends NumberTypes_T
-    ? T extends BigNumberTypes_T ? bigint : number
-    : T extends StringTypes_T ? string : DataView;
+type ReturnType<T extends C.ValueTypeNames_T> = T extends C.NumberTypes_T
+    ? T extends C.BigNumberTypes_T ? bigint : number
+    : T extends C.StringTypes_T ? string : DataView;
+
+type IBufferValueProperty<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> = C.IBufferValueProperty<T>;

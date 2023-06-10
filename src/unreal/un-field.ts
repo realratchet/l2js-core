@@ -10,7 +10,7 @@ abstract class UField extends UObject {
     public readonly isField = true;
     protected static getConstructorName() { return "Field"; }
 
-    protected doLoad(pkg: UPackage, exp: UExport): void {
+    protected doLoad(pkg: C.AUPackage, exp: C.UExport): void {
         // if (exp.objectName === "Pawn")
         //     debugger;
 
@@ -49,7 +49,7 @@ abstract class UField extends UObject {
             else
                 this._superField = null;
 
-            lastBase = lastBase._superField?.loadSelf() as UClass;
+            lastBase = lastBase._superField?.loadSelf() as C.UClass;
         } while (lastBase);
 
         return this._superField;
@@ -67,7 +67,7 @@ abstract class UField extends UObject {
             else
                 this._nextField = null;
 
-            lastBase = lastBase._nextField?.loadSelf() as UClass;
+            lastBase = lastBase._nextField?.loadSelf() as C.UClass;
         } while (lastBase);
 
         return this._nextField;

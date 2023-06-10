@@ -6,7 +6,7 @@ let gmp: _gmp.GMPLib = null;
 
 interface IEncodedFile {
     read(target: number): BufferValue<"buffer">;
-    read<T extends ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
+    read<T extends C.ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
 };
 
 abstract class UEncodedFile implements IEncodedFile {
@@ -45,7 +45,7 @@ abstract class UEncodedFile implements IEncodedFile {
             throw new Error("Stream is not readable!");
     }
 
-    public seek(offset: number, origin: Seek_T = "current") {
+    public seek(offset: number, origin: C.Seek_T = "current") {
         this.ensureReadable();
 
         switch (origin) {
@@ -60,7 +60,7 @@ abstract class UEncodedFile implements IEncodedFile {
     }
 
     public read(target: number): BufferValue<"buffer">;
-    public read<T extends ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
+    public read<T extends C.ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
 
     public read(target: any) {
         this.ensureReadable();
