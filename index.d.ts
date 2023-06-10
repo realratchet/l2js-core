@@ -228,6 +228,10 @@ declare global {
             export type FNumber<T extends ValueTypeNames_T = ValueTypeNames_T> = import("./src/unreal/un-number").FNumber<T>;
             export type FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArray<T>;
             export type FNameArray = import("./src/unreal/un-array").FNameArray;
+
+            export type AUPackageConstructor = new (loader: AAssetLoader, downloadPath: string) => C.AUPackage;
+            export type AUNativePackageConstructor = new (loader: AAssetLoader) => C.AUNativePackage;
+
         }
     }
 }

@@ -4,8 +4,8 @@ import { SUPPORTED_EXTENSIONS } from "./supported-extensions";
 abstract class AAssetLoader {
     private packages = new Map<string, Map<C.SupportedExtensions_T, C.AUPackage>>();
 
-    protected abstract createNativePackage(UNativePackage: AUNativePackageConstructor): C.AUNativePackage;
-    protected abstract createPackage(UPackage: AUPackageConstructor, downloadPath: string): C.AUPackage;
+    protected abstract createNativePackage(UNativePackage: C.AUNativePackageConstructor): C.AUNativePackage;
+    protected abstract createPackage(UPackage: C.AUPackageConstructor, downloadPath: string): C.AUPackage;
 
     protected constructor() { }
 
@@ -17,7 +17,6 @@ abstract class AAssetLoader {
     public getEnginePackage() { return this.pkgEngine; }
     public getNativePackage() { return this.pkgNative; }
 
-    // @ts-ignore
     protected init(assetList: L2JS.Core.IAssetListInfo, { UPackage, UNativePackage }: InitParams_T) {
         this.packages.set("native", new Map([["U", this.createNativePackage(UNativePackage)]]))
 
@@ -168,11 +167,9 @@ function getPackage(allPackages: Map<string, Map<C.SupportedExtensions_T, C.AUPa
     return pkg;
 }
 
-type AUPackageConstructor = typeof import("./unreal/un-package").AUPackage;
-type AUNativePackageConstructor = typeof import("./unreal/un-package").AUNativePackage;
 
 type ReturnType<T extends string | "native"> = T extends "native" ? C.AUNativePackage : C.AUPackage;
 type InitParams_T = Record<string, any> | { // can contain anything but must contain at least these two packages
-    UPackage: AUPackageConstructor,
-    UNativePackage: AUNativePackageConstructor,
+    UPackage: C.AUPackageConstructor,
+    UNativePackage: C.AUNativePackageConstructor,
 };
