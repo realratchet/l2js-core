@@ -9,7 +9,6 @@ export { UName } from "./unreal/un-name";
 export { UExport } from "./unreal/un-export";
 export { UImport } from "./unreal/un-import";
 
-export { UObject } from "./unreal/un-object";
 export { UNP_PropertyMasks, UNP_PropertyTypes, UNP_DataTypeSizes } from "./unreal/un-property/un-property-tag";
 export { SUPPORTED_EXTENSIONS } from "./supported-extensions";
 
@@ -22,7 +21,11 @@ export { UnProperties };
 import * as decoders from "./crypto/decryption/decoders";
 import * as encoders from "./crypto/encryption/encoders";
 
-
 const crypto = Object.freeze({ encoders, decoders });
 
 export { crypto };
+
+import UObject from "./unreal/un-object";
+
+export { UObject };
+export default UObject;

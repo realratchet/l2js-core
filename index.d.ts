@@ -1,3 +1,6 @@
+import UObject from "./src/index";
+
+export default UObject;
 export * from "./src/index";
 
 declare global {
