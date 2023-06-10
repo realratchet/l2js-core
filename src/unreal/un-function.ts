@@ -11,9 +11,9 @@ class UFunction extends UStruct {
     protected numParams: number;
     protected operatorPrecendence: number;
     protected returnValueOffset: number;
-    protected _funcFlags: FunctionFlags_T;
+    protected _funcFlags: number;
     protected replicationOffset: number;
-    protected funcFlags: Record<string, boolean>;
+    protected funcFlags: FlagDict<EnumKeys.FunctionFlags_T>;
 
     protected static getConstructorName() { return "Function"; }
 
@@ -42,7 +42,7 @@ class UFunction extends UStruct {
             this.returnValueOffset = pkg.read(uint16).value;
 
         this._funcFlags = pkg.read(uint32).value;
-        this.funcFlags = flagBitsToDict(this._funcFlags, FunctionFlags_T as any);
+        this.funcFlags = flagBitsToDict(this._funcFlags, FunctionFlags_T);
 
         if (allFlags(this._funcFlags, FunctionFlags_T.Net))
             this.replicationOffset = pkg.read(uint16).value;
@@ -52,9 +52,6 @@ class UFunction extends UStruct {
 
     public toString() { return `Function[${this.friendlyName}]`; }
 }
-
-export default UFunction;
-export { UFunction };
 
 enum FunctionFlags_T {
     Final = 0x00000001,         // Function is final(prebindable, non - overridable function)
@@ -75,3 +72,7 @@ enum FunctionFlags_T {
     Const = 0x00008000,         // Function doesn't modify this object
     Invariant = 0x00010000      // Return value is purely dependent on parameters; no state dependencies or internal state changes
 };
+
+export default UFunction;
+export { UFunction, FunctionFlags_T };
+

@@ -13,8 +13,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
     public arrayDimensions: number;
     public propertyName: string;
-    public propertyFlags: Readonly<Record<string, boolean>>;
-
+    public propertyFlags: FlagDict<EnumKeys.PropertyFlags_T>;
 
     protected flags: number;
     protected replicationOffset: number;
@@ -49,7 +48,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
         this.arrayDimensions = pkg.read(uint32).value;
         this.flags = pkg.read(uint32).value;
-        this.propertyFlags = Object.freeze(flagBitsToDict(this.flags, PropertyFlags_T as any));
+        this.propertyFlags = flagBitsToDict(this.flags, PropertyFlags_T);
 
         this.categoryNameId = pkg.read(compat32).value;
         this.categoryName = pkg.nameTable[this.categoryNameId].name as string;
@@ -750,8 +749,6 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
 
 }
 
-export { UProperty, UNumericProperty, UFloatProperty, UIntProperty, UStrProperty, UDelegateProperty, UBoolProperty, UNameProperty, UObjectProperty, UClassProperty, UStructProperty, UByteProperty, UArrayProperty, BooleanValue };
-
 enum PropertyFlags_T {
     Edit = 0x00000001,          // Property is user - settable in the editor.
     Const = 0x00000002,         // Actor's property always matches class's default actor property.
@@ -776,6 +773,8 @@ enum PropertyFlags_T {
     New = 0x00200000,           // Automatically create inner object
     NeedCtorLink = 0x00400000   // Fields need construction / destruction
 };
+
+export { UProperty, UNumericProperty, UFloatProperty, UIntProperty, UStrProperty, UDelegateProperty, UBoolProperty, UNameProperty, UObjectProperty, UClassProperty, UStructProperty, UByteProperty, UArrayProperty, BooleanValue, PropertyFlags_T };
 
 type ReturnType<T extends C.ValueTypeNames_T> = T extends C.NumberTypes_T
     ? T extends C.BigNumberTypes_T ? bigint : number

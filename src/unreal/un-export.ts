@@ -11,8 +11,8 @@ class UExport<T extends C.UObject = C.UObject> {
     public idObjectName: number;
     public objectName: string = "None";
 
-    public _flags: ObjectFlags_T;
-    public objectFlags: Readonly<Record<ObjectFlags_T, boolean>>;
+    public _flags: number;
+    public objectFlags: FlagDict<EnumKeys.ObjectFlags_T>;
 
     public size: number = 0;
     public offset: number;
@@ -26,7 +26,7 @@ class UExport<T extends C.UObject = C.UObject> {
     get flags() { return this._flags; }
     set flags(flags: number) {
         this._flags = flags;
-        this.objectFlags = Object.freeze(FlagUtils.flagBitsToDict(flags, ObjectFlags_T as any));
+        this.objectFlags = FlagUtils.flagBitsToDict(flags, ObjectFlags_T);
     }
 
     public toString() { return `${this.isFake ? '!' : ''}Export(id=${this.index + 1}, name=${this.objectName}, flags=[${Object.entries(this.objectFlags).filter(([, v]) => v).map(([k,]) => k).join(",")}])`; }

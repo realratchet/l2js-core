@@ -8,7 +8,7 @@ abstract class UState extends UStruct {
     protected _stateFlags: number;
     protected labelTableOffset: number;
     protected probes: string[];
-    protected stateFlags: Record<string, boolean>;
+    protected stateFlags: FlagDict<EnumKeys.EStateFlags_T>;
 
     public readonly isState = true;
 
@@ -30,7 +30,7 @@ abstract class UState extends UStruct {
         this.probeMask = pkg.read(uint64).value;
         this.ignoreMask = pkg.read(uint64).value;
         this._stateFlags = pkg.read(uint32).value;
-        this.stateFlags = flagBitsToDict(this._stateFlags, EStateFlags as any);
+        this.stateFlags = flagBitsToDict(this._stateFlags, EStateFlags_T);
 
         this.labelTableOffset = pkg.read(uint16).value;
 
@@ -41,13 +41,14 @@ abstract class UState extends UStruct {
     }
 }
 
-export default UState;
-export { UState };
-
-
-enum EStateFlags {
+enum EStateFlags_T {
     // State flags.
     STATE_Editable = 0x00000001,	// State should be user-selectable in UnrealEd.
     STATE_Auto = 0x00000002,	// State is automatic (the default state).
     STATE_Simulated = 0x00000004,   // State executes on client side.
 };
+
+export default UState;
+export { UState, EStateFlags_T };
+
+

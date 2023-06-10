@@ -1,2 +1,14 @@
 import C = L2JS.Core;
 import IConstructable = C.IConstructable;
+
+type ObjectValues<T> = T[keyof T];
+type FlagDict<T extends string> = Record<T, boolean>;
+
+declare namespace EnumKeys {
+    type PackageFlags_T = keyof typeof import("./src/unreal/un-package").PackageFlags_T;
+    type EClassFlags_T = keyof typeof import("./src/unreal/un-class").EClassFlags_T;
+    type ObjectFlags_T = keyof typeof import("./src/unreal/un-object-flags").ObjectFlags_T;
+    type FunctionFlags_T = keyof typeof import("./src/unreal/un-function").FunctionFlags_T;
+    type EStateFlags_T = keyof typeof import("./src/unreal/un-state").EStateFlags_T;
+    type PropertyFlags_T = keyof typeof import("./src/unreal/un-property/un-properties").PropertyFlags_T;
+}

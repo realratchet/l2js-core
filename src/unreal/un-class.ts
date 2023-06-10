@@ -28,8 +28,8 @@ class FDependencies implements IConstructable {
 class UClass extends UState {
     declare ["constructor"]: typeof UClass;
 
-    protected _classFlags: EClassFlags_T;
-    public classFlags: Readonly<Record<string, boolean>>;
+    protected _classFlags: number;
+    public classFlags: FlagDict<EnumKeys.EClassFlags_T>;
     protected classGuid: DataView;
     protected dependencies = new FArray(FDependencies);
     protected pkgImportIds = new FIndexArray();
@@ -85,7 +85,7 @@ class UClass extends UState {
         // debugger
 
         this._classFlags = pkg.read(uint32).value;
-        this.classFlags = flagBitsToDict(this._classFlags, EClassFlags_T as any);
+        this.classFlags = flagBitsToDict(this._classFlags, EClassFlags_T);
         this.classGuid = pkg.read(BufferValue.allocBytes(16)).value;
 
         // debugger;

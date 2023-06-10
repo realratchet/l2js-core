@@ -14,6 +14,7 @@ import UStruct from "./un-struct";
 import UConst from "./un-const";
 import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
+import { flagBitsToDict } from "src/utils/flags";
 
 
 abstract class AUPackage extends UEncodedFile {
@@ -71,7 +72,11 @@ abstract class AUPackage extends UEncodedFile {
 
         // debugger;
 
-        header.packageFlags = readable.read(int32).value;
+        header._packageFlags = readable.read(int32).value;
+        header.packageFlags = flagBitsToDict(header._packageFlags, PackageFlags_T);
+         
+        header.packageFlags
+
         header.nameCount = readable.read(int32).value;
         header.nameOffset = readable.read(int32).value;
         header.exportCount = readable.read(int32).value;
@@ -90,7 +95,7 @@ abstract class AUPackage extends UEncodedFile {
 
         if (readable.path === "assets/maps/20_21.unr") {
             console.assert(header.getArchiveFileVersion() === 123);
-            console.assert(header.packageFlags === 0x1);
+            console.assert(header._packageFlags === 0x1);
             console.assert(header.nameCount === 12165);
             console.assert(header.nameOffset === 0x40);
             console.assert(header.exportCount === 11379);
@@ -509,18 +514,16 @@ abstract class AUPackage extends UEncodedFile {
 }
 
 abstract class AUNativePackage extends AUPackage {
-    constructor(loader: C.AAssetLoader) { super(loader, "__native__.u"); }
+    public readonly isCore = false;
+    public readonly isEngine = false;
+    public readonly isNative = true;
 
-    public async decode(): Promise<this> {
-        if (this.buffer) return this;
+    public constructor(loader: C.AAssetLoader) { super(loader, "__native__.u"); }
 
-        const tStart = performance.now();
+    protected readArrayBuffer(): Promise<ArrayBuffer> { throw new Error("Method not used by native package."); }
+    public toBuffer(): ArrayBuffer { throw new Error("Method not used by native package."); }
 
-        this.imports = [];
-        this.exports = [];
-        this.nameTable = [];
-        this.nameHash = new Map();
-
+    protected registerNativeClasses() {
         this.registerNativeClass("Object");
         this.registerNativeClass("Field", "Object");
         this.registerNativeClass("Struct", "Field");
@@ -574,6 +577,19 @@ abstract class AUNativePackage extends AUPackage {
         this.registerNativeClass("Level", "LevelBase");
 
         this.registerNativeClass("Client", "Object");
+    }
+
+    public async decode(): Promise<this> {
+        if (this.buffer) return this;
+
+        const tStart = performance.now();
+
+        this.imports = [];
+        this.exports = [];
+        this.nameTable = [];
+        this.nameHash = new Map();
+
+        this.registerNativeClasses();
 
         this.buffer = new ArrayBuffer(0);
 
@@ -641,8 +657,18 @@ abstract class AUNativePackage extends AUPackage {
     }
 }
 
+enum PackageFlags_T {
+    NoFlags = 0,
+    AllowDownload = 0x0001, // Allow downloading package
+    ClientOptional = 0x0002, // Purely optional for clients
+    ServerSideOnly = 0x0004, // Only needed on the server side
+    BrokenLinks = 0x0008, // Loaded from linker with broken import links
+    Unsecure = 0x0010, // Not trusted
+    Need = 0x8000 // Client needs to download this package
+};
+
 export default AUPackage;
-export { AUPackage, AUNativePackage };
+export { AUPackage, AUNativePackage, PackageFlags_T };
 
 function registerNameTable(nameTable: UName[], nameHash: Map<string, number>, value: string) {
     if (nameHash.has(value)) return nameHash.get(value);

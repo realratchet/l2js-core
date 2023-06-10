@@ -10,6 +10,7 @@ declare global {
 
             export type AUPackage = import("./src/unreal/un-package").AUPackage;
             export type AUNativePackage = import("./src/unreal/un-package").AUNativePackage;
+            export type PackageFlags_T = import("./src/unreal/un-package").PackageFlags_T;
 
             export type BigNumberTypes_T = "int64" | "uint64";
             export type PrimitiveNumberTypes_T = "compat32" | "float" | "int32" | "uint32" | "int8" | "uint8" | "int16" | "uint16";
@@ -231,7 +232,6 @@ declare global {
 
             export type AUPackageConstructor = new (loader: AAssetLoader, downloadPath: string) => C.AUPackage;
             export type AUNativePackageConstructor = new (loader: AAssetLoader) => C.AUNativePackage;
-
         }
     }
 }
