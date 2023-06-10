@@ -1,7 +1,7 @@
 import BufferValue from "../buffer-value";
 import UExport from "./un-export";
 import ObjectFlags_T from "./un-object-flags";
-import AUPackage from "./un-package";
+import APackage from "./un-package";
 import PropertyTag from "./un-property/un-property-tag";
 import UStack from "./un-stack";
 
@@ -30,7 +30,7 @@ abstract class UObject implements C.ISerializable {
     protected isLoading = false;
     protected isReady = false;
 
-    protected pkg: AUPackage;
+    protected pkg: APackage;
     public readonly propertyDict = new Map<string, C.UProperty>();
     public nativeBytes?: BufferValue<"buffer"> = null;
 
@@ -68,7 +68,7 @@ abstract class UObject implements C.ISerializable {
         return dependencyChain.reverse();
     }
 
-    protected readNamedProps(pkg: AUPackage, _exp: UExport) {
+    protected readNamedProps(pkg: APackage, _exp: UExport) {
         pkg.seek(this.readHead, "set");
 
         if (this.readHead < this.readTail) {
@@ -106,7 +106,7 @@ abstract class UObject implements C.ISerializable {
         return this.load(this.pkg, this.exp);
     }
 
-    protected loadNative(pkg: AUPackage) {
+    protected loadNative(pkg: APackage) {
         for (const propVal of this.propertyDict.values())
             propVal.readProperty(pkg, null);
 
@@ -126,7 +126,7 @@ abstract class UObject implements C.ISerializable {
         return this;
     }
 
-    protected loadProperty(pkg: AUPackage, tag: PropertyTag) {
+    protected loadProperty(pkg: APackage, tag: PropertyTag) {
         const offStart = pkg.tell();
         const offEnd = offStart + tag.dataSize;
 
@@ -153,14 +153,14 @@ abstract class UObject implements C.ISerializable {
         pkg.seek(offEnd, "set");
     }
 
-    public setExport(pkg: AUPackage, exp: UExport) {
+    public setExport(pkg: APackage, exp: UExport) {
         this.objectName = `Exp_${exp.objectName}`;
         this.exportIndex = exp.index;
         this.exp = exp;
         this.pkg = pkg.asReadable();
     }
 
-    protected preLoad(pkg: AUPackage, exp: UExport): void {
+    protected preLoad(pkg: APackage, exp: UExport): void {
         const flags = exp.flags;
 
         if (!this.exp)
@@ -177,10 +177,10 @@ abstract class UObject implements C.ISerializable {
         this.readHead = pkg.tell();
     }
 
-    public load(pkg: AUPackage): this;
-    public load(pkg: AUPackage, info: UExport): this;
-    public load(pkg: AUPackage, info: PropertyTag): this;
-    public load(pkg: AUPackage, info?: any) {
+    public load(pkg: APackage): this;
+    public load(pkg: APackage, info: UExport): this;
+    public load(pkg: APackage, info: PropertyTag): this;
+    public load(pkg: APackage, info?: any) {
         if (info instanceof UExport)
             return this.loadWithExport(pkg, info);
 
@@ -190,7 +190,7 @@ abstract class UObject implements C.ISerializable {
         return this.loadNative(pkg);
     }
 
-    protected loadWithPropertyTag(pkg: AUPackage, tag: PropertyTag): this {
+    protected loadWithPropertyTag(pkg: APackage, tag: PropertyTag): this {
         const exp = new UExport();
 
         exp.objectName = `${tag.name}[Struct<${tag.structName}>]`;
@@ -201,7 +201,7 @@ abstract class UObject implements C.ISerializable {
         return this.loadWithExport(pkg, exp);
     }
 
-    protected loadWithExport(pkg: AUPackage, exp: UExport): this {
+    protected loadWithExport(pkg: APackage, exp: UExport): this {
         if (this.isLoading || this.isReady)
             return this;
 
@@ -232,9 +232,9 @@ abstract class UObject implements C.ISerializable {
         return this;
     }
 
-    protected doLoad(pkg: AUPackage, exp: UExport): void { this.readNamedProps(pkg, exp); }
+    protected doLoad(pkg: APackage, exp: UExport): void { this.readNamedProps(pkg, exp); }
 
-    protected postLoad(pkg: AUPackage, _exp: UExport): void {
+    protected postLoad(pkg: APackage, _exp: UExport): void {
         this.readHead = pkg.tell();
 
         if (UObject.UNREAD_AS_NATIVE && this.bytesUnread > 0)

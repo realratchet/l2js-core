@@ -11,7 +11,7 @@ class FDependencies implements IConstructable {
     public depth: number;
     public class: UClass;
 
-    public load(pkg: C.AUPackage): this {
+    public load(pkg: C.APackage): this {
         const compat32 = new BufferValue(BufferValue.compat32);
         const uint32 = new BufferValue(BufferValue.uint32);
         const int32 = new BufferValue(BufferValue.int32);
@@ -62,7 +62,7 @@ class UClass extends UState {
         return this;
     }
 
-    protected doLoad(pkg: C.AUPackage, exp: C.UExport<UObject>): void {
+    protected doLoad(pkg: C.APackage, exp: C.UExport<UObject>): void {
         // if (exp.objectName === "Pawn")
         //     debugger;
 

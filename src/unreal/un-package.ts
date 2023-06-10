@@ -17,7 +17,7 @@ import UState from "./un-state";
 import { flagBitsToDict } from "../utils/flags";
 
 
-abstract class AUPackage extends UEncodedFile {
+abstract class APackage extends UEncodedFile {
     public readonly loader: C.AAssetLoader;
 
     public exports: UExport[];
@@ -350,7 +350,7 @@ abstract class AUPackage extends UEncodedFile {
 
         } else {
             let objbase = entry.idSuper === 0 ? null : this.fetchObject(entry.idSuper) as UClass;
-            let pkg: AUPackage = this;
+            let pkg: APackage = this;
 
             if (!objbase && objname !== "Object") {
                 debugger;
@@ -513,7 +513,7 @@ abstract class AUPackage extends UEncodedFile {
     }
 }
 
-abstract class AUNativePackage extends AUPackage {
+abstract class ANativePackage extends APackage {
     public readonly isCore = false;
     public readonly isEngine = false;
     public readonly isNative = true;
@@ -667,8 +667,8 @@ enum PackageFlags_T {
     Need = 0x8000 // Client needs to download this package
 };
 
-export default AUPackage;
-export { AUPackage, AUNativePackage, PackageFlags_T };
+export default APackage;
+export { APackage, ANativePackage, PackageFlags_T };
 
 function registerNameTable(nameTable: UName[], nameHash: Map<string, number>, value: string) {
     if (nameHash.has(value)) return nameHash.get(value);

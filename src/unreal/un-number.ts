@@ -8,7 +8,7 @@ class FNumber<T extends C.NumberTypes_T> {
         this.type = dtype;
     }
 
-    public load(pkg: C.AUPackage): this {
+    public load(pkg: C.APackage): this {
         this.value = pkg.read(new BufferValue<C.NumberTypes_T>(this.type)).value as ReturnType<T>;
 
         return this;

@@ -2,16 +2,16 @@ import * as _path from "path";
 import { SUPPORTED_EXTENSIONS } from "./supported-extensions";
 
 abstract class AAssetLoader {
-    private packages = new Map<string, Map<C.SupportedExtensions_T, C.AUPackage>>();
+    private packages = new Map<string, Map<C.SupportedExtensions_T, C.APackage>>();
 
-    protected abstract createNativePackage(UNativePackage: C.AUNativePackageConstructor): C.AUNativePackage;
-    protected abstract createPackage(UPackage: C.AUPackageConstructor, downloadPath: string): C.AUPackage;
+    protected abstract createNativePackage(UNativePackage: C.ANativePackageConstructor): C.ANativePackage;
+    protected abstract createPackage(UPackage: C.APackageConstructor, downloadPath: string): C.APackage;
 
     protected constructor() { }
 
-    private pkgCore: C.AUPackage;
-    private pkgEngine: C.AUPackage;
-    private pkgNative: C.AUNativePackage;
+    private pkgCore: C.APackage;
+    private pkgEngine: C.APackage;
+    private pkgNative: C.ANativePackage;
 
     public getCorePackage() { return this.pkgCore; }
     public getEnginePackage() { return this.pkgEngine; }
@@ -49,7 +49,7 @@ abstract class AAssetLoader {
 
         if (arguments.length === 1) {
             if (pkgName === "native")
-                return getPackage(this.packages, pkgName, "Script") as C.AUNativePackage;
+                return getPackage(this.packages, pkgName, "Script") as C.ANativePackage;
 
             const [_pkgName, _pkgExt] = pathToPkgName(pkgName);
             const potentialPkgs = this.packages.get(_pkgName);
@@ -70,7 +70,7 @@ abstract class AAssetLoader {
         return getPackage(this.packages, pkgName, impType) !== null;
     }
 
-    public async load(pkg: C.AUPackage): Promise<C.AUPackage> {
+    public async load(pkg: C.APackage): Promise<C.APackage> {
         const pkgsToLoad = [pkg];
 
         while (pkgsToLoad.length > 0) {
@@ -151,11 +151,11 @@ function pathToPkgName(path: string): [string, C.SupportedExtensions_T] {
 
 export { pathToPkgName };
 
-function getPackage(allPackages: Map<string, Map<C.SupportedExtensions_T, C.AUPackage>>, pkgName: string, impType: string): C.AUPackage {
+function getPackage(allPackages: Map<string, Map<C.SupportedExtensions_T, C.APackage>>, pkgName: string, impType: string): C.APackage {
     const packages = allPackages.get(pkgName.toLowerCase());
     const validExts = impToTypes.get(impType);
 
-    let pkg: C.AUPackage = null;
+    let pkg: C.APackage = null;
 
     for (const ext of validExts) {
         if (!packages.has(ext)) continue;
@@ -168,8 +168,8 @@ function getPackage(allPackages: Map<string, Map<C.SupportedExtensions_T, C.AUPa
 }
 
 
-type ReturnType<T extends string | "native"> = T extends "native" ? C.AUNativePackage : C.AUPackage;
+type ReturnType<T extends string | "native"> = T extends "native" ? C.ANativePackage : C.APackage;
 type InitParams_T = Record<string, any> | { // can contain anything but must contain at least these two packages
-    UPackage: C.AUPackageConstructor,
-    UNativePackage: C.AUNativePackageConstructor,
+    UPackage: C.APackageConstructor,
+    UNativePackage: C.ANativePackageConstructor,
 };

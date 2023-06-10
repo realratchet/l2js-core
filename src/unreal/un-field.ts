@@ -10,7 +10,7 @@ abstract class UField extends UObject {
     public readonly isField = true;
     protected static getConstructorName() { return "Field"; }
 
-    protected doLoad(pkg: C.AUPackage, exp: C.UExport): void {
+    protected doLoad(pkg: C.APackage, exp: C.UExport): void {
         // if (exp.objectName === "Pawn")
         //     debugger;
 

@@ -7,7 +7,7 @@ class UConst extends UField {
     protected static getConstructorName() { return "Const"; }
     public toString() { return `Const[${this.value}]`; }
 
-    protected doLoad(pkg: C.AUPackage, exp: C.UExport<C.UObject>): void {
+    protected doLoad(pkg: C.APackage, exp: C.UExport<C.UObject>): void {
         super.doLoad(pkg, exp);
 
         this.value = new FString().load(pkg).value;

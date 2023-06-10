@@ -1,4 +1,4 @@
-import AUPackage from "./un-package";
+import APackage from "./un-package";
 import BufferValue from "../buffer-value";
 import PropertyTag from "./un-property/un-property-tag";
 import UExport from "./un-export";
@@ -22,7 +22,7 @@ class FArray<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> ex
 
     public map<T2>(fnMap: (value: T, index: number, array: T[]) => T2): T2[] { return [...this].map(fnMap); }
 
-    public load(pkg: AUPackage, tag?: PropertyTag): this {
+    public load(pkg: APackage, tag?: PropertyTag): this {
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
         const count = pkg.read(new BufferValue(BufferValue.compat32)).value;
@@ -81,7 +81,7 @@ class FIndexArray extends FArray<FNumber<"compat32">> {
 class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements IConstructable {
     protected indexArray = new FIndexArray();
 
-    public load(pkg: AUPackage, tag?: PropertyTag): this {
+    public load(pkg: APackage, tag?: PropertyTag): this {
         this.indexArray.load(pkg, tag);
 
         let i = 0;
@@ -119,7 +119,7 @@ class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements 
 class FNameArray extends Array<string> implements IConstructable {
     protected indexArray = new FIndexArray();
 
-    public load(pkg: AUPackage, tag?: PropertyTag): this {
+    public load(pkg: APackage, tag?: PropertyTag): this {
         this.indexArray.load(pkg, tag);
 
         let i = 0;
@@ -179,7 +179,7 @@ class FPrimitiveArray<T extends C.NumberTypes_T> implements IConstructable {
 
     public map<T>(fnMap: (value: any, index: number, array: any[]) => T): T[] { return [...(this as any as Array<T>)].map(fnMap); }
 
-    public load(pkg: AUPackage, tag?: PropertyTag): this {
+    public load(pkg: APackage, tag?: PropertyTag): this {
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
         const count = pkg.read(new BufferValue(BufferValue.compat32));

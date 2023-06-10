@@ -3,7 +3,7 @@ import BufferValue from "../buffer-value";
 import ObjectFlags_T from "./un-object-flags";
 import UObject from "./un-object";
 import UNativeRegistry from "./un-native-registry";
-import AUPackage from "./un-package";
+import APackage from "./un-package";
 import PropertyTag from "./un-property/un-property-tag";
 import { UProperty } from "./un-property/un-properties";
 
@@ -33,7 +33,7 @@ class UStruct extends UField {
     protected static getConstructorName() { return "Struct"; }
     protected defaultProperties = new Map<string, any>();
 
-    // protected readArray(pkg: AUPackage, tag: PropertyTag) {
+    // protected readArray(pkg: APackage, tag: PropertyTag) {
     //     let field: UStruct = this;
 
     //     while (field) {
@@ -76,7 +76,7 @@ class UStruct extends UField {
         return null;
     }
 
-    protected loadProperty(pkg: AUPackage, tag: PropertyTag): void {
+    protected loadProperty(pkg: APackage, tag: PropertyTag): void {
         const offStart = pkg.tell();
         const offEnd = offStart + tag.dataSize;
 
@@ -147,7 +147,7 @@ class UStruct extends UField {
         throw new Error("Broken");
     }
 
-    protected doLoad(pkg: AUPackage, exp: C.UExport<UObject>): void {
+    protected doLoad(pkg: APackage, exp: C.UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
         this.readHead = pkg.tell();
@@ -212,7 +212,7 @@ class UStruct extends UField {
         this.readHead = pkg.tell();
     }
 
-    protected readScript(pkg: AUPackage) {
+    protected readScript(pkg: APackage) {
         const native = pkg.loader.getNativePackage();
         const core = pkg.loader.getCorePackage();
 
@@ -220,7 +220,7 @@ class UStruct extends UField {
             this.readToken(native, core, pkg, 0);
     }
 
-    public buildClass<T extends UObject = UObject>(pkg: C.AUNativePackage): new () => T {
+    public buildClass<T extends UObject = UObject>(pkg: C.ANativePackage): new () => T {
         // if (this.exp.objectName === "Vector")
         //     debugger;
 
@@ -404,7 +404,7 @@ class UStruct extends UField {
     protected bytecode: { type: string, value: any, tokenName?: string }[] = [];
     protected bytecodeLength = 0;
 
-    protected readToken(native: C.AUNativePackage, core: AUPackage, pkg: AUPackage, depth: number): ExprToken_T {
+    protected readToken(native: C.ANativePackage, core: APackage, pkg: APackage, depth: number): ExprToken_T {
         if (depth === 64) throw new Error("Too deep");
 
         const uint8 = new BufferValue(BufferValue.uint8);
@@ -933,7 +933,7 @@ class FLabelField implements IConstructable {
     public name: string = "None";
     public offset: number;
 
-    public load(pkg: AUPackage): this {
+    public load(pkg: APackage): this {
         const compat32 = new BufferValue(BufferValue.compat32);
         const uint32 = new BufferValue(BufferValue.uint32);
 

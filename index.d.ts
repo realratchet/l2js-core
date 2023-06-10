@@ -8,8 +8,8 @@ declare global {
 
             export type AAssetLoader = import("./src/asset-loader").AAssetLoader;
 
-            export type AUPackage = import("./src/unreal/un-package").AUPackage;
-            export type AUNativePackage = import("./src/unreal/un-package").AUNativePackage;
+            export type APackage = import("./src/unreal/un-package").APackage;
+            export type ANativePackage = import("./src/unreal/un-package").ANativePackage;
             export type PackageFlags_T = import("./src/unreal/un-package").PackageFlags_T;
 
             export type BigNumberTypes_T = "int64" | "uint64";
@@ -193,7 +193,7 @@ declare global {
             export type PropertyTag = import("./src/unreal/un-property/un-property-tag").PropertyTag;
 
             export interface IConstructable {
-                load(pkg: AUPackage, tag?: PropertyTag): this;
+                load(pkg: APackage, tag?: PropertyTag): this;
             }
 
             export type UObject = import("./src/unreal/un-object").UObject;
@@ -201,9 +201,9 @@ declare global {
             export type UExport<T extends UObject = UObject> = import("./src/unreal/un-export").UExport<T>;
 
             export interface ISerializable extends IConstructable {
-                load(pkg: AUPackage): this;
-                load(pkg: AUPackage, info: UExport): this;
-                load(pkg: AUPackage, info: PropertyTag): this;
+                load(pkg: APackage): this;
+                load(pkg: APackage, info: UExport): this;
+                load(pkg: APackage, info: PropertyTag): this;
             }
 
             export type UField = import("./src/unreal/un-field").UField;
@@ -230,8 +230,8 @@ declare global {
             export type FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArray<T>;
             export type FNameArray = import("./src/unreal/un-array").FNameArray;
 
-            export type AUPackageConstructor = new (loader: AAssetLoader, downloadPath: string) => C.AUPackage;
-            export type AUNativePackageConstructor = new (loader: AAssetLoader) => C.AUNativePackage;
+            export type APackageConstructor = new (loader: AAssetLoader, downloadPath: string) => C.APackage;
+            export type ANativePackageConstructor = new (loader: AAssetLoader) => C.ANativePackage;
         }
     }
 }
