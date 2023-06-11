@@ -228,7 +228,7 @@ type ReturnType<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> =
     : T extends "int64" ? BigInt64ArrayConstructor
     : never;
 
-class FPrimitiveArrayLazy<T extends C.NumberTypes_T> extends FPrimitiveArray<T>{
+class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> extends FPrimitiveArray<T>{
     public unkLazyInt: number;
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
