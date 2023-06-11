@@ -218,14 +218,14 @@ class FPrimitiveArray<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> i
 }
 
 type ReturnType<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> =
-    | T extends "uint8" ? Uint8ArrayConstructor
-    : T extends "int8" ? Int8ArrayConstructor
-    : T extends "uint16" ? Uint16ArrayConstructor
-    : T extends "int16" ? Int16ArrayConstructor
-    : T extends "uint32" ? Uint32ArrayConstructor
-    : T extends "int32" ? Int32ArrayConstructor
-    : T extends "uint64" ? BigUint64ArrayConstructor
-    : T extends "int64" ? BigInt64ArrayConstructor
+    | T extends "uint8" ? Uint8Array
+    : T extends "int8" ? Int8Array
+    : T extends "uint16" ? Uint16Array
+    : T extends "int16" ? Int16Array
+    : T extends "uint32" ? Uint32Array
+    : T extends "int32" ? Int32Array
+    : T extends "uint64" ? BigUint64Array
+    : T extends "int64" ? BigInt64Array
     : never;
 
 class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> extends FPrimitiveArray<T>{
