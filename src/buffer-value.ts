@@ -73,9 +73,9 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
             const readBytes = length.readValue(buffer, offset);
 
             byteOffset = length.value > 0 ? readBytes + 1 : readBytes;  // add delimiter unless empty
-            offset = offset + byteOffset - 1;
+            offset = offset + byteOffset - readBytes;
 
-            this.type.bytes = length.value - readBytes;
+            this.type.bytes = length.value - 1;
 
         } else if (this.type.name === "compat32") {
             const byte = new BufferValue(uint8);
