@@ -1,17 +1,17 @@
 import * as _path from "path";
 import { SUPPORTED_EXTENSIONS } from "./supported-extensions";
 
-abstract class AAssetLoader {
-    private packages = new Map<string, Map<C.SupportedExtensions_T, C.APackage>>();
+abstract class AAssetLoader<TPackage extends C.APackage = C.APackage, TNativePackage extends C.ANativePackage = C.ANativePackage> {
+    private packages = new Map<string, Map<C.SupportedExtensions_T, TPackage | TNativePackage>>();
 
-    protected abstract createNativePackage(UNativePackage: C.ANativePackageConstructor): C.ANativePackage;
-    protected abstract createPackage(UPackage: C.APackageConstructor, downloadPath: string): C.APackage;
+    protected abstract createPackage(UPackage: C.APackageConstructor, downloadPath: string): TPackage;
+    protected abstract createNativePackage(UNativePackage: C.ANativePackageConstructor): TNativePackage;
 
     protected constructor() { }
 
-    private pkgCore: C.APackage;
-    private pkgEngine: C.APackage;
-    private pkgNative: C.ANativePackage;
+    private pkgCore: TPackage;
+    private pkgEngine: TPackage;
+    private pkgNative: TNativePackage;
 
     public getCorePackage() { return this.pkgCore; }
     public getEnginePackage() { return this.pkgEngine; }
@@ -42,35 +42,35 @@ abstract class AAssetLoader {
         return this;
     }
 
-    public getPackage<T extends string | "native">(packagePath: T): ReturnType<T>;
-    public getPackage<T extends string | "native">(pkgName: T, impType?: string): ReturnType<T>;
+    public getPackage<T extends string | "native">(packagePath: T): ReturnType<T, TPackage, TNativePackage>;
+    public getPackage<T extends string | "native">(pkgName: T, impType?: string): ReturnType<T, TPackage, TNativePackage>;
 
-    public getPackage<T extends string | "native">(pkgName: T, impType?: string): ReturnType<T> {
+    public getPackage<T extends string | "native">(pkgName: T, impType?: string): ReturnType<T, TPackage, TNativePackage> {
 
         if (arguments.length === 1) {
             if (pkgName === "native")
-                return getPackage(this.packages, pkgName, "Script") as C.ANativePackage;
+                return getPackage<T, TPackage, TNativePackage>(this.packages, pkgName, "Script");
 
             const [_pkgName, _pkgExt] = pathToPkgName(pkgName);
             const potentialPkgs = this.packages.get(_pkgName);
             const pkg = potentialPkgs.get(_pkgExt);
 
-            return pkg as any;
+            return pkg as ReturnType<T, TPackage, TNativePackage>;
         }
 
-        const pkg = getPackage(this.packages, pkgName, impType);
+        const pkg = getPackage<T, TPackage, TNativePackage>(this.packages, pkgName, impType);
 
         if (pkg === null)
             throw new Error(`Package '${pkgName}[${impType}]' not found!`);
 
-        return pkg as any;
+        return pkg;
     }
 
     public hasPackage(pkgName: string, impType: string) {
         return getPackage(this.packages, pkgName, impType) !== null;
     }
 
-    public async load(pkg: C.APackage): Promise<C.APackage> {
+    public async load(pkg: TPackage): Promise<TPackage> {
         const pkgsToLoad = [pkg];
 
         while (pkgsToLoad.length > 0) {
@@ -151,11 +151,11 @@ function pathToPkgName(path: string): [string, C.SupportedExtensions_T] {
 
 export { pathToPkgName };
 
-function getPackage(allPackages: Map<string, Map<C.SupportedExtensions_T, C.APackage>>, pkgName: string, impType: string): C.APackage {
+function getPackage<T extends string | "native", TPackage, TNativePackage>(allPackages: Map<string, Map<C.SupportedExtensions_T, TPackage | TNativePackage>>, pkgName: T, impType: string): ReturnType<T, TPackage, TNativePackage> {
     const packages = allPackages.get(pkgName.toLowerCase());
     const validExts = impToTypes.get(impType);
 
-    let pkg: C.APackage = null;
+    let pkg: TPackage | TNativePackage = null;
 
     for (const ext of validExts) {
         if (!packages.has(ext)) continue;
@@ -164,11 +164,11 @@ function getPackage(allPackages: Map<string, Map<C.SupportedExtensions_T, C.APac
         break;
     }
 
-    return pkg;
+    return pkg as ReturnType<T, TPackage, TNativePackage>;
 }
 
 
-type ReturnType<T extends string | "native"> = T extends "native" ? C.ANativePackage : C.APackage;
+type ReturnType<T extends string | "native", TPackage, TNativePackage> = T extends "native" ? TNativePackage : TPackage;
 type InitParams_T = Record<string, any> | { // can contain anything but must contain at least these two packages
     UPackage: C.APackageConstructor,
     UNativePackage: C.ANativePackageConstructor,

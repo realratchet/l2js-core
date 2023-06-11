@@ -9,7 +9,7 @@ declare global {
             export type IAssetListInfo = Record<string, string>;
             export type SupportedExtensions_T = "UNR" | "UTX" | "USX" | "UAX" | "U" | "UKX" | "USK" | "NATIVE";
 
-            export type AAssetLoader = import("./src/asset-loader").AAssetLoader;
+            export type AAssetLoader<TPackage extends C.APackage = C.APackage, TNativePackage extends C.ANativePackage = C.ANativePackage> = import("./src/asset-loader").AAssetLoader<TPackage, TNativePackage>;
 
             export type APackage = import("./src/unreal/un-package").APackage;
             export type ANativePackage = import("./src/unreal/un-package").ANativePackage;
@@ -236,8 +236,8 @@ declare global {
             export type FPrimitiveArray<T extends NumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArray<T>;
             export type FPrimitiveArrayLazy<T extends NumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArrayLazy<T>;
 
-            export type APackageConstructor = new (loader: AAssetLoader, downloadPath: string) => C.APackage;
-            export type ANativePackageConstructor = new (loader: AAssetLoader) => C.ANativePackage;
+            export type APackageConstructor<T extends APackage = APackage> = new (loader: AAssetLoader, downloadPath: string) => T;
+            export type ANativePackageConstructor<T extends ANativePackage = ANativePackage> = new (loader: AAssetLoader) => T;
         }
     }
 }
