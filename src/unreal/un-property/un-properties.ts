@@ -427,9 +427,6 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
 
         pkg.read(this.propertyValue[tag.arrayIndex]);
 
-        if (this.propertyValue[tag.arrayIndex].string.length + 2 !== tag.dataSize)
-            debugger;
-
         this.propertyValuePkg = pkg;
         this.isSet[tag.arrayIndex] = true;
 
