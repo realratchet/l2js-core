@@ -6,6 +6,8 @@ export * from "./src/index";
 declare global {
     namespace L2JS {
         namespace Core {
+            export type FlagDict<T extends string> = Record<T, boolean>;
+
             export type IAssetListInfo = Record<string, string>;
             export type SupportedExtensions_T = "UNR" | "UTX" | "USX" | "UAX" | "U" | "UKX" | "USK" | "NATIVE";
 
@@ -16,8 +18,8 @@ declare global {
             export type PackageFlags_T = import("./src/unreal/un-package").PackageFlags_T;
 
             export type BigNumberTypes_T = "int64" | "uint64";
-            export type PrimitiveNumberTypes_T = "compat32" | "float" | "int32" | "uint32" | "int8" | "uint8" | "int16" | "uint16";
-            export type NumberTypes_T = BigNumberTypes_T | PrimitiveNumberTypes_T;
+            export type PrimitiveNumberTypes_T = "float" | "int32" | "uint32" | "int8" | "uint8" | "int16" | "uint16";
+            export type NumberTypes_T = "compat32" | BigNumberTypes_T | PrimitiveNumberTypes_T;
             export type StringTypes_T = "char" | "utf16";
 
             export type ValueTypeNames_T = NumberTypes_T | StringTypes_T | "guid" | "buffer";

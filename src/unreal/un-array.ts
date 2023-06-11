@@ -145,7 +145,7 @@ class FNameArray extends Array<string> implements IConstructable {
     public clone(): FNameArray { return new FNameArray().copy(this); }
 }
 
-class FPrimitiveArray<T extends C.NumberTypes_T> implements IConstructable {
+class FPrimitiveArray<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> implements IConstructable {
     protected array: DataView;
     protected Constructor: C.ValidTypes_T<T>;
 
@@ -156,7 +156,6 @@ class FPrimitiveArray<T extends C.NumberTypes_T> implements IConstructable {
         switch (this.Constructor.name) {
             case "int64": funName = "getBigInt64"; break;
             case "uint64": funName = "getBigUint64"; break;
-            case "compat32":
             case "int32":
                 funName = "getInt32";
                 break;
@@ -204,12 +203,12 @@ class FPrimitiveArray<T extends C.NumberTypes_T> implements IConstructable {
         return this.array.buffer.slice(this.array.byteOffset, this.array.byteOffset + this.getByteLength());
     }
 
-    public getTypedArray() {
+    public getTypedArray(): ReturnType<T> {
         try {
-            return new this.Constructor.dtype(this.array.buffer, this.array.byteOffset, this.getElemCount());
+            return new this.Constructor.dtype(this.array.buffer, this.array.byteOffset, this.getElemCount()) as any;
         } catch (e) {
             if (e.message.includes("should be a multiple of"))
-                return new this.Constructor.dtype(this.getArrayBufferSlice());
+                return new this.Constructor.dtype(this.getArrayBufferSlice()) as any;
 
             throw e;
         }
@@ -217,6 +216,17 @@ class FPrimitiveArray<T extends C.NumberTypes_T> implements IConstructable {
 
     public getByteLength() { return this.array.byteLength; }
 }
+
+type ReturnType<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> =
+    | T extends "uint8" ? Uint8ArrayConstructor
+    : T extends "int8" ? Int8ArrayConstructor
+    : T extends "uint16" ? Uint16ArrayConstructor
+    : T extends "int16" ? Int16ArrayConstructor
+    : T extends "uint32" ? Uint32ArrayConstructor
+    : T extends "int32" ? Int32ArrayConstructor
+    : T extends "uint64" ? BigUint64ArrayConstructor
+    : T extends "int64" ? BigInt64ArrayConstructor
+    : never;
 
 class FPrimitiveArrayLazy<T extends C.NumberTypes_T> extends FPrimitiveArray<T>{
     public unkLazyInt: number;

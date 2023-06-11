@@ -13,7 +13,7 @@ class UFunction extends UStruct {
     protected returnValueOffset: number;
     protected _funcFlags: number;
     protected replicationOffset: number;
-    protected funcFlags: FlagDict<EnumKeys.FunctionFlags_T>;
+    protected funcFlags: C.FlagDict<EnumKeys.FunctionFlags_T>;
 
     protected static getConstructorName() { return "Function"; }
 

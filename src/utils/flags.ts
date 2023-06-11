@@ -8,7 +8,7 @@ function flagBitsToDict<T extends string>(flags: number, enum_: Record<T, number
             acc[name as T] = true;
 
         return acc;
-    }, {} as FlagDict<T>);
+    }, {} as C.FlagDict<T>);
 }
 
 export { anyFlags, allFlags, flagBitsToDict }

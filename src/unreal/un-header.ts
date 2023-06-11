@@ -5,7 +5,7 @@ type UGeneration = import("./un-generation").UGeneration;
 class UHeader {
     public version: number;
     public _packageFlags: number;
-    public packageFlags: FlagDict<EnumKeys.PackageFlags_T>;
+    public packageFlags: C.FlagDict<EnumKeys.PackageFlags_T>;
 
     public nameCount: number;
     public nameOffset: number;

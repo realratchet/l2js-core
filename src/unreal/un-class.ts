@@ -29,7 +29,7 @@ class UClass extends UState {
     declare ["constructor"]: typeof UClass;
 
     protected _classFlags: number;
-    public classFlags: FlagDict<EnumKeys.EClassFlags_T>;
+    public classFlags: C.FlagDict<EnumKeys.EClassFlags_T>;
     protected classGuid: DataView;
     protected dependencies = new FArray(FDependencies);
     protected pkgImportIds = new FIndexArray();

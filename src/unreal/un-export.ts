@@ -12,7 +12,7 @@ class UExport<T extends C.UObject = C.UObject> {
     public objectName: string = "None";
 
     public _flags: number;
-    public objectFlags: FlagDict<EnumKeys.ObjectFlags_T>;
+    public objectFlags: C.FlagDict<EnumKeys.ObjectFlags_T>;
 
     public size: number = 0;
     public offset: number;

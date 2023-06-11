@@ -13,7 +13,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
     public arrayDimensions: number;
     public propertyName: string;
-    public propertyFlags: FlagDict<EnumKeys.PropertyFlags_T>;
+    public propertyFlags: C.FlagDict<EnumKeys.PropertyFlags_T>;
 
     protected flags: number;
     protected replicationOffset: number;

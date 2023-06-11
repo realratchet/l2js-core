@@ -26,8 +26,7 @@ class FNumber<T extends C.NumberTypes_T> {
 export default FNumber;
 export { FNumber };
 
-type ReturnType<T extends C.NumberTypes_T> = T extends C.PrimitiveNumberTypes_T
-    ? number
-    : T extends C.BigNumberTypes_T
-    ? bigint
+type ReturnType<T extends C.NumberTypes_T> =
+    | T extends C.PrimitiveNumberTypes_T | "compat32" ? number
+    : T extends C.BigNumberTypes_T ? bigint
     : never;

@@ -8,7 +8,7 @@ abstract class UState extends UStruct {
     protected _stateFlags: number;
     protected labelTableOffset: number;
     protected probes: string[];
-    protected stateFlags: FlagDict<EnumKeys.EStateFlags_T>;
+    protected stateFlags: C.FlagDict<EnumKeys.EStateFlags_T>;
 
     public readonly isState = true;
 
