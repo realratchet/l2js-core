@@ -1,6 +1,4 @@
-import APackage from "./un-package";
 import BufferValue from "../buffer-value";
-import PropertyTag from "./un-property/un-property-tag";
 import UExport from "./un-export";
 import FNumber from "./un-number";
 
@@ -22,7 +20,7 @@ class FArray<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> ex
 
     public map<T2>(fnMap: (value: T, index: number, array: T[]) => T2): T2[] { return [...this].map(fnMap); }
 
-    public load(pkg: APackage, tag?: PropertyTag): this {
+    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
         const count = pkg.read(new BufferValue(BufferValue.compat32)).value;
@@ -81,7 +79,7 @@ class FIndexArray extends FArray<FNumber<"compat32">> {
 class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements IConstructable {
     protected indexArray = new FIndexArray();
 
-    public load(pkg: APackage, tag?: PropertyTag): this {
+    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
         this.indexArray.load(pkg, tag);
 
         let i = 0;
@@ -119,7 +117,7 @@ class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements 
 class FNameArray extends Array<string> implements IConstructable {
     protected indexArray = new FIndexArray();
 
-    public load(pkg: APackage, tag?: PropertyTag): this {
+    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
         this.indexArray.load(pkg, tag);
 
         let i = 0;
@@ -179,7 +177,7 @@ class FPrimitiveArray<T extends C.NumberTypes_T> implements IConstructable {
 
     public map<T>(fnMap: (value: any, index: number, array: any[]) => T): T[] { return [...(this as any as Array<T>)].map(fnMap); }
 
-    public load(pkg: APackage, tag?: PropertyTag): this {
+    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
         const count = pkg.read(new BufferValue(BufferValue.compat32));
@@ -220,5 +218,18 @@ class FPrimitiveArray<T extends C.NumberTypes_T> implements IConstructable {
     public getByteLength() { return this.array.byteLength; }
 }
 
+class FPrimitiveArrayLazy<T extends C.NumberTypes_T> extends FPrimitiveArray<T>{
+    public unkLazyInt: number;
+
+    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
+
+        this.unkLazyInt = pkg.read(new BufferValue(BufferValue.int32)).value as number;
+
+        super.load(pkg, tag);
+
+        return this;
+    }
+}
+
 export default FArray;
-export { FArray, FIndexArray, FNameArray, FPrimitiveArray, FObjectArray };
+export { FArray, FIndexArray, FNameArray, FPrimitiveArray, FObjectArray, FPrimitiveArrayLazy };

@@ -233,6 +233,8 @@ declare global {
             export type FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArray<T>;
             export type FNameArray = import("./src/unreal/un-array").FNameArray;
             export type FObjectArray<T extends UObject = UObject> = import("./src/unreal/un-array").FObjectArray<T>;
+            export type FPrimitiveArray<T extends NumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArray<T>;
+            export type FPrimitiveArrayLazy<T extends NumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArrayLazy<T>;
 
             export type APackageConstructor = new (loader: AAssetLoader, downloadPath: string) => C.APackage;
             export type ANativePackageConstructor = new (loader: AAssetLoader) => C.ANativePackage;
