@@ -236,6 +236,9 @@ class UStruct extends UField {
             ? pkg.getConstructor(lastNative.friendlyName as C.NativeTypes_T) as any as typeof UObject
             : pkg.getStructConstructor(this.friendlyName) as any as typeof UObject;
 
+        if (friendlyName === "Primitive")
+            debugger;
+
         // @ts-ignore
         const _clsBase = {
             [friendlyName]: class DynamicStruct extends Constructor {

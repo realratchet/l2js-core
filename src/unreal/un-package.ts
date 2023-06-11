@@ -181,8 +181,9 @@ abstract class APackage extends UEncodedFile {
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "Sound");
 
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "Primitive");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "ConvexVolume");
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "Model");
+
+            addClassDependency(nameTable, nameHash, imports, exports, "Native", "ConvexVolume");
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "Mesh");
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "StaticMesh");
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "MeshInstance");

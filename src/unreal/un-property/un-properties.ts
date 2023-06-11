@@ -311,7 +311,7 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
 
 class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportProperty<C.UStruct, T, T> {
     public readProperty(pkg: APackage, tag: PropertyTag) {
-        this.propertyName = tag.name;
+        this.propertyName = tag?.name ?? this.propertyName ?? "None";
 
         // if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
         //     debugger;
@@ -321,13 +321,13 @@ class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportPr
 
         const Constructor = this.value.buildClass<T>(native);
         const struct = new Constructor();
-        const isNative = ["Vector", "Rotator", "Color"].includes(tag.structName) || verArchive < 0x76;
+        const isNative = ["Vector", "Rotator", "Color"].includes(tag?.structName || null) || verArchive < 0x76;
 
         struct.load(pkg, isNative ? null : tag);
 
-        this.propertyValue[tag.arrayIndex] = struct;
+        this.propertyValue[tag?.arrayIndex || 0] = struct;
         this.propertyValuePkg = pkg;
-        this.isSet[tag.arrayIndex] = true;
+        this.isSet[tag?.arrayIndex] = true;
 
         return this;
     }
@@ -362,7 +362,7 @@ abstract class UNumericProperty<T extends C.NumberTypes_T | C.StringTypes_T> ext
     declare ["constructor"]: typeof UNumericProperty & { dtype: C.ValidTypes_T<T> };
 
     public readProperty(pkg: APackage, tag: PropertyTag) {
-        this.propertyName = tag?.name || null;
+        this.propertyName = tag?.name ?? this.propertyName ?? "None";
 
         pkg.read(this.propertyValue[tag?.arrayIndex || 0]);
         this.propertyValuePkg = pkg;
@@ -417,7 +417,7 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
     }
 
     public readProperty(pkg: APackage, tag: PropertyTag) {
-        this.propertyName = tag?.name || null;
+        this.propertyName = tag?.name ?? this.propertyName ?? "None";
 
         if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
             debugger;
@@ -571,7 +571,7 @@ class UByteProperty extends UBaseExportProperty<C.UEnum, BufferValue<"uint8">, n
     public static dtype = BufferValue.uint8;
 
     public readProperty(pkg: APackage, tag: PropertyTag) {
-        this.propertyName = tag?.name || null;
+        this.propertyName = tag?.name ?? this.propertyName ?? "None";
 
         if (this.arrayDimensions !== 1 || tag && tag.arrayIndex !== 0)
             debugger;
