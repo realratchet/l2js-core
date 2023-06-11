@@ -33,36 +33,7 @@ class UStruct extends UField {
     protected static getConstructorName() { return "Struct"; }
     protected defaultProperties = new Map<string, any>();
 
-    // protected readArray(pkg: APackage, tag: PropertyTag) {
-    //     let field: UStruct = this;
-
-    //     while (field) {
-
-
-    //         if (!field.childPropFields.has(tag.name)) {
-    //             field = field.superField as any as UStruct;
-    //             continue;
-    //         }
-
-    //         const property = field.childPropFields.get(tag.name);
-
-    //         debugger;
-
-    //         const constr = property.createObject();
-    //         const value = constr(pkg, tag);
-
-    //         this.setProperty(tag, value);
-
-    //         return true;
-
-    //     }
-
-    //     debugger;
-    //     throw new Error("Broken");
-    // }
-
     protected isValidProperty(varName: string) {
-        // debugger;
 
         let parent: UStruct = this;
 
@@ -221,9 +192,6 @@ class UStruct extends UField {
     }
 
     public buildClass<T extends UObject = UObject>(pkg: C.ANativePackage): new () => T {
-        // if (this.exp.objectName === "Vector")
-        //     debugger;
-
         if (this.kls)
             return this.kls as any as new () => T;
 
@@ -254,17 +222,9 @@ class UStruct extends UField {
             for (const field of childPropFields.values()) {
                 if (!(field instanceof UProperty)) continue;
 
-                const propertyName = field.propertyName;
-
-                // debugger;
-
-                // if (this.propertyDict.has(propertyName))
-                //     clsNamedProperties[propertyName] = this.propertyDict.get(propertyName);
-                // else
-                clsNamedProperties[propertyName] = field.clone();
+                clsNamedProperties[field.propertyName] = field.clone();
             }
 
-            // debugger;
 
             for (const [propertyName, propertyValue] of defaultProperties.entries())
                 defaultNamedProperties[propertyName] = propertyValue;
@@ -276,18 +236,6 @@ class UStruct extends UField {
             ? pkg.getConstructor(lastNative.friendlyName as C.NativeTypes_T) as any as typeof UObject
             : pkg.getStructConstructor(this.friendlyName) as any as typeof UObject;
 
-        // if (lastNative)
-        //     debugger;
-
-        // if (friendlyName === "Vector")
-        //     debugger;
-
-        // if (friendlyName === "PointRegion")
-        //     debugger;
-
-        // if (friendlyName === "NMovableSunLight")
-        //     debugger;
-
         // @ts-ignore
         const _clsBase = {
             [friendlyName]: class DynamicStruct extends Constructor {
@@ -297,34 +245,18 @@ class UStruct extends UField {
                 public static readonly nativeClass = lastNative;
                 public static readonly inheretenceChain = Object.freeze(inheretenceChain);
 
-                protected newProps: Record<string, string> = {};
-
                 protected static getConstructorName(): string { return friendlyName; }
 
                 constructor() {
                     super();
 
-                    const oldProps = this.getPropertyMap();
-                    const newProps = this.newProps;
-                    const missingProps = [];
-
-                    // if (friendlyName === "Vector")
-                    //     debugger;
+                    const propNames = this.getPropertyMap();
 
                     for (const [propName, propValue] of Object.entries(clsNamedProperties)) {
-                        const varname = propName in oldProps ? oldProps[propName] : propName;
-
-                        if (!(propName in oldProps)) {
-                            newProps[varname] = varname;
-                            missingProps.push(varname);
-                        }
-
                         if (!propValue)
                             debugger;
 
                         const value = propValue.clone();
-
-                        // debugger;
 
                         if (propName in defaultNamedProperties) {
                             if (!value.copy) {
@@ -335,38 +267,21 @@ class UStruct extends UField {
                             value.copy(defaultNamedProperties[propName]);
                         }
 
-                        this.propertyDict.set(varname, value);
+                        this.propertyDict.set(propName, value);
 
-                        // if (value instanceof BufferValue) {
-                        //     this.propertyDict.set(varname, value);
-                        // } else if (value.getConstructorName?.()) {
-                        //     this.propertyDict.set(varname, new value());
-                        // } else if (value instanceof UnContainers.UContainer) {
-                        //     this.propertyDict.set(varname, value);
-                        // } else if (value instanceof Array) {
-                        //     this.propertyDict.set(varname, value);
-                        // } else if (value instanceof FPrimitiveArray) {
-                        //     this.propertyDict.set(varname, value);
-                        // } else if (value instanceof UObject) {
-                        //     this.propertyDict.set(varname, value);
-                        // } else {
-                        //     debugger;
-                        // }
+                        if (propName in propNames) {
+                            // Attach proxies to varnames
+                            const varname = propNames[propName];
 
+                            if (Object.hasOwn(this, varname))
+                                throw new Error(`Variable name '${varname}' already used, cannot assign proxy for '${propName}' property!`);
 
-                        // if (value !== undefined || !(varname in this))
-                        //     (this as any)[varname] = value;
+                            Object.defineProperty(this, varname, {
+                                get: () => this.propertyDict.get(propName).getPropertyValue(),
+                                set: (v: any) => { throw new Error("Not yet implemented."); }
+                            })
+                        }
                     }
-
-                    // if (missingProps.length > 0 && lastNative)
-                    //     console.warn(`Native type '${friendlyName}' is missing property '${missingProps.join(", ")}'`);
-                }
-
-                protected getPropertyMap(): Record<string, string> {
-                    return {
-                        ...super.getPropertyMap(),
-                        ...this.newProps
-                    };
                 }
 
                 public toString() { return Constructor === UObject ? `[D|S]${friendlyName}` : Constructor.prototype.toString.call(this); }
@@ -374,7 +289,6 @@ class UStruct extends UField {
         }[this.friendlyName];
 
         const clsNamedPropertiesKeys = Object.keys(clsNamedProperties);
-
         const cls = eval([
             `(function() {`,
             `    const ${Constructor.name} = _clsBase;`,
@@ -390,10 +304,6 @@ class UStruct extends UField {
             ),
             `})();`,
         ].join("\n"));
-
-        // console.log(cls);
-
-        // debugger;
 
         this.kls = cls as any;
 
@@ -412,20 +322,13 @@ class UStruct extends UField {
         const uint32 = new BufferValue(BufferValue.uint32);
         const compat32 = new BufferValue(BufferValue.compat32);
         const float = new BufferValue(BufferValue.float);
-        const char = new BufferValue(BufferValue.char);
 
         depth++;
-
-
-
-        // debugger;
 
         const tokenValue = pkg.read(uint8).value as ExprToken_T;
         let tokenValue2 = tokenValue;
 
         const tokenHex = `0x${tokenValue.toString(16)}`;
-
-        // debugger;
 
         const isNativeFunc = UNativeRegistry.hasNativeFunc(tokenValue);
         const tokenName = isNativeFunc ? UNativeRegistry.getNativeFuncName(tokenValue) : ExprToken_T[tokenValue];
@@ -439,8 +342,6 @@ class UStruct extends UField {
 
         tokenDebug += tokenName + "\r\n";
         this.bytecodePlainText += tokenDebug;
-
-
 
         if (tokenValue < ExprToken_T.MaxConversion) {
             switch (tokenValue) {
@@ -624,8 +525,6 @@ class UStruct extends UField {
                 case ExprToken_T.FloatToInt: {
                     const objectIndex = pkg.read(compat32).value as number;
 
-                    // debugger;
-
                     this.bytecode.push({ type: "compat", value: objectIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
                 } return tokenValue2;
@@ -748,77 +647,6 @@ class UStruct extends UField {
 
 export default UStruct;
 export { UStruct };
-
-// function buildStructProperty(pkg: UNativePackage, field: UnProperties.UArrayProperty) {
-//     if (field.arrayDimensions !== 1)
-//         debugger;
-
-//     const childProperty = field.value;
-
-//     if (childProperty.isNumericType) {
-//         const dtype = (childProperty as UNumericProperty).constructor.dtype;
-//         const arr = new FPrimitiveArray(dtype);
-
-//         return arr;
-//     }
-
-//     if (childProperty instanceof UnProperties.UStructProperty) {
-//         const cls = buildProperty(pkg, childProperty);
-//         const arr = new FArray(cls);
-
-//         return arr;
-//     }
-
-//     if (childProperty instanceof UnProperties.UObjectProperty) {
-//         return new FIndexArray();
-//     }
-
-
-//     debugger;
-// }
-
-// function buildNonArrayProperty(pkg: UNativePackage, field: UProperty): any {
-//     if (field.isNumericType)
-//         return (field as any as IBufferValueProperty).buildBuffer();
-
-//     if (field instanceof UnProperties.UNameProperty)
-//         return field.buildContainer(pkg.nameTable);
-
-//     if (field instanceof UnProperties.UObjectProperty || field instanceof UnProperties.UClassProperty)
-//         return field.buildContainer();
-
-//     if (field instanceof UnProperties.UByteProperty)
-//         return field.buildContainer();
-
-//     if (field instanceof UnProperties.UStructProperty)
-//         return new (field.value.buildClass(pkg))();
-
-//     if (field instanceof UnProperties.UBoolProperty)
-//         return field.buildContainer();
-
-//     if (field instanceof UnProperties.UStrProperty)
-//         return new BufferValue(BufferValue.compat32);
-
-//     debugger;
-//     throw new Error("Not implemented yet!");
-// }
-
-// function buildProperty(pkg: UNativePackage, field: UProperty): any {
-//     if (field instanceof UnProperties.UArrayProperty)
-//         return buildStructProperty(pkg, field);
-
-//     if (field.arrayDimensions > 1) {
-//         const arr = new Array(field.arrayDimensions);
-
-//         for (let i = 0; i < field.arrayDimensions; i++)
-//             arr[i] = buildNonArrayProperty(pkg, field);
-
-
-//         return arr;
-//     }
-
-//     return buildNonArrayProperty(pkg, field);
-// }
 
 enum ExprToken_T {
     // Variable references

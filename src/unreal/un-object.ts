@@ -88,10 +88,14 @@ abstract class UObject implements C.ISerializable {
         this.readHead = pkg.tell();
     }
 
+    protected getPropertyMap(): Record<string, string> { return {}; }
     protected getPropertyVarName(tag: PropertyTag) { return tag.name; }
-    protected isValidProperty(varName: string) { return this.propertyDict.has(varName) ? this.propertyDict.get(varName) : null; }
+    protected isValidProperty(varName: string) {
+        return this.propertyDict.has(varName)
+            ? this.propertyDict.get(varName)
+            : null;
+    }
 
-    protected getPropertyMap() { return {}; }
 
     public clone(): UObject {
         const Constructor = this.constructor as any as new () => UObject;
