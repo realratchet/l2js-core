@@ -250,9 +250,7 @@ class UStruct extends UField {
 
                 protected static getConstructorName(): string { return friendlyName; }
 
-                constructor() {
-                    super();
-
+                protected makeLayout() {
                     const propNames = this.getPropertyMap();
 
                     for (const [propName, propValue] of Object.entries(clsNamedProperties)) {
@@ -285,6 +283,8 @@ class UStruct extends UField {
                             })
                         }
                     }
+
+                    this.isConstructed = true;
                 }
 
                 public toString() { return Constructor === UObject ? `[D|S]${friendlyName}` : Constructor.prototype.toString.call(this); }

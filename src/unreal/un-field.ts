@@ -23,6 +23,10 @@ abstract class UField extends UObject {
         this.nextFieldId = pkg.read(compat32).value;
     }
 
+    protected makeLayout() {
+        this.isConstructed = true;
+    }
+
     protected collectDependencies<T extends UField = typeof this>() {
         const dependencyTree = [];
         let base = this as unknown as T;

@@ -14,6 +14,7 @@ abstract class UObject implements C.ISerializable {
     public static UNREAD_AS_NATIVE = false;
 
     public readonly isObject = true;
+    public isConstructed: boolean = false;
 
     public objectName = "Exp_None";
     public exportIndex?: number = null;
@@ -33,6 +34,16 @@ abstract class UObject implements C.ISerializable {
     protected pkg: APackage;
     public readonly propertyDict = new Map<string, C.UProperty>();
     public nativeBytes?: BufferValue<"buffer"> = null;
+
+
+    public constructor() {
+        this.makeLayout();
+
+        if (!this.isConstructed)
+            throw new Error(`'${this.constructor.name}' must be created via package.`)
+    }
+
+    protected makeLayout(): void { throw new Error("Layout must be overloaded by the package."); }
 
     protected setReadPointers(exp: UExport) {
         this.readStart = this.readHead = exp.offset;
