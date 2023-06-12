@@ -43,7 +43,7 @@ abstract class UObject implements C.ISerializable {
             throw new Error(`'${this.constructor.name}' must be created via package.`)
     }
 
-    protected makeLayout(): void { throw new Error("Layout must be overloaded by the package."); }
+    protected makeLayout(): void { throw new Error(`Layout for '${this.constructor.name}' must be overloaded by the package, was this created via package?.`); }
 
     protected setReadPointers(exp: UExport) {
         this.readStart = this.readHead = exp.offset;
@@ -283,6 +283,10 @@ abstract class UObject implements C.ISerializable {
             filename: this.pkg?.path ?? null,
             value: properties
         };
+    }
+
+    public toString() {
+        return `${this.constructor.name}=(name=${this.exp?.objectName ?? this.objectName}${this.exp ? `, exp=${this.exp.index}` : ''})`;
     }
 }
 

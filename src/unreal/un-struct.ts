@@ -5,7 +5,7 @@ import UObject from "./un-object";
 import UNativeRegistry from "./un-native-registry";
 import APackage from "./un-package";
 import PropertyTag from "./un-property/un-property-tag";
-import { UProperty } from "./un-property/un-properties";
+import { UProperty, BooleanValue } from "./un-property/un-properties";
 
 class UStruct extends UField {
     declare ["constructor"]: typeof UStruct;
@@ -257,18 +257,18 @@ class UStruct extends UField {
                         if (!propValue)
                             debugger;
 
-                        const value = propValue.clone();
+                        const property = propValue.clone();
 
                         if (propName in defaultNamedProperties) {
-                            if (!value.copy) {
+                            if (!property.copy) {
                                 debugger;
                                 throw new Error(`Must be copyable '${clsNamedProperties[propName].constructor.name}'`);
                             }
 
-                            value.copy(defaultNamedProperties[propName]);
+                            property.copy(defaultNamedProperties[propName]);
                         }
 
-                        this.propertyDict.set(propName, value);
+                        this.propertyDict.set(propName, property);
 
                         if (propName in propNames) {
                             // Attach proxies to varnames
@@ -278,8 +278,27 @@ class UStruct extends UField {
                                 throw new Error(`Variable name '${varname}' already used, cannot assign proxy for '${propName}' property!`);
 
                             Object.defineProperty(this, varname, {
-                                get: () => this.propertyDict.get(propName).getPropertyValue(),
-                                set: (v: any) => { throw new Error("Not yet implemented."); }
+                                get: () => {
+
+                                    if (property.arrayDimensions !== 1)
+                                        throw new Error(`Not implemented`);
+
+                                    return this.propertyDict.get(propName).getPropertyValue()
+                                },
+                                set: (v: any) => {
+                                    if (property.arrayDimensions !== 1)
+                                        throw new Error(`Not implemented`);
+
+                                    const value = property.propertyValue[0];
+
+                                    if (value instanceof BufferValue || value instanceof BooleanValue)
+                                        value.value = v;
+                                    else {
+                                        debugger;
+                                        throw new Error(`Not implemented`);
+                                    }
+
+                                }
                             })
                         }
                     }
