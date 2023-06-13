@@ -41,8 +41,11 @@ abstract class UObject implements C.ISerializable {
 
         if (!this.isConstructed)
             throw new Error(`'${this.constructor.name}' must be created via package.`)
+
+        this.onSuperConstructed();
     }
 
+    protected onSuperConstructed(): void { }
     protected makeLayout(): void { throw new Error(`Layout for '${this.constructor.name}' must be overloaded by the package, was this created via package?.`); }
 
     protected setReadPointers(exp: UExport) {
@@ -110,6 +113,7 @@ abstract class UObject implements C.ISerializable {
 
     public clone(): UObject {
         const Constructor = this.constructor as any as new () => UObject;
+
 
         return new Constructor().copy(this);
     }

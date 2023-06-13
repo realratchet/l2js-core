@@ -44,7 +44,7 @@ class FArray<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> ex
                 return exp;
             })() : null;
 
-            this[i] = new (this.Constructor as any)(elementSize).load(pkg, exp);
+            this[i] = new (this.Constructor as any)().load(pkg, exp);
         }
 
         if (hasTag) console.assert((pkg.tell() - beginIndex - tag.dataSize) === 0);

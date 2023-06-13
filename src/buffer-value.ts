@@ -159,7 +159,7 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
 
             (this.bytes[funName] as any)(this.bytes.byteOffset + 0, bytes, this.endianess === "little");
         }
-        else throw new Error("Invalid action.");
+        else throw new Error(`Invalid byte type '${typeof bytes}' expected 'number'`);
     }
 
     public get value(): ReturnType<T> {
