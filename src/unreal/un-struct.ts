@@ -155,7 +155,7 @@ class UStruct extends UField {
 
             while (Number.isFinite(childPropId) && childPropId !== 0) {
 
-                const field = pkg.fetchObject<UProperty | UField>(childPropId).loadSelf();
+                const field = pkg.fetchObject(childPropId).loadSelf() as UProperty | UField;
 
                 if (field instanceof UProperty)
                     this.childPropFields.set(field.propertyName, field);
