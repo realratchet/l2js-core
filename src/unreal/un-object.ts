@@ -35,7 +35,6 @@ abstract class UObject implements C.ISerializable {
     public readonly propertyDict = new Map<string, C.UProperty>();
     public nativeBytes?: BufferValue<"buffer"> = null;
 
-
     public constructor() {
         this.makeLayout();
 
@@ -109,7 +108,6 @@ abstract class UObject implements C.ISerializable {
             ? this.propertyDict.get(varName)
             : null;
     }
-
 
     public clone(): UObject {
         const Constructor = this.constructor as any as new () => UObject;
@@ -289,6 +287,7 @@ abstract class UObject implements C.ISerializable {
         };
     }
 
+    public toString(...args: any): string;
     public toString() {
         return `${this.constructor.name}=(name=${this.exp?.objectName ?? this.objectName}${this.exp ? `, exp=${this.exp.index}` : ''})`;
     }

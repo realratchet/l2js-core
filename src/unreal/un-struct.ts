@@ -5,7 +5,7 @@ import UObject from "./un-object";
 import UNativeRegistry from "./un-native-registry";
 import APackage from "./un-package";
 import PropertyTag from "./un-property/un-property-tag";
-import { UProperty, BooleanValue } from "./un-property/un-properties";
+import * as UnProperties from "./un-property/un-properties";
 
 class UStruct extends UField {
     declare ["constructor"]: typeof UStruct;
@@ -13,7 +13,7 @@ class UStruct extends UField {
     protected textBufferId: number;
 
     protected firstChildPropId: number;
-    public readonly childPropFields = new Map<string, UProperty>();
+    public readonly childPropFields = new Map<string, UnProperties.UProperty>();
     public readonly childFunctions = new Array<C.UFunction>();
     public readonly childEnums = new Array<C.UEnum>();
     public readonly childStructs = new Array<UStruct>();
@@ -91,7 +91,7 @@ class UStruct extends UField {
 
             const property = field.childPropFields.get(tag.name);
 
-            if (!(property instanceof UProperty))
+            if (!(property instanceof UnProperties.UProperty))
                 continue;
 
             if (property.arrayDimensions > 1) {
@@ -141,8 +141,8 @@ class UStruct extends UField {
         if (0x77 < verArchive) {
             this.unkObjectId = pkg.read(compat32).value;    // struct flags?
 
-            if (this.unkObjectId !== 0)
-                debugger;
+            // if (this.unkObjectId !== 0)
+            //     debugger;
         }
 
         this.line = pkg.read(int32).value;
@@ -155,9 +155,9 @@ class UStruct extends UField {
 
             while (Number.isFinite(childPropId) && childPropId !== 0) {
 
-                const field = pkg.fetchObject(childPropId).loadSelf() as UProperty | UField;
+                const field = pkg.fetchObject(childPropId).loadSelf() as UnProperties.UProperty | UField;
 
-                if (field instanceof UProperty)
+                if (field instanceof UnProperties.UProperty)
                     this.childPropFields.set(field.propertyName, field);
                 else if (field instanceof UField) {
                     switch (field.constructor.getConstructorName()) {
@@ -201,7 +201,7 @@ class UStruct extends UField {
         if (!this.isReady)
             debugger;
 
-        const clsNamedProperties: Record<string, UProperty> = {};
+        const clsNamedProperties: Record<string, UnProperties.UProperty> = {};
         const defaultNamedProperties: Record<string, any> = {};
         const inheretenceChain = new Array<string>();
 
@@ -220,7 +220,7 @@ class UStruct extends UField {
             const { childPropFields, defaultProperties } = base;
 
             for (const field of childPropFields.values()) {
-                if (!(field instanceof UProperty)) continue;
+                if (!(field instanceof UnProperties.UProperty)) continue;
 
                 clsNamedProperties[field.propertyName] = field.clone();
             }
@@ -281,9 +281,9 @@ class UStruct extends UField {
                                 get: () => {
 
                                     if (property.arrayDimensions !== 1)
-                                        throw new Error(`Not implemented`);
+                                        return new FixedArrayContainer(property);
 
-                                    return this.propertyDict.get(propName).getPropertyValue()
+                                    return this.propertyDict.get(propName).getPropertyValue();
                                 },
                                 set: (v: any) => {
                                     if (property.arrayDimensions !== 1)
@@ -291,8 +291,12 @@ class UStruct extends UField {
 
                                     const value = property.propertyValue[0];
 
-                                    if (value instanceof BufferValue || value instanceof BooleanValue)
+                                    if (value instanceof BufferValue || value instanceof UnProperties.BooleanValue)
                                         value.value = v;
+                                    else if (property instanceof UnProperties.UArrayProperty)
+                                        property.propertyValue[0] = v;
+                                    else if (property instanceof UnProperties.UStructProperty)
+                                        property.propertyValue[0] = v;
                                     else {
                                         debugger;
                                         throw new Error(`Not implemented`);
@@ -796,5 +800,134 @@ class FLabelField implements IConstructable {
     }
 
     public isNone() { return this.name === "None"; }
+
+}
+
+class FixedArrayContainer<T> implements ReadonlyArray<T> {
+    protected readonly property: UnProperties.UProperty<any, any>;
+    public length: number;
+    readonly [n: number]: T;
+
+    constructor(property: UnProperties.UProperty) {
+        if (property.arrayDimensions <= 1)
+            throw new Error(`Invalid array length '${property.arrayDimensions} <= 1'`);
+
+        this.property = property;
+        this.length = property.arrayDimensions;
+
+        for (let i = 0, len = property.arrayDimensions; i < len; i++) {
+            Object.defineProperty(this, i, {
+                get: this.getValue.bind(this, i),
+                set: this.setValue.bind(this, i)
+            });
+        }
+    }
+
+    protected toArray(): T[] {
+        const arr = new Array(this.length);
+
+        for (let i = 0, len = this.length; i < len; i++)
+            arr[i] = this[i];
+
+        return arr;
+    }
+
+    public getValue(index: number): T { return this.property.getPropertyValue(index); }
+
+    public setValue(index: number, value: T): void {
+        debugger;
+
+        throw new Error("Not implemented error");
+    }
+
+    public toString() { return `FixedArray[${this.property}]`; }
+
+
+    public filter<S extends T>(predicate: (value: T, index: number, array: readonly T[]) => value is S, thisArg?: any): S[];
+    public filter(predicate: (value: T, index: number, array: readonly T[]) => unknown, thisArg?: any): T[];
+    public filter<S>(predicate: unknown, thisArg?: unknown): T[] | S[] {
+        return this.toArray().filter(predicate as any, thisArg);
+    }
+
+
+    public toLocaleString(): string {
+        throw new Error("Method not implemented.");
+    }
+    public concat(...items: ConcatArray<T>[]): T[];
+    public concat(...items: (T | ConcatArray<T>)[]): T[];
+    public concat(..._items: unknown[]): T[] {
+        throw new Error("Method not implemented.");
+    }
+    public join(separator?: string): string {
+        throw new Error("Method not implemented.");
+    }
+    slice(start?: number, end?: number): T[] {
+        throw new Error("Method not implemented.");
+    }
+    indexOf(searchElement: T, fromIndex?: number): number {
+        throw new Error("Method not implemented.");
+    }
+    lastIndexOf(searchElement: T, fromIndex?: number): number {
+        throw new Error("Method not implemented.");
+    }
+    every<S extends T>(predicate: (value: T, index: number, array: readonly T[]) => value is S, thisArg?: any): this is readonly S[];
+    every(predicate: (value: T, index: number, array: readonly T[]) => unknown, thisArg?: any): boolean;
+    every(predicate: unknown, thisArg?: unknown): boolean {
+        throw new Error("Method not implemented.");
+    }
+    some(predicate: (value: T, index: number, array: readonly T[]) => unknown, thisArg?: any): boolean {
+        throw new Error("Method not implemented.");
+    }
+    forEach(callbackfn: (value: T, index: number, array: readonly T[]) => void, thisArg?: any): void {
+        throw new Error("Method not implemented.");
+    }
+    map<U>(callbackfn: (value: T, index: number, array: readonly T[]) => U, thisArg?: any): U[] {
+        throw new Error("Method not implemented.");
+    }
+
+    reduce(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: readonly T[]) => T): T;
+    reduce(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: readonly T[]) => T, initialValue: T): T;
+    reduce<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: readonly T[]) => U, initialValue: U): U;
+    reduce<U>(callbackfn: unknown, initialValue?: unknown): T | U {
+        throw new Error("Method not implemented.");
+    }
+    reduceRight(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: readonly T[]) => T): T;
+    reduceRight(callbackfn: (previousValue: T, currentValue: T, currentIndex: number, array: readonly T[]) => T, initialValue: T): T;
+    reduceRight<U>(callbackfn: (previousValue: U, currentValue: T, currentIndex: number, array: readonly T[]) => U, initialValue: U): U;
+    reduceRight<U>(callbackfn: unknown, initialValue?: unknown): T | U {
+        throw new Error("Method not implemented.");
+    }
+    find<S extends T>(predicate: (this: void, value: T, index: number, obj: readonly T[]) => value is S, thisArg?: any): S;
+    find(predicate: (value: T, index: number, obj: readonly T[]) => unknown, thisArg?: any): T;
+    find<S extends T>(predicate: unknown, thisArg?: unknown): T | S {
+        throw new Error("Method not implemented.");
+    }
+    findIndex(predicate: (value: T, index: number, obj: readonly T[]) => unknown, thisArg?: any): number {
+        throw new Error("Method not implemented.");
+    }
+    entries(): IterableIterator<[number, T]> {
+        throw new Error("Method not implemented.");
+    }
+    keys(): IterableIterator<number> {
+        throw new Error("Method not implemented.");
+    }
+    values(): IterableIterator<T> {
+        throw new Error("Method not implemented.");
+    }
+    includes(searchElement: T, fromIndex?: number): boolean {
+        throw new Error("Method not implemented.");
+    }
+    flatMap<U, This = undefined>(callback: (this: This, value: T, index: number, array: T[]) => U | readonly U[], thisArg?: This): U[] {
+        throw new Error("Method not implemented.");
+    }
+    flat<A, D extends number = 1>(this: A, depth?: D): FlatArray<A, D>[] {
+        throw new Error("Method not implemented.");
+    }
+    at(index: number): T {
+        throw new Error("Method not implemented.");
+    }
+    [Symbol.iterator](): IterableIterator<T> {
+        throw new Error("Method not implemented.");
+    }
 
 }

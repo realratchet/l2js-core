@@ -1,6 +1,6 @@
 import BufferValue from "../../buffer-value";
 import { flagBitsToDict } from "../../utils/flags";
-import FArray, { FIndexArray, FObjectArray, FPrimitiveArray } from "../un-array";
+import FArray, { FObjectArray, FPrimitiveArray } from "../un-array";
 import UClass from "../un-class";
 import UField from "../un-field";
 import UObject from "../un-object";
@@ -9,8 +9,6 @@ import PropertyTag from "./un-property-tag";
 import { pathToPkgName } from "../../asset-loader";
 
 abstract class UProperty<T1 = any, T2 = T1> extends UField {
-    // declare ["constructor"]: typeof UProperty;
-
     public arrayDimensions: number;
     public propertyName: string;
     public propertyFlags: C.FlagDict<EnumKeys.PropertyFlags_T>;
@@ -25,16 +23,10 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public propertyValue: T1[];
     protected propertyValuePkg: APackage;
 
-    // public readonly isNumericType: boolean = false;
-
     protected preLoad(pkg: APackage, exp: C.UExport): void {
         super.preLoad(pkg, exp);
 
         this.propertyName = exp.objectName;
-
-        // if (this.propertyName === "LightBrightness")
-        //     debugger;
-
     }
 
     protected doLoad(pkg: APackage, exp: C.UExport): void {
@@ -84,16 +76,12 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     }
 
     public copy(other: UProperty<T1, T2>) {
-        // if (other.propertyName === "LightBrightness")
-        //     debugger;
-
         if (this.constructor.name !== other.constructor.name)
             throw new Error("Invalid constructor");
 
         this.isReady = other.isReady;
         this.isLoading = other.isLoading;
         this.isDefault = other.isDefault.slice();
-        // this.isSet = other.isSet.slice();
         this.isSet = new Array(other.arrayDimensions).fill(false);
 
         this.arrayDimensions = other.arrayDimensions;
@@ -743,7 +731,6 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
             isDefault: this.isDefault
         };
     }
-
 }
 
 enum PropertyFlags_T {
@@ -771,7 +758,23 @@ enum PropertyFlags_T {
     NeedCtorLink = 0x00400000   // Fields need construction / destruction
 };
 
-export { UProperty, UNumericProperty, UFloatProperty, UIntProperty, UStrProperty, UDelegateProperty, UBoolProperty, UNameProperty, UObjectProperty, UClassProperty, UStructProperty, UByteProperty, UArrayProperty, BooleanValue, PropertyFlags_T };
+export {
+    UProperty,
+    UNumericProperty,
+    UFloatProperty,
+    UIntProperty,
+    UStrProperty,
+    UDelegateProperty,
+    UBoolProperty,
+    UNameProperty,
+    UObjectProperty,
+    UClassProperty,
+    UStructProperty,
+    UByteProperty,
+    UArrayProperty,
+    BooleanValue,
+    PropertyFlags_T
+};
 
 type ReturnType<T extends C.ValueTypeNames_T> = T extends C.NumberTypes_T
     ? T extends C.BigNumberTypes_T ? bigint : number
