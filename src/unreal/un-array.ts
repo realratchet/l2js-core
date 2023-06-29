@@ -67,7 +67,7 @@ class FArray<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> ex
         return this;
     }
 
-    public clone(): FArray<T> { return new FArray(this.Constructor).copy(this); }
+    public nativeClone(): FArray<T> { return new FArray(this.Constructor).copy(this); }
 }
 
 class FIndexArray extends FArray<FNumber<"compat32">> {
@@ -111,7 +111,7 @@ class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements 
         return this;
     }
 
-    public clone(): FObjectArray<T> { return new FObjectArray<T>().copy(this); }
+    public nativeClone(): FObjectArray<T> { return new FObjectArray<T>().copy(this); }
 }
 
 class FNameArray extends Array<string> implements IConstructable {
@@ -142,7 +142,7 @@ class FNameArray extends Array<string> implements IConstructable {
         return this;
     }
 
-    public clone(): FNameArray { return new FNameArray().copy(this); }
+    public nativeClone(): FNameArray { return new FNameArray().copy(this); }
 }
 
 class FPrimitiveArray<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> implements IConstructable {

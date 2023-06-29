@@ -101,13 +101,13 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
             if (dtype === "object") {
                 if (prop instanceof BufferValue)
-                    this.propertyValue[i] = prop.clone() as T1;
+                    this.propertyValue[i] = prop.nativeClone() as T1;
                 else if (prop === null)
                     this.propertyValue[i] = prop;
                 else if (prop instanceof UObject) {
-                    this.propertyValue[i] = prop.clone() as T1;
+                    this.propertyValue[i] = prop.nativeClone() as T1;
                 } else if (prop instanceof BooleanValue) {
-                    this.propertyValue[i] = prop.clone() as T1;
+                    this.propertyValue[i] = prop.nativeClone() as T1;
                 } else {
                     debugger;
                     throw new Error("Not implemented")
@@ -126,7 +126,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
         return this;
     }
 
-    public clone() {
+    public nativeClone() {
         const Constructor = this.constructor as any as new () => UProperty<T1, T2>;
         const clone = new Constructor();
 
@@ -324,7 +324,11 @@ class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportPr
 
     public toString() {
         const friendlyName = this.valueId === 0 ? null : (this._value?.friendlyName || "<eval>");
-        const object = this.arrayDimensions === 1 ? this.propertyValue[0] ? null : (this.getPropertyValue(0).toString() || "<eval>") : null;
+        const object = this.arrayDimensions === 1
+            ? this.propertyValue[0]
+                ? (this.getPropertyValue(0).toString() || "<eval>")
+                : null
+            : null;
 
         return super.toString("StructProperty", friendlyName, object);
     }
@@ -459,7 +463,7 @@ class BooleanValue {
     public value: boolean;
 
     public constructor(value: boolean = false) { this.value = value; }
-    public clone() { return new BooleanValue(this.value); }
+    public nativeClone() { return new BooleanValue(this.value); }
 
     toString() { return `Boolean[${this.value}]`; }
 }

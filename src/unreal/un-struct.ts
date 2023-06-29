@@ -62,7 +62,7 @@ class UStruct extends UField {
         if (!property)
             throw new Error(`Cannot map property '${propName}' -> ${varName}`);
 
-        const defaultProperty = property.loadSelf().clone().readProperty(pkg, tag);
+        const defaultProperty = property.loadSelf().nativeClone().readProperty(pkg, tag);
 
         defaultProperty.isDefault[tag?.arrayIndex || 0] = true;
 
@@ -222,7 +222,7 @@ class UStruct extends UField {
             for (const field of childPropFields.values()) {
                 if (!(field instanceof UnProperties.UProperty)) continue;
 
-                clsNamedProperties[field.propertyName] = field.clone();
+                clsNamedProperties[field.propertyName] = field.nativeClone();
             }
 
 
@@ -257,7 +257,7 @@ class UStruct extends UField {
                         if (!propValue)
                             debugger;
 
-                        const property = propValue.clone();
+                        const property = propValue.nativeClone();
 
                         if (propName in defaultNamedProperties) {
                             if (!property.copy) {
@@ -330,6 +330,8 @@ class UStruct extends UField {
             ),
             `})();`,
         ].join("\n"));
+
+        (Constructor as any).onClassCreated?.(cls);
 
         this.kls = cls as any;
 

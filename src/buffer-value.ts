@@ -53,7 +53,7 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
         return this;
     }
 
-    public clone() { return new BufferValue(this.type).copy(this); }
+    public nativeClone() { return new BufferValue(this.type).copy(this); }
 
     public slice(start: number, end: number) {
         const child = new BufferValue(this.type);

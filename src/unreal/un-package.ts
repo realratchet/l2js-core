@@ -64,17 +64,9 @@ abstract class APackage extends UEncodedFile {
 
         header.version = readable.read(uint32).value;
 
-        // const v = new DataView(new ArrayBuffer(4));
-        // v.setUint32(0, header.version, true);
-        // const b = new BufferValue(BufferValue.uint32);
-
-        // b.bytes = v;
-
-        // debugger;
-
         header._packageFlags = readable.read(int32).value;
         header.packageFlags = flagBitsToDict(header._packageFlags, PackageFlags_T);
-         
+
         header.packageFlags
 
         header.nameCount = readable.read(int32).value;

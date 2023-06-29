@@ -5,9 +5,8 @@ import APackage from "./un-package";
 import PropertyTag from "./un-property/un-property-tag";
 import UStack from "./un-stack";
 
-
 abstract class UObject implements C.ISerializable {
-    declare ["constructor"]: typeof UObject;
+    declare public ["constructor"]: typeof UObject;
 
     public static readonly CLEANUP_NAMESPACE = true;
     public static readonly isSerializable = true;
@@ -35,7 +34,7 @@ abstract class UObject implements C.ISerializable {
     public readonly propertyDict = new Map<string, C.UProperty>();
     public nativeBytes?: BufferValue<"buffer"> = null;
 
-    public constructor() {
+    constructor() {
         this.makeLayout();
 
         if (!this.isConstructed)
@@ -109,9 +108,8 @@ abstract class UObject implements C.ISerializable {
             : null;
     }
 
-    public clone(): UObject {
+    public nativeClone(): UObject {
         const Constructor = this.constructor as any as new () => UObject;
-
 
         return new Constructor().copy(this);
     }
