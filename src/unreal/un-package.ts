@@ -157,6 +157,7 @@ abstract class APackage extends UEncodedFile {
                         exp.flags = ObjectFlags_T.Native;
                         exp.size = 0;
                         exp.offset = 0;
+                        exp.isFake = true;
 
                         exports.push(exp);
                     }
@@ -645,6 +646,7 @@ abstract class ANativePackage extends APackage {
         exp.flags = ObjectFlags_T.Native;
         exp.size = 0;
         exp.offset = 0;
+        exp.isFake = true;
 
         this.exports.push(exp);
     }
