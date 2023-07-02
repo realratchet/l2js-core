@@ -70,6 +70,19 @@ class FArray<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> ex
     public nativeClone(): FArray<T> { return new FArray(this.Constructor).copy(this); }
 }
 
+class FArrayLazy<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> extends FArray<T>{
+    public unkLazyInt: number;
+
+    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
+
+        this.unkLazyInt = pkg.read(new BufferValue(BufferValue.int32)).value as number;
+
+        super.load(pkg, tag);
+
+        return this;
+    }
+}
+
 class FIndexArray extends FArray<FNumber<"compat32">> {
     public constructor() {
         super(FNumber.forType(BufferValue.compat32));
@@ -242,4 +255,4 @@ class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_
 }
 
 export default FArray;
-export { FArray, FIndexArray, FNameArray, FPrimitiveArray, FObjectArray, FPrimitiveArrayLazy };
+export { FArray, FArrayLazy, FIndexArray, FNameArray, FPrimitiveArray, FObjectArray, FPrimitiveArrayLazy };
