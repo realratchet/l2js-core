@@ -33,7 +33,7 @@ class UStruct extends UField {
     protected static getConstructorName() { return "Struct"; }
     protected defaultProperties = new Map<string, any>();
 
-    protected isValidProperty(varName: string) {
+    protected findValidProperty(varName: string) {
 
         let parent: UStruct = this;
 
@@ -57,7 +57,7 @@ class UStruct extends UField {
         if (!varName)
             throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${tag.getTypeName()}'`);
 
-        const property = this.isValidProperty(varName);
+        const property = this.findValidProperty(varName);
 
         if (!property)
             throw new Error(`Cannot map property '${propName}' -> ${varName}`);
@@ -199,6 +199,9 @@ class UStruct extends UField {
         const dependencyTree = this.collectDependencies<UStruct>();
 
         if (!this.isReady)
+            debugger;
+
+        if (this.friendlyName === "Primitive")
             debugger;
 
         const clsNamedProperties: Record<string, UnProperties.UProperty> = {};

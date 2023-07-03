@@ -102,7 +102,7 @@ abstract class UObject implements C.ISerializable {
 
     protected getPropertyMap(): Record<string, string> { return {}; }
     protected getPropertyVarName(tag: PropertyTag) { return tag.name; }
-    protected isValidProperty(varName: string) {
+    protected findValidProperty(varName: string) {
         return this.propertyDict.has(varName)
             ? this.propertyDict.get(varName)
             : null;
@@ -151,10 +151,10 @@ abstract class UObject implements C.ISerializable {
         if (!varName)
             throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${tag.getTypeName()}'`);
 
-        if (!this.isValidProperty(varName))
-            throw new Error(`Cannot map property '${propName}' -> ${varName}`);
+        const property = this.findValidProperty(varName);
 
-        const property = this.propertyDict.get(varName);
+        if (!property)
+            throw new Error(`Cannot map property '${propName}' -> ${varName}`);
 
         property.readProperty(pkg, tag);
         property.isDefault[tag?.arrayIndex || 0] = false;

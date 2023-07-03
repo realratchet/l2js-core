@@ -8,6 +8,13 @@ import APackage from "../un-package";
 import PropertyTag from "./un-property-tag";
 import { pathToPkgName } from "../../asset-loader";
 
+type PropertyConstructorParams_T = {
+    arrayDimensions: number,
+    flags: number,
+    categoryNameId: number,
+    categoryName: string
+}
+
 abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public arrayDimensions: number;
     public propertyName: string;
@@ -22,6 +29,37 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public isDefault: boolean[];
     public propertyValue: T1[];
     protected propertyValuePkg: APackage;
+
+    public constructor(
+        {
+            arrayDimensions = 1,
+            flags = 0,
+            categoryNameId = 0,
+            categoryName = "None",
+        }: PropertyConstructorParams_T = {} as PropertyConstructorParams_T
+    ) {
+        super();
+
+        this.arrayDimensions = arrayDimensions;
+        this.flags = flags;
+
+        this.propertyFlags = flagBitsToDict(this.flags, PropertyFlags_T);
+        this.propertyValue = new Array<T1>(this.arrayDimensions);
+
+        this.categoryNameId = categoryNameId;
+        this.categoryName = categoryName
+
+        this.isSet = new Array(this.arrayDimensions).fill(false);
+        this.isDefault = new Array(this.arrayDimensions).fill(false);
+
+        for (let i = 0; i < this.arrayDimensions; i++) {
+            this.propertyValue[i] = this.makeDefault();
+
+            if (this.propertyValue[i] === undefined)
+                debugger;
+
+        }
+    }
 
     protected preLoad(pkg: APackage, exp: C.UExport): void {
         super.preLoad(pkg, exp);
@@ -43,7 +81,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
         this.propertyFlags = flagBitsToDict(this.flags, PropertyFlags_T);
 
         this.categoryNameId = pkg.read(compat32).value;
-        this.categoryName = pkg.nameTable[this.categoryNameId].name as string;
+        this.categoryName = pkg.nameTable[this.categoryNameId].name;
 
         if (this.flags & PropertyFlags_T.Net)
             this.replicationOffset = pkg.read(uint16).value;
@@ -508,8 +546,6 @@ class UBoolProperty extends UProperty<BooleanValue, boolean> {
         };
     }
 }
-
-
 
 class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
     public readProperty(pkg: APackage, tag: PropertyTag) {
