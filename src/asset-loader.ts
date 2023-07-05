@@ -1,23 +1,28 @@
 import * as _path from "path";
 import { SUPPORTED_EXTENSIONS } from "./supported-extensions";
 
-abstract class AAssetLoader<TPackage extends C.APackage = C.APackage, TNativePackage extends C.ANativePackage = C.ANativePackage> {
-    private packages = new Map<string, Map<C.SupportedExtensions_T, TPackage | TNativePackage>>();
+abstract class AAssetLoader<
+    TPackage extends C.APackage = C.APackage,
+    TCorePackage extends C.ACorePackage = C.ACorePackage,
+    TEnginePackage extends C.AEnginePackage = C.AEnginePackage,
+    TNativePackage extends C.ANativePackage = C.ANativePackage
+> {
+    private packages = new Map<string, Map<C.SupportedExtensions_T, TPackage | TCorePackage | TEnginePackage | TNativePackage>>();
 
-    protected abstract createPackage(UPackage: C.APackageConstructor, downloadPath: string): TPackage;
+    protected abstract createPackage(UPackage: C.APackageConstructor | C.ACorePackageConstructor | C.AEnginePackageConstructor, downloadPath: string): TPackage;
     protected abstract createNativePackage(UNativePackage: C.ANativePackageConstructor): TNativePackage;
 
     protected constructor() { }
 
-    private pkgCore: TPackage;
-    private pkgEngine: TPackage;
+    private pkgCore: TCorePackage;
+    private pkgEngine: TEnginePackage;
     private pkgNative: TNativePackage;
 
     public getCorePackage() { return this.pkgCore; }
     public getEnginePackage() { return this.pkgEngine; }
     public getNativePackage() { return this.pkgNative; }
 
-    protected init(assetList: L2JS.Core.IAssetListInfo, { UPackage, UNativePackage }: InitParams_T) {
+    protected init(assetList: L2JS.Core.IAssetListInfo, { UPackage, UCorePackage, UEnginePackage, UNativePackage }: InitParams_T) {
         this.packages.set("native", new Map([["U", this.createNativePackage(UNativePackage)]]))
 
         for (let [path, downloadPath] of Object.entries(assetList)) {
@@ -31,34 +36,42 @@ abstract class AAssetLoader<TPackage extends C.APackage = C.APackage, TNativePac
             if (packages.has(pkgExt))
                 throw new Error(`Package already registered: ${pkgName}`);
 
-            packages.set(pkgExt, this.createPackage(UPackage, downloadPath));
+            const fullPkgName = `${pkgName}.${pkgExt}`.toLowerCase();
 
+            let PackageConstructor: any;
+
+            switch (fullPkgName) {
+                case "core.u": PackageConstructor = UCorePackage; break;
+                case "engine.u": PackageConstructor = UEnginePackage; break;
+                default: PackageConstructor = UPackage; break;
+            }
+
+            packages.set(pkgExt, this.createPackage(PackageConstructor, downloadPath));
         }
 
-        this.pkgCore = this.getPackage("core", "Script");
-        this.pkgEngine = this.getPackage("engine", "Script");
+        this.pkgCore = this.getPackage("core");
+        this.pkgEngine = this.getPackage("engine");
         this.pkgNative = this.getPackage("native");
 
         return this;
     }
 
-    public getPackage<T extends string | "native">(packagePath: T): ReturnType<T, TPackage, TNativePackage>;
-    public getPackage<T extends string | "native">(pkgName: T, impType?: string): ReturnType<T, TPackage, TNativePackage>;
-
-    public getPackage<T extends string | "native">(pkgName: T, impType?: string): ReturnType<T, TPackage, TNativePackage> {
+    public getPackage<T extends string | "core" | "engine" | "native">(packagePath: T): ReturnType<T, TPackage, TCorePackage, TEnginePackage, TNativePackage>;
+    public getPackage<T extends string | "core" | "engine" | "native">(pkgName: T, impType?: string): ReturnType<T, TPackage, TCorePackage, TEnginePackage, TNativePackage>;
+    public getPackage<T extends string | "core" | "engine" | "native">(pkgName: T, impType?: string): ReturnType<T, TPackage, TCorePackage, TEnginePackage, TNativePackage> {
 
         if (arguments.length === 1) {
-            if (pkgName === "native")
-                return getPackage<T, TPackage, TNativePackage>(this.packages, pkgName, "Script");
+            if (pkgName === "native" || pkgName === "core" || pkgName === "engine")
+                return getPackage<T, TPackage, TCorePackage, TEnginePackage, TNativePackage>(this.packages, pkgName, "Script");
 
             const [_pkgName, _pkgExt] = pathToPkgName(pkgName);
             const potentialPkgs = this.packages.get(_pkgName);
             const pkg = potentialPkgs.get(_pkgExt);
 
-            return pkg as ReturnType<T, TPackage, TNativePackage>;
+            return pkg as ReturnType<T, TPackage, TCorePackage, TEnginePackage, TNativePackage>;
         }
 
-        const pkg = getPackage<T, TPackage, TNativePackage>(this.packages, pkgName, impType);
+        const pkg = getPackage<T, TPackage, TCorePackage, TEnginePackage, TNativePackage>(this.packages, pkgName, impType);
 
         if (pkg === null)
             throw new Error(`Package '${pkgName}[${impType}]' not found!`);
@@ -151,11 +164,11 @@ function pathToPkgName(path: string): [string, C.SupportedExtensions_T] {
 
 export { pathToPkgName };
 
-function getPackage<T extends string | "native", TPackage, TNativePackage>(allPackages: Map<string, Map<C.SupportedExtensions_T, TPackage | TNativePackage>>, pkgName: T, impType: string): ReturnType<T, TPackage, TNativePackage> {
+function getPackage<T extends string | "native", TPackage, TCorePackage, TEnginePackage, TNativePackage>(allPackages: Map<string, Map<C.SupportedExtensions_T, TPackage | TNativePackage | TCorePackage | TEnginePackage>>, pkgName: T, impType: string): ReturnType<T, TPackage, TCorePackage, TEnginePackage, TNativePackage> {
     const packages = allPackages.get(pkgName.toLowerCase());
     const validExts = impToTypes.get(impType);
 
-    let pkg: TPackage | TNativePackage = null;
+    let pkg: TPackage | TNativePackage | TCorePackage | TEnginePackage = null;
 
     for (const ext of validExts) {
         if (!packages.has(ext)) continue;
@@ -164,12 +177,19 @@ function getPackage<T extends string | "native", TPackage, TNativePackage>(allPa
         break;
     }
 
-    return pkg as ReturnType<T, TPackage, TNativePackage>;
+    return pkg as ReturnType<T, TPackage, TCorePackage, TEnginePackage, TNativePackage>;
 }
 
 
-type ReturnType<T extends string | "native", TPackage, TNativePackage> = T extends "native" ? TNativePackage : TPackage;
+type ReturnType<T extends string | "native" | "core" | "engine", TPackage, TCorePackage, TEnginePackage, TNativePackage> =
+    T extends "native" ? TNativePackage
+    : T extends "core" ? TCorePackage
+    : T extends "engine" ? TEnginePackage
+    : TPackage;
+
 type InitParams_T = Record<string, any> | { // can contain anything but must contain at least these two packages
     UPackage: C.APackageConstructor,
+    UCorePackage: C.ACorePackageConstructor,
+    UEnginePackage: C.ANativePackageConstructor,
     UNativePackage: C.ANativePackageConstructor,
 };

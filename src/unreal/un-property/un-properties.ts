@@ -5,17 +5,23 @@ import UClass from "../un-class";
 import UField from "../un-field";
 import UObject from "../un-object";
 import APackage from "../un-package";
-import PropertyTag from "./un-property-tag";
+import PropertyTag, { UNP_PropertyTypes, getPropertyTypeName } from "./un-property-tag";
 import { pathToPkgName } from "../../asset-loader";
 
-type PropertyConstructorParams_T = {
-    arrayDimensions: number,
-    flags: number,
-    categoryNameId: number,
-    categoryName: string
-}
+type PropertyConstructorParams_T = PropertyExtraPars_T & {
+    propertyName?: string,
+    pkg?: C.APackage
+};
+
+type ExportPropertyConstructorParams_T = PropertyExtraPars_T & {
+    propertyName?: string,
+    pkg?: C.APackage,
+    valueId?: number
+};
 
 abstract class UProperty<T1 = any, T2 = T1> extends UField {
+    public abstract readonly propertyType: UNP_PropertyTypes;
+
     public arrayDimensions: number;
     public propertyName: string;
     public propertyFlags: C.FlagDict<EnumKeys.PropertyFlags_T>;
@@ -30,16 +36,23 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public propertyValue: T1[];
     protected propertyValuePkg: APackage;
 
+    public getTypeName() { return getPropertyTypeName(this.propertyType); }
+
     public constructor(
         {
             arrayDimensions = 1,
             flags = 0,
             categoryNameId = 0,
             categoryName = "None",
+            propertyName = "None",
+            pkg = null
         }: PropertyConstructorParams_T = {} as PropertyConstructorParams_T
     ) {
         super();
 
+        this.propertyName = propertyName;
+
+        this.pkg = pkg;
         this.arrayDimensions = arrayDimensions;
         this.flags = flags;
 
@@ -57,7 +70,6 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
             if (this.propertyValue[i] === undefined)
                 debugger;
-
         }
     }
 
@@ -185,6 +197,12 @@ abstract class UBaseExportProperty<T1 extends UField, T2 = T1, T3 = T2> extends 
     public valueId: number;
     public _value: T1;
 
+    constructor({ valueId = 0 } = {} as ExportPropertyConstructorParams_T) {
+        super(...arguments);
+
+        this.valueId = valueId;
+    }
+
     public get value() {
         if (this.valueId !== 0 && !this._value)
             this._value = this.pkg.fetchObject(this.valueId);
@@ -211,6 +229,8 @@ abstract class UBaseExportProperty<T1 extends UField, T2 = T1, T3 = T2> extends 
 }
 
 class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<UClass, BufferValue<"compat32">, T> {
+    public readonly propertyType = UNP_PropertyTypes.UNP_ObjectProperty;
+
     public readProperty(pkg: APackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
@@ -259,6 +279,7 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
 
 
 class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">, UClass> {
+    public readonly propertyType = UNP_PropertyTypes.UNP_ClassProperty;
 
     protected metaClassId: number;
     protected _metaClass: UClass;
@@ -323,7 +344,6 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
     public toJSON() {
         const values = this.propertyValue.map(v => v.value);
 
-
         return {
             type: "class",
             package: pathToPkgName(this.propertyValuePkg.path),
@@ -336,6 +356,8 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
 }
 
 class UStructProperty<T extends UObject = UObjectProperty> extends UBaseExportProperty<C.UStruct, T, T> {
+    public readonly propertyType = UNP_PropertyTypes.UNP_StructProperty;
+
     public readProperty(pkg: APackage, tag: PropertyTag) {
         this.propertyName = tag?.name ?? this.propertyName ?? "None";
 
@@ -432,16 +454,22 @@ abstract class UNumericProperty<T extends C.NumberTypes_T | C.StringTypes_T> ext
 class UFloatProperty extends UNumericProperty<"float"> {
     public static dtype = BufferValue.float;
 
+    public readonly propertyType = UNP_PropertyTypes.UNP_FloatProperty;
+
     declare ["constructor"]: typeof UNumericProperty & typeof UFloatProperty;
 }
 
 class UIntProperty extends UNumericProperty<"int32"> {
     public static dtype = BufferValue.int32;
 
+    public readonly propertyType = UNP_PropertyTypes.UNP_IntProperty;
+
     declare ["constructor"]: typeof UNumericProperty & typeof UIntProperty;
 }
 
 class UStrProperty extends UProperty<BufferValue<"char">, string> {
+    public readonly propertyType = UNP_PropertyTypes.UNP_StrProperty;
+
     protected makeDefault(): BufferValue<"char"> {
         return new BufferValue(BufferValue.char);
     }
@@ -488,6 +516,8 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
 }
 
 class UDelegateProperty extends UProperty<any, any> {
+    public readonly propertyType: UNP_PropertyTypes = null;
+
     public readProperty(pkg: APackage, tag: PropertyTag): UProperty<any, any> {
         throw new Error("Method not implemented.");
     }
@@ -507,9 +537,9 @@ class BooleanValue {
 }
 
 class UBoolProperty extends UProperty<BooleanValue, boolean> {
-    protected makeDefault(): BooleanValue {
-        return new BooleanValue();
-    }
+    public readonly propertyType = UNP_PropertyTypes.UNP_BoolProperty;
+
+    protected makeDefault(): BooleanValue { return new BooleanValue(); }
 
     public readProperty(pkg: APackage, tag: PropertyTag) {
         if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
@@ -548,6 +578,8 @@ class UBoolProperty extends UProperty<BooleanValue, boolean> {
 }
 
 class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
+    public readonly propertyType = UNP_PropertyTypes.UNP_NameProperty;
+
     public readProperty(pkg: APackage, tag: PropertyTag) {
         this.propertyName = tag.name;
 
@@ -593,8 +625,9 @@ class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
 }
 
 class UByteProperty extends UBaseExportProperty<C.UEnum, BufferValue<"uint8">, number> {
-
     declare ["constructor"]: typeof UNumericProperty & { dtype: C.ValidTypes_T<"uint8"> };
+
+    public readonly propertyType = UNP_PropertyTypes.UNP_ByteProperty;
 
     public static dtype = BufferValue.uint8;
 
@@ -676,9 +709,9 @@ class UByteProperty extends UBaseExportProperty<C.UEnum, BufferValue<"uint8">, n
 type ArrayType = FArray<any> | FPrimitiveArray<any> | FObjectArray<any>;
 
 class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>, ArrayType, ArrayType> {
-    protected makeDefault(): ArrayType {
-        return null;
-    }
+    public readonly propertyType = UNP_PropertyTypes.UNP_ArrayProperty;
+
+    protected makeDefault(): ArrayType { return null; }
 
     public readProperty(pkg: APackage, tag: PropertyTag) {
         this.propertyName = tag.name;
@@ -689,16 +722,18 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
 
         const type = this.value.loadSelf();
 
-        if (type instanceof UStructProperty)
+        if (type instanceof UStructProperty || type instanceof UClassProperty) {
             this.propertyValue[tag.arrayIndex] = new FArray(type.value.buildClass(pkg.loader.getNativePackage())).load(pkg, tag);
-        else if (type instanceof UObjectProperty)
+        } else if (type instanceof UObjectProperty) {
             this.propertyValue[tag.arrayIndex] = new FObjectArray().load(pkg, tag);
-        else if (type instanceof UIntProperty) {
+        } else if (type instanceof UIntProperty) {
             this.propertyValue[tag.arrayIndex] = new FPrimitiveArray(BufferValue.int32).load(pkg, tag);
         } else if (type instanceof UFloatProperty) {
             this.propertyValue[tag.arrayIndex] = new FPrimitiveArray(BufferValue.float).load(pkg, tag);
         } else if (type instanceof UByteProperty) {
             this.propertyValue[tag.arrayIndex] = new FPrimitiveArray(BufferValue.uint8).load(pkg, tag);
+        } else if (type instanceof UClass) {
+            this.propertyValue[tag.arrayIndex] = new FArray(type.buildClass(pkg.loader.getNativePackage())).load(pkg, tag);
         } else {
             debugger;
             throw new Error("Not yet implemented!");
@@ -797,6 +832,8 @@ enum PropertyFlags_T {
     New = 0x00200000,           // Automatically create inner object
     NeedCtorLink = 0x00400000   // Fields need construction / destruction
 };
+
+
 
 export {
     UProperty,

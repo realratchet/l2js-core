@@ -1,12 +1,14 @@
-import BufferValue from "../buffer-value";
-import UExport from "./un-export";
-import ObjectFlags_T from "./un-object-flags";
-import APackage from "./un-package";
-import PropertyTag from "./un-property/un-property-tag";
 import UStack from "./un-stack";
+import UExport from "./un-export";
+import APackage from "./un-package";
+import BufferValue from "../buffer-value";
+import ObjectFlags_T from "./un-object-flags";
+import PropertyTag from "./un-property/un-property-tag";
 
 abstract class UObject implements C.ISerializable {
-    declare public ["constructor"]: typeof UObject;
+    declare public ["constructor"]: typeof UObject & { friendlyName?: string };
+
+    public static readonly LAZY_CLONE_ON_USE = true;
 
     public static readonly CLEANUP_NAMESPACE = true;
     public static readonly isSerializable = true;
@@ -34,7 +36,7 @@ abstract class UObject implements C.ISerializable {
     public readonly propertyDict = new Map<string, C.UProperty>();
     public nativeBytes?: BufferValue<"buffer"> = null;
 
-    constructor() {
+    public constructor() {
         this.makeLayout();
 
         if (!this.isConstructed)
@@ -42,6 +44,8 @@ abstract class UObject implements C.ISerializable {
 
         this.onSuperConstructed();
     }
+
+    protected getUnserializedPropertyies(): C.UnserializedProperty_T[] { return []; }
 
     protected onSuperConstructed(): void { }
     protected makeLayout(): void { throw new Error(`Layout for '${this.constructor.name}' must be overloaded by the package, was this created via package?.`); }
@@ -89,7 +93,6 @@ abstract class UObject implements C.ISerializable {
 
                 if (!tag.isValid()) break;
 
-
                 this.loadProperty(pkg, tag);
 
                 this.readHead = pkg.tell();
@@ -122,8 +125,18 @@ abstract class UObject implements C.ISerializable {
     }
 
     protected loadNative(pkg: APackage) {
-        for (const propVal of this.propertyDict.values())
-            propVal.readProperty(pkg, null);
+        for (const [propKey, propValOrig] of this.propertyDict.entries()) {
+            if (UObject.LAZY_CLONE_ON_USE) {
+                const propVal = propValOrig.nativeClone();
+
+                this.propertyDict.set(propKey, propVal)
+
+                propVal.readProperty(pkg, null);
+
+            } else {
+                propValOrig.readProperty(pkg, null);
+            }
+        }
 
         this.isLoading = false;
         this.isReady = true;
@@ -151,16 +164,28 @@ abstract class UObject implements C.ISerializable {
         if (!varName)
             throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${tag.getTypeName()}'`);
 
-        const property = this.findValidProperty(varName);
+        const propertyOrig = this.findValidProperty(varName);
 
-        if (!property)
-            throw new Error(`Cannot map property '${propName}' -> ${varName}`);
+        if (!propertyOrig)
+            throw new Error(`Cannot map '${tag.getTypeName()}' property '${propName}' -> '${varName}' for '${this.constructor.friendlyName ?? this.constructor.name}'`);
+
+        if (propertyOrig.propertyType !== tag.type)
+            throw new Error(`Property type mismatch got '${tag.getTypeName()}' expected '${propertyOrig.getTypeName()}'`);
+
+        let property: C.UProperty<any, any>;
+
+        if (UObject.LAZY_CLONE_ON_USE) {
+            property = propertyOrig.nativeClone();
+            this.propertyDict.set(varName, property);
+        } else {
+            property = propertyOrig;
+        }
 
         property.readProperty(pkg, tag);
         property.isDefault[tag?.arrayIndex || 0] = false;
 
-        if (pkg.tell() < offEnd)
-            console.warn(`Unread '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
+        // if (pkg.tell() < offEnd)
+        //     console.warn(`Unread '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
 
         if (pkg.tell() > offEnd)
             throw new Error(`Reader exceeded by '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
@@ -176,6 +201,7 @@ abstract class UObject implements C.ISerializable {
     }
 
     protected preLoad(pkg: APackage, exp: UExport): void {
+        console.log(`Loading '${exp}' from '${pkg}'`)
         const flags = exp.flags;
 
         if (!this.exp)
@@ -259,7 +285,7 @@ abstract class UObject implements C.ISerializable {
         if (this.skipRemaining) this.readHead = this.readTail;
         if (this.bytesUnread > 0 && this.careUnread) {
             const constructorName = (this.constructor as any).isDynamicClass ? `${(this.constructor as any).friendlyName}[Dynamic]` : this.constructor.name;
-            console.warn(`Unread '${this.objectName}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}', only ${this.readHead - this.readStart} bytes read.`);
+            // console.warn(`Unread '${this.objectName}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}', only ${this.readHead - this.readStart} bytes read.`);
         }
 
         if (UObject.CLEANUP_NAMESPACE) {
@@ -291,7 +317,6 @@ abstract class UObject implements C.ISerializable {
     }
 }
 
-
-
 export default UObject;
 export { UObject };
+

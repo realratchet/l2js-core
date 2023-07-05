@@ -1,3 +1,5 @@
+import UExport from "src/unreal/un-export";
+import APackage from "src/unreal/un-package";
 import BufferValue from "../buffer-value";
 import UObject from "./un-object";
 
@@ -24,7 +26,14 @@ abstract class UField extends UObject {
         this.isConstructed = true;
     }
 
+    protected preLoad(pkg: APackage, exp: UExport<UObject>): void {
+        super.preLoad(pkg, exp);
+
+        this.superFieldId = exp.idSuper;
+    }
+
     protected collectDependencies<T extends UField = typeof this>() {
+
         const dependencyTree = [];
         let base = this as unknown as T;
 

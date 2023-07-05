@@ -8,14 +8,38 @@ declare global {
         namespace Core {
             export type FlagDict<T extends string> = Record<T, boolean>;
 
+            export type UnserializedProperty_T =
+                | [string, Exclude<C.PropertyTypes_T, "ArrayProperty">, PropertyExtraPars_T?]
+                | [string, "ArrayProperty", ["Struct" | "Class", string], PropertyExtraPars_T?];
+
             export type IAssetListInfo = Record<string, string>;
             export type SupportedExtensions_T = "UNR" | "UTX" | "USX" | "UAX" | "U" | "UKX" | "USK" | "NATIVE";
 
-            export type AAssetLoader<TPackage extends C.APackage = C.APackage, TNativePackage extends C.ANativePackage = C.ANativePackage> = import("./src/asset-loader").AAssetLoader<TPackage, TNativePackage>;
+            export type AAssetLoader<
+                TPackage extends C.APackage = C.APackage,
+                TCorePackage extends C.ACorePackage = C.ACorePackage,
+                TEnginePackage extends C.AEnginePackage = C.AEnginePackage,
+                TNativePackage extends C.ANativePackage = C.ANativePackage
+            > = import("./src/asset-loader").AAssetLoader<TPackage, TCorePackage, TEnginePackage, TNativePackage>;
 
             export type APackage = import("./src/unreal/un-package").APackage;
             export type ANativePackage = import("./src/unreal/un-package").ANativePackage;
             export type PackageFlags_T = import("./src/unreal/un-package").PackageFlags_T;
+
+            export interface ICorePackage extends APackage {
+                isCore: true;
+                isEngine: false;
+                isNative: false;
+            }
+
+            export interface IEnginePackage extends APackage {
+                isCore: false;
+                isEngine: true;
+                isNative: false;
+            }
+
+            export type ACorePackage = C.APackage & C.ICorePackage;
+            export type AEnginePackage = C.APackage & C.IEnginePackage;
 
             export type BigNumberTypes_T = "int64" | "uint64";
             export type PrimitiveNumberTypes_T = "float" | "int32" | "uint32" | "int8" | "uint8" | "int16" | "uint16";
@@ -36,8 +60,7 @@ declare global {
             export type BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> = import("./src/buffer-value").BufferValue<T>;
             export type Seek_T = "current" | "set";
 
-            export type NativePropertyTypes_T =
-                | "Property"
+            export type PropertyTypes_T =
                 | "ByteProperty"
                 | "ObjectProperty"
                 | "StructProperty"
@@ -55,6 +78,10 @@ declare global {
                 | "DelegateProperty";
 
             export type NativeEngineTypes_T =
+                | "Material"
+                | "Modifier"
+                | "TexModifer"
+                | "StaticMeshMaterial"
                 | "Font"
                 | "Palette"
                 | "Sound"
@@ -162,7 +189,8 @@ declare global {
                 | "State"
                 | "Class"
                 | "TextBuffer"
-                | NativePropertyTypes_T;
+                | "Property"
+                | PropertyTypes_T;
 
             export type NativeTypes_T =
                 | NativeCoreTypes_T
@@ -240,6 +268,8 @@ declare global {
             export type FPrimitiveArrayLazy<T extends NumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArrayLazy<T>;
 
             export type APackageConstructor<T extends APackage = APackage> = new (loader: AAssetLoader, downloadPath: string) => T;
+            export type ACorePackageConstructor<T extends ACorePackage = ACorePackage> = new (loader: AAssetLoader, downloadPath: string) => T;
+            export type AEnginePackageConstructor<T extends AEnginePackage = AEnginePackage> = new (loader: AAssetLoader, downloadPath: string) => T;
             export type ANativePackageConstructor<T extends ANativePackage = ANativePackage> = new (loader: AAssetLoader) => T;
         }
     }

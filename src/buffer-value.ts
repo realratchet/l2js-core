@@ -48,7 +48,7 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
         if (this.type.name !== other.type.name)
             throw new Error(`Type mismatch source type '${other.type.name}' but expected '${this.type.name}'.`);
 
-        this.bytes = new DataView(other.bytes.buffer.slice(0));
+        this.bytes = new DataView(other.bytes.buffer, other.bytes.byteOffset, other.bytes.byteLength);
 
         return this;
     }
@@ -75,7 +75,7 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
             byteOffset = length.value > 0 ? readBytes + 1 : readBytes;  // add delimiter unless empty
             offset = offset + byteOffset - readBytes;
 
-            this.type.bytes = length.value - 1;
+            this.type.bytes = Math.max(length.value - 1, 0);
 
         } else if (this.type.name === "compat32") {
             const byte = new BufferValue(uint8);
@@ -118,7 +118,13 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
             byteOffset = byteOffset - 1;
         }
 
-        this.bytes = new DataView(buffer.slice(offset, offset + this.type.bytes));
+        this.bytes_ = new DataView(buffer.slice(offset, offset + this.type.bytes));
+        this.bytes = new DataView(buffer, offset, this.type.bytes);
+
+        if (this.bytes.byteLength !== this.bytes.byteLength)
+            debugger;
+
+        // debugger;
 
         return this.bytes.byteLength + byteOffset;
     }
@@ -132,7 +138,7 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
         let string = "";
 
         for (let i = 0, bc = this.bytes.byteLength; i < bc; i++) {
-            const charCode = this.bytes.getUint8(this.bytes.byteOffset + i);
+            const charCode = this.bytes.getUint8(i);
             const char = String.fromCharCode(charCode);
             string += char.match(expIsPrintable) ? char : ".";
         }
@@ -157,7 +163,7 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
                 default: throw new Error(`Unknown type: ${this.type.name}`);
             }
 
-            (this.bytes[funName] as any)(this.bytes.byteOffset + 0, bytes, this.endianess === "little");
+            (this.bytes[funName] as any)(0, bytes, this.endianess === "little");
         }
         else throw new Error(`Invalid byte type '${typeof bytes}' expected 'number'`);
     }
@@ -186,7 +192,7 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
             default: throw new Error(`Unknown type: ${this.type.name}`);
         }
 
-        if (funName) return buffer[funName](buffer.byteOffset, this.endianess === "little") as ReturnType<T>;
+        if (funName) return buffer[funName](0, this.endianess === "little") as ReturnType<T>;
         else if (this.type.name === "guid") return this.bytes as DataView as ReturnType<T>;
         else if (this.type.name === "char" || this.type.name === "utf16") return this.string as ReturnType<T>;
 
@@ -195,12 +201,12 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
 
     public get hex(): string {
         if (this.type.name === "buffer" || this.type.name === "char") {
-            if (this.bytes.byteLength === 1) return `0x${this.bytes.getUint8(this.bytes.byteOffset + 0)}`;
+            if (this.bytes.byteLength === 1) return `0x${this.bytes.getUint8(0)}`;
 
             let string = "0x";
 
             for (let i = 0; i < this.bytes.byteLength; i += 2) {
-                const bits = this.bytes.getUint16(this.bytes.byteOffset + i, this.endianess === "little");
+                const bits = this.bytes.getUint16(i, this.endianess === "little");
                 const bitB = ((bits >> 8) & 0xFF).toString(16).toUpperCase();
                 const bitA = (bits & 0x00FF).toString(16).toUpperCase();
 

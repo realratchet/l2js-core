@@ -9,3 +9,11 @@ declare namespace EnumKeys {
     type EStateFlags_T = keyof typeof import("./src/unreal/un-state").EStateFlags_T;
     type PropertyFlags_T = keyof typeof import("./src/unreal/un-property/un-properties").PropertyFlags_T;
 }
+
+type PropertyExtraPars_T = {
+    arrayDimensions?: number,
+    flags?: number,
+    categoryNameId?: number,
+    categoryName?: string,
+    valueId?: number
+};

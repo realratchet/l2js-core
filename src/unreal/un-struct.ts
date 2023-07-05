@@ -68,8 +68,8 @@ class UStruct extends UField {
 
         this.defaultProperties.set(varName, defaultProperty);
 
-        if (pkg.tell() < offEnd)
-            console.warn(`Unread '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
+        // if (pkg.tell() < offEnd)
+        //     console.warn(`Unread '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
 
         pkg.seek(offEnd, "set");
     }
@@ -225,9 +225,8 @@ class UStruct extends UField {
             for (const field of childPropFields.values()) {
                 if (!(field instanceof UnProperties.UProperty)) continue;
 
-                clsNamedProperties[field.propertyName] = field.nativeClone();
+                clsNamedProperties[field.propertyName] = UObject.LAZY_CLONE_ON_USE ? field : field.nativeClone();
             }
-
 
             for (const [propertyName, propertyValue] of defaultProperties.entries())
                 defaultNamedProperties[propertyName] = propertyValue;
@@ -239,8 +238,7 @@ class UStruct extends UField {
             ? pkg.getConstructor(lastNative.friendlyName as C.NativeTypes_T) as any as typeof UObject
             : pkg.getStructConstructor(this.friendlyName) as any as typeof UObject;
 
-        if (friendlyName === "Primitive")
-            debugger;
+        const pkgEngine = pkg.loader.getEnginePackage();
 
         // @ts-ignore
         const _clsBase = {
@@ -254,9 +252,28 @@ class UStruct extends UField {
                 protected static getConstructorName(): string { return friendlyName; }
 
                 protected makeLayout() {
+                    const clsExtendedProperties = Object.assign({}, clsNamedProperties);
+                    const clsUnserializedProperties = this.getUnserializedPropertyies();
+
+                    for (const [propertyName, propertyType, ...propsExtra] of clsUnserializedProperties) {
+                        if (propertyName in clsExtendedProperties)
+                            throw new Error(`Trying to override already serialized property: ${propertyName}<${propertyType}>`)
+
+                        let propertyExt: Record<string, any>;
+                        let propertySubType: ["Struct" | "Class", string] = null;
+
+                        if (propertyType === "ArrayProperty") {
+                            [propertySubType, propertyExt] = propsExtra as [["Struct" | "Class", string], PropertyExtraPars_T?];
+                        }
+
+                        const property = addUnserializedProperty(pkgEngine, propertyName, propertyType, propertySubType, propertyExt);
+
+                        clsExtendedProperties[propertyName] = property;
+                    }
+
                     const propNames = this.getPropertyMap();
 
-                    for (const [propName, propValue] of Object.entries(clsNamedProperties)) {
+                    for (const [propName, propValue] of Object.entries(clsExtendedProperties)) {
                         if (!propValue)
                             debugger;
 
@@ -265,7 +282,7 @@ class UStruct extends UField {
                         if (propName in defaultNamedProperties) {
                             if (!property.copy) {
                                 debugger;
-                                throw new Error(`Must be copyable '${clsNamedProperties[propName].constructor.name}'`);
+                                throw new Error(`Must be copyable '${clsExtendedProperties[propName].constructor.name}'`);
                             }
 
                             property.copy(defaultNamedProperties[propName]);
@@ -337,6 +354,8 @@ class UStruct extends UField {
         (Constructor as any).onClassCreated?.(cls);
 
         this.kls = cls as any;
+
+        console.log(`%cRegistered new class: %c${friendlyName}`, "color: blue", "color: green")
 
         return this.kls as any as new () => T;
     }
@@ -679,6 +698,28 @@ class UStruct extends UField {
 export default UStruct;
 export { UStruct };
 
+function addUnserializedProperty(pkg: C.AEnginePackage, propertyName: string, properytType: C.PropertyTypes_T, propertySubType: ["Struct" | "Class", string], extraProps?: PropertyExtraPars_T): UnProperties.UProperty<any, any> {
+    const parameters = Object.assign({}, extraProps, { propertyName, pkg });
+
+    let Property: new (...args: any) => C.UProperty<any, any>;
+
+    const subValueId = propertySubType ? pkg.findObjectRef(...propertySubType) : null;
+
+    if (propertySubType) parameters["valueId"] = subValueId;
+
+    switch (properytType) {
+        case "ObjectProperty": Property = UnProperties.UObjectProperty; break;
+        case "BoolProperty": Property = UnProperties.UBoolProperty; break;
+        case "ArrayProperty": Property = UnProperties.UArrayProperty; break;
+        case "FloatProperty": Property = UnProperties.UFloatProperty; break;
+        case "IntProperty": Property = UnProperties.UIntProperty; break;
+        case "ByteProperty": Property = UnProperties.UByteProperty; break;
+        default: throw new Error(`Not implemented property type '${properytType}' for '${propertyName}'`);
+    }
+
+    return new Property(parameters);
+}
+
 enum ExprToken_T {
     // Variable references
     LocalVariable = 0x00,    // A local variable
@@ -805,7 +846,6 @@ class FLabelField implements IConstructable {
     }
 
     public isNone() { return this.name === "None"; }
-
 }
 
 class FixedArrayContainer<T> implements ReadonlyArray<T> {
@@ -934,5 +974,4 @@ class FixedArrayContainer<T> implements ReadonlyArray<T> {
     [Symbol.iterator](): IterableIterator<T> {
         throw new Error("Method not implemented.");
     }
-
 }

@@ -161,7 +161,7 @@ abstract class UEncodedFile implements IEncodedFile {
 
         if (this.promiseDecoding) return this.promiseDecoding;
 
-        console.log("Started loading package:", this.path);
+        console.log(`%cStarted loading package: %c${this.path}`, "color: blue", "color: gray");
 
         return this.handle.promiseDecoding = this.promiseDecoding = new Promise(async resolve => {
             this.buffer = await this.readArrayBuffer();
@@ -207,7 +207,16 @@ abstract class UEncodedFile implements IEncodedFile {
                     throw new Error(`Unsupported file version: ${version}`)
                 }
 
-                console.log(`'${this.path}' loaded in ${performance.now() - tStart} ms`);
+                const size = this.buffer.byteLength;
+                let sizeString: string;
+
+                if (size >= szGB) sizeString = `${(size / szGB).toFixed(2)}GB`;
+                else if (size >= szMB) sizeString = `${(size / szMB).toFixed(2)}MB`;
+                else if (size >= szKB) sizeString = `${(size / szKB).toFixed(2)}kB`;
+                else sizeString = `${size.toFixed(2)}B`;
+
+                if (size > 1024 * 1024)
+                    console.log(`'${this.path}' loaded in ${(performance.now() - tStart).toFixed(3)} ms (${sizeString})`);
             }
 
             this.signature = signature.value;
@@ -220,3 +229,5 @@ abstract class UEncodedFile implements IEncodedFile {
 
 export default UEncodedFile;
 export { UEncodedFile };
+
+const szKB = 1024, szMB = szKB * 1024, szGB = szMB * 1024;

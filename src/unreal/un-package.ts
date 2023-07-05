@@ -30,20 +30,19 @@ abstract class APackage extends UEncodedFile {
 
     public nameHash = new Map<string, number>();
 
-    public readonly isCore: boolean;
-    public readonly isEngine: boolean;
+    public readonly isCore: boolean = false;
+    public readonly isEngine: boolean = false;
     public readonly isNative: boolean = false;
 
     public isDecoded() { return !!this.buffer; }
 
-    constructor(loader: C.AAssetLoader, path: string) {
+    public constructor(loader: C.AAssetLoader, path: string) {
         super(path);
 
         this.loader = loader;
-
-        this.isCore = path.toLocaleLowerCase().endsWith("core.u");
-        this.isEngine = path.toLocaleLowerCase().endsWith("engine.u");
     }
+
+    protected addClassDependencies(nameTable: C.UName[], nameHash: Map<string, number>, imports: UImport[], exports: UExport<UObject>[]): void { }
 
     public async decode(): Promise<this> {
         if (this.buffer) return this;
@@ -168,35 +167,10 @@ abstract class APackage extends UEncodedFile {
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "State");
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "DelegateProperty");
 
-        } else if (this.isEngine) {
-            addPackageDependendency(nameTable, nameHash, imports, "Native")
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "Font");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "Sound");
-
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "Primitive");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "Model");
-
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "ConvexVolume");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "Mesh");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "StaticMesh");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "MeshInstance");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "LodMeshInstance");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "SkeletalMeshInstance");
-
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "MeshAnimation");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "StaticMeshInstance");
-
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "Viewport");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "Player");
-
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "TerrainSector");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "TerrainPrimitive");
-
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "LevelBase");
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "Level");
-
-            addClassDependency(nameTable, nameHash, imports, exports, "Native", "Client");
         }
+
+        readable.registerNativeClasses();
+        readable.addClassDependencies(nameTable, nameHash, imports, exports);
 
         readable.importGroups = readable.imports.reduce((accum, imp, index) => {
             const impType = imp.className;
@@ -435,7 +409,7 @@ abstract class APackage extends UEncodedFile {
         return this.fetchObject<T>(index);
     }
 
-    protected findObjectRef(className: string, objectName: string, groupName: string = "None"): number {
+    public findObjectRef(className: string, objectName: string, groupName: string = "None"): number {
         const isClass = className == "Class";
 
         for (const exp of this.exports) {
@@ -505,6 +479,34 @@ abstract class APackage extends UEncodedFile {
 
         return obj as T;
     }
+
+    protected registerNativeClasses() { }
+    protected registerNativeClass(className: C.NativeTypes_T, baseClass: C.NativeTypes_T | "None" = "None"): void {
+        if (!this.nameHash.has(className)) {
+            const name = new UName();
+
+            name.name = className;
+            name.flags = 0;
+
+            this.nameTable.push(name);
+            this.nameHash.set(className, this.nameTable.length - 1);
+        }
+
+        const exp = new UExport();
+
+        exp.index = this.exports.length
+        exp.idClass = 0;
+        exp.idSuper = baseClass === "None" ? 0 : this.findObjectRef("Class", baseClass);
+        exp.idPackage = 0;
+        exp.idObjectName = this.nameHash.get(className);
+        exp.objectName = className;
+        exp.flags = ObjectFlags_T.Native;
+        exp.size = 0;
+        exp.offset = 0;
+        exp.isFake = true;
+
+        this.exports.push(exp);
+    }
 }
 
 abstract class ANativePackage extends APackage {
@@ -544,33 +546,6 @@ abstract class ANativePackage extends APackage {
         this.registerNativeClass("NameProperty", "Property");
         this.registerNativeClass("StrProperty", "Property");
         // this.registerNativeClass("StringProperty", "Property");
-
-        this.registerNativeClass("Texture", "Object");
-        this.registerNativeClass("Font", "Object");
-        this.registerNativeClass("Sound", "Object");
-
-        this.registerNativeClass("Primitive", "Object");
-        this.registerNativeClass("Model", "Primitive");
-        this.registerNativeClass("ConvexVolume", "Primitive");
-        this.registerNativeClass("StaticMesh", "Primitive");
-        this.registerNativeClass("Mesh", "Primitive");
-        this.registerNativeClass("MeshInstance", "Primitive");
-        this.registerNativeClass("LodMeshInstance", "MeshInstance");
-        this.registerNativeClass("SkeletalMeshInstance", "LodMeshInstance");
-
-        this.registerNativeClass("MeshAnimation", "Object");
-        this.registerNativeClass("StaticMeshInstance", "Object");
-
-        this.registerNativeClass("Player", "Object");
-        this.registerNativeClass("Viewport", "Player");
-
-        this.registerNativeClass("TerrainSector", "Object");
-        this.registerNativeClass("TerrainPrimitive", "Primitive");
-
-        this.registerNativeClass("LevelBase", "Object");
-        this.registerNativeClass("Level", "LevelBase");
-
-        this.registerNativeClass("Client", "Object");
     }
 
     public async decode(): Promise<this> {
@@ -623,33 +598,6 @@ abstract class ANativePackage extends APackage {
 
         return Constructor;
     }
-
-    protected registerNativeClass(className: C.NativeTypes_T, baseClass: C.NativeTypes_T | "None" = "None"): void {
-        if (!this.nameHash.has(className)) {
-            const name = new UName();
-
-            name.name = className;
-            name.flags = 0;
-
-            this.nameTable.push(name);
-            this.nameHash.set(className, this.nameTable.length - 1);
-        }
-
-        const exp = new UExport();
-
-        exp.index = this.exports.length
-        exp.idClass = 0;
-        exp.idSuper = baseClass === "None" ? 0 : this.findObjectRef("Class", baseClass);
-        exp.idPackage = 0;
-        exp.idObjectName = this.nameHash.get(className);
-        exp.objectName = className;
-        exp.flags = ObjectFlags_T.Native;
-        exp.size = 0;
-        exp.offset = 0;
-        exp.isFake = true;
-
-        this.exports.push(exp);
-    }
 }
 
 enum PackageFlags_T {
@@ -662,8 +610,7 @@ enum PackageFlags_T {
     Need = 0x8000 // Client needs to download this package
 };
 
-export default APackage;
-export { APackage, ANativePackage, PackageFlags_T };
+
 
 function registerNameTable(nameTable: UName[], nameHash: Map<string, number>, value: string) {
     if (nameHash.has(value)) return nameHash.get(value);
@@ -701,6 +648,7 @@ function addPackageDependendency(nameTable: UName[], nameHash: Map<string, numbe
 
     imports.push(imp);
 }
+
 function addClassDependency(nameTable: UName[], nameHash: Map<string, number>, imports: UImport[], exports: UExport<UObject>[], classPackage: string, objectName: string) {
     registerNameTable(nameTable, nameHash, objectName);
 
@@ -737,3 +685,6 @@ function addClassDependency(nameTable: UName[], nameHash: Map<string, number>, i
 
     return { imp, exp };
 }
+
+export default APackage;
+export { APackage, ANativePackage, PackageFlags_T, addPackageDependendency, addClassDependency };
