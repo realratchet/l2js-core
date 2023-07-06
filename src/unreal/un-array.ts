@@ -3,6 +3,8 @@ import UExport from "./un-export";
 import FNumber from "./un-number";
 
 class FArray<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> extends Array<T> implements IConstructable {
+    declare ["constructor"]: typeof FArray;
+
     protected Constructor: { new(...pars: any): T };
 
     public getElemCount() { return this.length; }
@@ -67,7 +69,7 @@ class FArray<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> ex
         return this;
     }
 
-    public nativeClone(): FArray<T> { return new FArray(this.Constructor).copy(this); }
+    public nativeClone(): FArray<T> { return new this.constructor(this.Constructor).copy(this); }
 }
 
 class FArrayLazy<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> extends FArray<T>{
@@ -78,6 +80,15 @@ class FArrayLazy<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable
         this.unkLazyInt = pkg.read(new BufferValue(BufferValue.int32)).value as number;
 
         super.load(pkg, tag);
+
+        return this;
+    }
+
+    public copy(other: FArrayLazy<T>): this {
+        if (!other)
+            return this;
+
+        this.unkLazyInt = other.unkLazyInt;
 
         return this;
     }
@@ -158,8 +169,10 @@ class FNameArray extends Array<string> implements IConstructable {
     public nativeClone(): FNameArray { return new FNameArray().copy(this); }
 }
 
-class FPrimitiveArray<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> implements IConstructable {
-    protected array: DataView;
+class FPrimitiveArray<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T = any> implements IConstructable {
+    declare ["constructor"]: typeof FPrimitiveArray;
+
+    protected array = new DataView(new ArrayBuffer(0));
     protected Constructor: C.ValidTypes_T<T>;
 
     public getElemCount() { return this.array ? this.array.byteLength / this.Constructor.bytes : 0; }
@@ -230,6 +243,16 @@ class FPrimitiveArray<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> i
     }
 
     public getByteLength() { return this.array.byteLength; }
+
+    public nativeClone() { return new this.constructor(this.Constructor).copy(this); }
+    public copy(other: FPrimitiveArray<T>): this {
+        if (!other)
+            return this;
+
+        this.array = new DataView(other.array.buffer, other.array.byteOffset, other.array.byteLength);
+
+        return this;
+    }
 }
 
 type ReturnType<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> =
@@ -251,6 +274,16 @@ class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_
         this.unkLazyInt = pkg.read(new BufferValue(BufferValue.int32)).value as number;
 
         super.load(pkg, tag);
+
+        return this;
+    }
+
+    public copy(other: FPrimitiveArrayLazy<T>): this {
+        if (!other)
+            return this;
+
+        super.copy(other);
+        this.unkLazyInt = other.unkLazyInt;
 
         return this;
     }

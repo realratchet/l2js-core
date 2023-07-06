@@ -118,11 +118,7 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
             byteOffset = byteOffset - 1;
         }
 
-        this.bytes_ = new DataView(buffer.slice(offset, offset + this.type.bytes));
         this.bytes = new DataView(buffer, offset, this.type.bytes);
-
-        if (this.bytes.byteLength !== this.bytes.byteLength)
-            debugger;
 
         // debugger;
 

@@ -4,7 +4,7 @@ import ObjectFlags_T from "./un-object-flags";
 import UObject from "./un-object";
 import UNativeRegistry from "./un-native-registry";
 import APackage from "./un-package";
-import PropertyTag from "./un-property/un-property-tag";
+import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
 import * as UnProperties from "./un-property/un-properties";
 
 class UStruct extends UField {
@@ -62,9 +62,7 @@ class UStruct extends UField {
         if (!property)
             throw new Error(`Cannot map property '${propName}' -> ${varName}`);
 
-        const defaultProperty = property.loadSelf().nativeClone().readProperty(pkg, tag);
-
-        defaultProperty.isDefault[tag?.arrayIndex || 0] = true;
+        const defaultProperty = property.loadSelf().readProperty(pkg, tag, this.propertyDict);
 
         this.defaultProperties.set(varName, defaultProperty);
 
@@ -191,7 +189,7 @@ class UStruct extends UField {
             this.readToken(native, core, pkg, 0);
     }
 
-    public buildClass<T extends UObject = UObject>(pkg: C.ANativePackage): new () => T {
+    public buildClass<T extends UObject = UObject>(pkgNative: C.ANativePackage): new () => T {
         if (this.kls)
             return this.kls as any as new () => T;
 
@@ -199,9 +197,6 @@ class UStruct extends UField {
         const dependencyTree = this.collectDependencies<UStruct>();
 
         if (!this.isReady)
-            debugger;
-
-        if (this.friendlyName === "Primitive")
             debugger;
 
         const clsNamedProperties: Record<string, UnProperties.UProperty> = {};
@@ -228,17 +223,37 @@ class UStruct extends UField {
                 clsNamedProperties[field.propertyName] = UObject.LAZY_CLONE_ON_USE ? field : field.nativeClone();
             }
 
-            for (const [propertyName, propertyValue] of defaultProperties.entries())
-                defaultNamedProperties[propertyName] = propertyValue;
+            for (const propertyName of defaultProperties.keys())
+                defaultNamedProperties[propertyName] = base.propertyDict.get(propertyName);
         }
 
         const friendlyName = this.friendlyName;
         const hostClass = this;
         const Constructor = lastNative
-            ? pkg.getConstructor(lastNative.friendlyName as C.NativeTypes_T) as any as typeof UObject
-            : pkg.getStructConstructor(this.friendlyName) as any as typeof UObject;
+            ? pkgNative.getConstructor(lastNative.friendlyName as C.NativeTypes_T) as any as typeof UObject
+            : pkgNative.getStructConstructor(this.friendlyName) as any as typeof UObject;
 
-        const pkgEngine = pkg.loader.getEnginePackage();
+        const pkgEngine = pkgNative.loader.getEnginePackage();
+
+        const clsExtendedProperties = Object.assign({}, clsNamedProperties);
+        const clsUnserializedProperties = Constructor.collectUnserializedProperties();
+
+        for (const [propertyName, propertyType, ...propsExtra] of clsUnserializedProperties) {
+            if (propertyName in clsExtendedProperties)
+                throw new Error(`Trying to override already serialized property: ${propertyName}<${propertyType}>`)
+
+            let propertyExt: Record<string, any>;
+            let propertySubType: ["Struct" | "Class", string] = null;
+
+            if (propertyType === "ArrayProperty") {
+                [propertySubType, propertyExt] = propsExtra as [["Struct" | "Class", string], PropertyExtraPars_T?];
+            }
+
+            const property = addUnserializedProperty(pkgEngine, propertyName, propertyType, propertySubType, propertyExt);
+
+            clsExtendedProperties[propertyName] = property;
+        }
+
 
         // @ts-ignore
         const _clsBase = {
@@ -250,45 +265,22 @@ class UStruct extends UField {
                 public static readonly inheretenceChain = Object.freeze(inheretenceChain);
 
                 protected static getConstructorName(): string { return friendlyName; }
+                protected findPropReader<T1 = any, T2 = any>(propName: string): C.UProperty<T1, T2> {
+                    if (!(propName in clsExtendedProperties))
+                        throw new Error(`Property '${propName}' does not exist!`);
+
+                    return clsExtendedProperties[propName];
+                }
 
                 protected makeLayout() {
-                    const clsExtendedProperties = Object.assign({}, clsNamedProperties);
-                    const clsUnserializedProperties = this.getUnserializedPropertyies();
-
-                    for (const [propertyName, propertyType, ...propsExtra] of clsUnserializedProperties) {
-                        if (propertyName in clsExtendedProperties)
-                            throw new Error(`Trying to override already serialized property: ${propertyName}<${propertyType}>`)
-
-                        let propertyExt: Record<string, any>;
-                        let propertySubType: ["Struct" | "Class", string] = null;
-
-                        if (propertyType === "ArrayProperty") {
-                            [propertySubType, propertyExt] = propsExtra as [["Struct" | "Class", string], PropertyExtraPars_T?];
-                        }
-
-                        const property = addUnserializedProperty(pkgEngine, propertyName, propertyType, propertySubType, propertyExt);
-
-                        clsExtendedProperties[propertyName] = property;
-                    }
-
                     const propNames = this.getPropertyMap();
 
-                    for (const [propName, propValue] of Object.entries(clsExtendedProperties)) {
-                        if (!propValue)
-                            debugger;
+                    for (const [propName, property] of Object.entries(clsExtendedProperties)) {
 
-                        const property = propValue.nativeClone();
+                        const defaultValue = getDefaultValue(propName, property, defaultNamedProperties, this.propertyDict,)
 
-                        if (propName in defaultNamedProperties) {
-                            if (!property.copy) {
-                                debugger;
-                                throw new Error(`Must be copyable '${clsExtendedProperties[propName].constructor.name}'`);
-                            }
 
-                            property.copy(defaultNamedProperties[propName]);
-                        }
-
-                        this.propertyDict.set(propName, property);
+                        this.propertyDict.set(propName, defaultValue);
 
                         if (propName in propNames) {
                             // Attach proxies to varnames
@@ -300,28 +292,28 @@ class UStruct extends UField {
                             Object.defineProperty(this, varname, {
                                 get: () => {
 
-                                    if (property.arrayDimensions !== 1)
-                                        return new FixedArrayContainer(property);
+                                    // if (property.arrayDimensions !== 1)
+                                    //     return new FixedArrayContainer(property);
 
-                                    return this.propertyDict.get(propName).getPropertyValue();
+                                    return this.propertyDict.get(propName);//.getPropertyValue();
                                 },
                                 set: (v: any) => {
-                                    if (property.arrayDimensions !== 1)
-                                        throw new Error(`Not implemented`);
+                                    this.propertyDict.set(propName, v);
+                                    // if (property.arrayDimensions !== 1)
+                                    //     throw new Error(`Not implemented`);
 
-                                    const value = property.propertyValue[0];
+                                    // const value = property.propertyValue[0];
 
-                                    if (value instanceof BufferValue || value instanceof UnProperties.BooleanValue)
-                                        value.value = v;
-                                    else if (property instanceof UnProperties.UArrayProperty)
-                                        property.propertyValue[0] = v;
-                                    else if (property instanceof UnProperties.UStructProperty)
-                                        property.propertyValue[0] = v;
-                                    else {
-                                        debugger;
-                                        throw new Error(`Not implemented`);
-                                    }
-
+                                    // if (value instanceof BufferValue || value instanceof UnProperties.BooleanValue)
+                                    //     value.value = v;
+                                    // else if (property instanceof UnProperties.UArrayProperty)
+                                    //     property.propertyValue[0] = v;
+                                    // else if (property instanceof UnProperties.UStructProperty)
+                                    //     property.propertyValue[0] = v;
+                                    // else {
+                                    //     debugger;
+                                    //     throw new Error(`Not implemented`);
+                                    // }
                                 }
                             })
                         }
@@ -697,6 +689,63 @@ class UStruct extends UField {
 
 export default UStruct;
 export { UStruct };
+
+function getUnsetDefaultValue(pkgNative: C.ANativePackage, property: UnProperties.UProperty) {
+    switch (property.type) {
+        case UNP_PropertyTypes.UNP_ByteProperty:
+        case UNP_PropertyTypes.UNP_FloatProperty:
+        case UNP_PropertyTypes.UNP_BoolProperty:
+        case UNP_PropertyTypes.UNP_IntProperty:
+        case UNP_PropertyTypes.UNP_StrProperty:
+        case UNP_PropertyTypes.UNP_ObjectProperty:
+        case UNP_PropertyTypes.UNP_NameProperty:
+        case UNP_PropertyTypes.UNP_ClassProperty:
+        case UNP_PropertyTypes.UNP_NameProperty:
+        case UNP_PropertyTypes.UNP_ArrayProperty:
+            return property.getDefaultValue(pkgNative);
+        // case UNP_PropertyTypes.UNP_ClassProperty:
+        // case UNP_PropertyTypes.UNP_StructProperty:
+        // case UNP_PropertyTypes.UNP_ObjectProperty:
+        //     if (property.arrayDimensions > 1)
+        //         return defaultValue.map((x: UObject) => x?.nativeClone() ?? null);
+
+        //     return defaultValue.nativeClone();
+        default:
+            debugger;
+            throw new Error(`Property type '${property.getTypeName()}' not yet implemented.`)
+    }
+}
+
+function getDefaultValue(propName: string, property: UnProperties.UProperty, defaultNamedProperties: Record<string, any>) {
+    if (!(propName in defaultNamedProperties))
+        return property.getDefaultValue(); //getUnsetDefaultValue(pkgNative, property);
+
+    const defaultValue = defaultNamedProperties[propName];
+
+    switch (property.type) {
+        case UNP_PropertyTypes.UNP_ByteProperty:
+        case UNP_PropertyTypes.UNP_FloatProperty:
+        case UNP_PropertyTypes.UNP_BoolProperty:
+        case UNP_PropertyTypes.UNP_IntProperty:
+        case UNP_PropertyTypes.UNP_StrProperty:
+        case UNP_PropertyTypes.UNP_NameProperty:
+            if (property.arrayDimensions > 1)
+                return defaultValue.slice();
+
+            return defaultValue;
+        case UNP_PropertyTypes.UNP_ClassProperty:
+        case UNP_PropertyTypes.UNP_StructProperty:
+        case UNP_PropertyTypes.UNP_ObjectProperty:
+            if (property.arrayDimensions > 1)
+                return defaultValue.map((x: UObject) => x?.nativeClone() ?? null);
+
+            return defaultValue.nativeClone();
+        default:
+            debugger;
+            throw new Error(`Property type '${property.getTypeName()}' not yet implemented.`)
+    }
+}
+
 
 function addUnserializedProperty(pkg: C.AEnginePackage, propertyName: string, properytType: C.PropertyTypes_T, propertySubType: ["Struct" | "Class", string], extraProps?: PropertyExtraPars_T): UnProperties.UProperty<any, any> {
     const parameters = Object.assign({}, extraProps, { propertyName, pkg });

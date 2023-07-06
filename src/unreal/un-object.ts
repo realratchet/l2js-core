@@ -2,8 +2,9 @@ import UStack from "./un-stack";
 import UExport from "./un-export";
 import APackage from "./un-package";
 import BufferValue from "../buffer-value";
+import { FPrimitiveArray } from "./un-array";
 import ObjectFlags_T from "./un-object-flags";
-import PropertyTag from "./un-property/un-property-tag";
+import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
 
 abstract class UObject implements C.ISerializable {
     declare public ["constructor"]: typeof UObject & { friendlyName?: string };
@@ -33,7 +34,7 @@ abstract class UObject implements C.ISerializable {
     protected isReady = false;
 
     protected pkg: APackage;
-    public readonly propertyDict = new Map<string, C.UProperty>();
+    public readonly propertyDict = new Map<string, any>();
     public nativeBytes?: BufferValue<"buffer"> = null;
 
     public constructor() {
@@ -45,10 +46,28 @@ abstract class UObject implements C.ISerializable {
         this.onSuperConstructed();
     }
 
-    protected getUnserializedPropertyies(): C.UnserializedProperty_T[] { return []; }
+    public static getUnserializedProperties(): C.UnserializedProperty_T[] { return []; }
+    public static collectUnserializedProperties(): C.UnserializedProperty_T[] {
+        if (this === UObject)
+            return this.getUnserializedProperties();
+
+        let base = this as any;
+        const dependencyProps: Record<string, C.UnserializedProperty_T> = {};
+
+        do {
+            for (const prop of base.getUnserializedProperties()) {
+                dependencyProps[prop[0]] = prop;
+            }
+            base = base.__proto__;
+
+        } while (base !== UObject);
+
+        return Object.values(dependencyProps);
+    }
 
     protected onSuperConstructed(): void { }
     protected makeLayout(): void { throw new Error(`Layout for '${this.constructor.name}' must be overloaded by the package, was this created via package?.`); }
+    protected findPropReader<T1 = any, T2 = any>(propName: string): C.UProperty<T1, T2> { { throw new Error(`Layout for '${this.constructor.name}' must be overloaded by the package, was this created via package?.`); } }
 
     protected setReadPointers(exp: UExport) {
         this.readStart = this.readHead = exp.offset;
@@ -60,6 +79,7 @@ abstract class UObject implements C.ISerializable {
     public get byteOffset() { return this.readHead - this.readStart; }
 
     public get objectFlags() { return this.exp ? this.exp.objectFlags : {} };
+
 
     protected static getConstructorName(): string {
         debugger;
@@ -105,14 +125,10 @@ abstract class UObject implements C.ISerializable {
 
     protected getPropertyMap(): Record<string, string> { return {}; }
     protected getPropertyVarName(tag: PropertyTag) { return tag.name; }
-    protected findValidProperty(varName: string) {
-        return this.propertyDict.has(varName)
-            ? this.propertyDict.get(varName)
-            : null;
-    }
+    protected findValidProperty(varName: string) { return this.findPropReader(varName); }
 
-    public nativeClone(): UObject {
-        const Constructor = this.constructor as any as new () => UObject;
+    public nativeClone<T extends UObject = UObject>(): T {
+        const Constructor = this.constructor as any as new () => T;
 
         return new Constructor().copy(this);
     }
@@ -125,17 +141,12 @@ abstract class UObject implements C.ISerializable {
     }
 
     protected loadNative(pkg: APackage) {
-        for (const [propKey, propValOrig] of this.propertyDict.entries()) {
-            if (UObject.LAZY_CLONE_ON_USE) {
-                const propVal = propValOrig.nativeClone();
+        for (const propName of this.propertyDict.keys()) {
+            const property = this.findPropReader(propName);
 
-                this.propertyDict.set(propKey, propVal)
+            const propValue = property.readValue(pkg, null);
 
-                propVal.readProperty(pkg, null);
-
-            } else {
-                propValOrig.readProperty(pkg, null);
-            }
+            this.propertyDict.set(propName, propValue);
         }
 
         this.isLoading = false;
@@ -148,8 +159,10 @@ abstract class UObject implements C.ISerializable {
         if (this.constructor !== other.constructor)
             throw new Error(`'${this.constructor.name}' !== '${other.constructor.name}'`);
 
-        for (const [name, val] of other.propertyDict.entries())
-            this.propertyDict.get(name).copy(val);
+        for (const [name, val] of other.propertyDict.entries()) {
+            this.propertyDict.set(name, deepClone(val));
+
+        }
 
         return this;
     }
@@ -164,25 +177,28 @@ abstract class UObject implements C.ISerializable {
         if (!varName)
             throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${tag.getTypeName()}'`);
 
-        const propertyOrig = this.findValidProperty(varName);
+        // const propReader = this.findPropReader(varName);
 
-        if (!propertyOrig)
+        // if (tag.type === UNP_PropertyTypes.UNP_StructProperty) {
+        //     const propertyOrig = this.findValidProperty(varName);
+
+        //     if (propertyOrig === null) {
+
+        //         const defStruct = (propReader as C.UStructProperty).initializeDefault(pkg.loader.getNativePackage());
+
+        //         this.propertyDict.set(varName, defStruct);
+        //     }
+        // }
+
+        const property = this.findValidProperty(varName);
+
+        if (!property)
             throw new Error(`Cannot map '${tag.getTypeName()}' property '${propName}' -> '${varName}' for '${this.constructor.friendlyName ?? this.constructor.name}'`);
 
-        if (propertyOrig.propertyType !== tag.type)
-            throw new Error(`Property type mismatch got '${tag.getTypeName()}' expected '${propertyOrig.getTypeName()}'`);
+        if (property.type !== tag.type)
+            throw new Error(`Property type mismatch got '${tag.getTypeName()}' expected '${property.getTypeName()}'`);
 
-        let property: C.UProperty<any, any>;
-
-        if (UObject.LAZY_CLONE_ON_USE) {
-            property = propertyOrig.nativeClone();
-            this.propertyDict.set(varName, property);
-        } else {
-            property = propertyOrig;
-        }
-
-        property.readProperty(pkg, tag);
-        property.isDefault[tag?.arrayIndex || 0] = false;
+        property.readProperty(pkg, tag, this.propertyDict);
 
         // if (pkg.tell() < offEnd)
         //     console.warn(`Unread '${tag.name}' ${offEnd - pkg.tell()} bytes (${((offEnd - pkg.tell()) / 1024).toFixed(2)} kB) for package '${pkg.path}'`);
@@ -320,3 +336,17 @@ abstract class UObject implements C.ISerializable {
 export default UObject;
 export { UObject };
 
+function deepClone<T = any>(value: T | T[]): T | T[] {
+    if (value instanceof Array && value.constructor === Array)
+        return value.map(v => deepClone(v)) as T[];
+
+    if (["number", "boolean", "string"].includes(typeof value)) return value;
+    if (value == null) return null;
+    if (value instanceof UObject) return value.nativeClone() as T;
+
+    if (value instanceof FPrimitiveArray) return value.nativeClone() as T;
+
+    debugger;
+    throw new Error("not yet implemented");
+
+}

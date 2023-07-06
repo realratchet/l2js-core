@@ -223,6 +223,9 @@ declare global {
                 | "SpriteEmitter";
 
             export type UProperty<T1 = any, T2 = T1> = import("./src/unreal/un-property/un-properties").UProperty<T1, T2>;
+            
+            export type UStructProperty<T1 = any> = import("./src/unreal/un-property/un-properties").UStructProperty<T1>;
+            
             export type PropertyTag = import("./src/unreal/un-property/un-property-tag").PropertyTag;
 
             export interface IConstructable {
