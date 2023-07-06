@@ -217,7 +217,7 @@ abstract class UObject implements C.ISerializable {
     }
 
     protected preLoad(pkg: APackage, exp: UExport): void {
-        console.log(`Loading '${exp}' from '${pkg}'`)
+        // console.log(`Loading '${exp}' from '${pkg}'`)
         const flags = exp.flags;
 
         if (!this.exp)

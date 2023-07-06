@@ -285,10 +285,7 @@ class UStructProperty<T extends UObject = UObject> extends UBaseExportProperty<C
         const native = pkg.loader.getNativePackage();
         const verArchive = pkg.header.getArchiveFileVersion();
 
-        // debugger;
-
-        const Constructor = this.value.buildClass<T>(native);
-        const struct = new Constructor();
+        const struct = this.initializeDefault(native)
         const isNative = ["Vector", "Rotator", "Color"].includes(tag?.structName || null) || verArchive < 0x76;
 
         struct.load(pkg, isNative ? null : tag);

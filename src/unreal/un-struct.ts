@@ -272,13 +272,25 @@ class UStruct extends UField {
                     return clsExtendedProperties[propName];
                 }
 
+                protected initialize(): this {
+                    for (const [propName, property] of Object.entries(clsExtendedProperties)) {
+                        if (property.type !== UNP_PropertyTypes.UNP_StructProperty) continue;
+                        if (this.propertyDict.get(propName) !== null) continue;
+
+                        const struct = (property as C.UStructProperty).initializeDefault(pkgNative);
+
+                        this.propertyDict.set(propName, struct);
+                        
+                    }
+
+                    return this;
+                }
+
                 protected makeLayout() {
                     const propNames = this.getPropertyMap();
 
                     for (const [propName, property] of Object.entries(clsExtendedProperties)) {
-
-                        const defaultValue = getDefaultValue(propName, property, defaultNamedProperties, this.propertyDict,)
-
+                        const defaultValue = getDefaultValue(propName, property, defaultNamedProperties)
 
                         this.propertyDict.set(propName, defaultValue);
 
@@ -323,6 +335,12 @@ class UStruct extends UField {
                 }
 
                 public toString() { return Constructor === UObject ? `[D|S]${friendlyName}` : Constructor.prototype.toString.call(this); }
+
+                public constructor() {
+                    super();
+
+                    this.initialize();
+                }
             }
         }[this.friendlyName];
 
