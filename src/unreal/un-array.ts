@@ -200,6 +200,13 @@ class FPrimitiveArray<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T = 
 
     public constructor(constr: C.ValidTypes_T<T>) { this.Constructor = constr; }
 
+    public *iter(): Generator<number, null, unknown> {
+        for (let i = 0, len = this.getElemCount(); i < len; i++)
+            yield this.getElem(i);
+
+        return null;
+    }
+
     public map<T>(fnMap: (value: any, index: number, array: any[]) => T): T[] { return [...(this as any as Array<T>)].map(fnMap); }
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {

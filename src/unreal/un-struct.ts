@@ -62,6 +62,9 @@ class UStruct extends UField {
         if (!property)
             throw new Error(`Cannot map property '${propName}' -> ${varName}`);
 
+        if (!this.propertyDict.has(varName))
+            this.propertyDict.set(varName, property.getDefaultValue());
+
         const defaultProperty = property.loadSelf().readProperty(pkg, tag, this.propertyDict);
 
         this.defaultProperties.set(varName, defaultProperty);
@@ -193,6 +196,8 @@ class UStruct extends UField {
         if (this.kls)
             return this.kls as any as new () => T;
 
+        if (this.friendlyName === "Mover") debugger;
+
         this.loadSelf();
         const dependencyTree = this.collectDependencies<UStruct>();
 
@@ -254,7 +259,6 @@ class UStruct extends UField {
             clsExtendedProperties[propertyName] = property;
         }
 
-
         // @ts-ignore
         const _clsBase = {
             [friendlyName]: class DynamicStruct extends Constructor {
@@ -280,7 +284,7 @@ class UStruct extends UField {
                         const struct = (property as C.UStructProperty).initializeDefault(pkgNative);
 
                         this.propertyDict.set(propName, struct);
-                        
+
                     }
 
                     return this;
@@ -336,8 +340,8 @@ class UStruct extends UField {
 
                 public toString() { return Constructor === UObject ? `[D|S]${friendlyName}` : Constructor.prototype.toString.call(this); }
 
-                public constructor() {
-                    super();
+                public constructor(...args: any) {
+                    super(...args);
 
                     this.initialize();
                 }

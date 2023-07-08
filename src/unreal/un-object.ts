@@ -37,7 +37,7 @@ abstract class UObject implements C.ISerializable {
     public readonly propertyDict = new Map<string, any>();
     public nativeBytes?: BufferValue<"buffer"> = null;
 
-    public constructor() {
+    public constructor(..._: any) {
         this.makeLayout();
 
         if (!this.isConstructed)
