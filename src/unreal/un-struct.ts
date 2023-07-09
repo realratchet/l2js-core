@@ -207,12 +207,14 @@ class UStruct extends UField {
         const clsNamedProperties: Record<string, UnProperties.UProperty> = {};
         const defaultNamedProperties: Record<string, any> = {};
         const inheretenceChain = new Array<string>();
+        const clsInheritedProps: Record<string, string[]> = {};
 
         let lastNative: UStruct = null;
 
         for (const base of dependencyTree.reverse()) {
 
             inheretenceChain.push(base.friendlyName);
+            const propNames = clsInheritedProps[base.friendlyName] = new Array<string>();
 
             if (!base.exp || base.exp.anyFlags(ObjectFlags_T.Native))
                 lastNative = base;
@@ -226,6 +228,7 @@ class UStruct extends UField {
                 if (!(field instanceof UnProperties.UProperty)) continue;
 
                 clsNamedProperties[field.propertyName] = UObject.LAZY_CLONE_ON_USE ? field : field.nativeClone();
+                propNames.push(field.propertyName);
             }
 
             for (const propertyName of defaultProperties.keys())
@@ -267,6 +270,7 @@ class UStruct extends UField {
                 public static readonly hostClass = hostClass;
                 public static readonly nativeClass = lastNative;
                 public static readonly inheretenceChain = Object.freeze(inheretenceChain);
+                public static readonly inheritedProps = Object.freeze(clsInheritedProps);
 
                 protected static getConstructorName(): string { return friendlyName; }
                 protected findPropReader<T1 = any, T2 = any>(propName: string): C.UProperty<T1, T2> {
@@ -348,6 +352,8 @@ class UStruct extends UField {
             }
         }[this.friendlyName];
 
+        
+
         const clsNamedPropertiesKeys = Object.keys(clsNamedProperties);
         const cls = eval([
             `(function() {`,
@@ -357,7 +363,7 @@ class UStruct extends UField {
                 clsNamedPropertiesKeys.length > 0
                     ? [
                         `    return class ${friendlyName} extends ${Constructor.name} {`,
-                        `        /* ${clsNamedPropertiesKeys.join(", ")} */`,
+                        ...Object.entries(clsInheritedProps).reverse().map(([k, p]) => { return `        /* <${k}>:    ${p.join(", ")} */` }),
                         `}`,
                     ]
                     : [`    return class ${friendlyName} extends ${Constructor.name} {}`]
