@@ -166,7 +166,6 @@ abstract class APackage extends UEncodedFile {
             addPackageDependendency(nameTable, nameHash, imports, "Native")
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "State");
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "DelegateProperty");
-
         }
 
         readable.registerNativeClasses();
