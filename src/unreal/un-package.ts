@@ -173,6 +173,8 @@ abstract class APackage extends UEncodedFile {
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "Font");
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "Sound");
 
+            addClassDependency(nameTable, nameHash, imports, exports, "Native", "Polys");
+
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "Primitive");
             addClassDependency(nameTable, nameHash, imports, exports, "Native", "Model");
 
@@ -544,6 +546,8 @@ abstract class ANativePackage extends APackage {
         this.registerNativeClass("NameProperty", "Property");
         this.registerNativeClass("StrProperty", "Property");
         // this.registerNativeClass("StringProperty", "Property");
+
+        this.registerNativeClass("Polys", "Object");
 
         this.registerNativeClass("Texture", "Object");
         this.registerNativeClass("Font", "Object");

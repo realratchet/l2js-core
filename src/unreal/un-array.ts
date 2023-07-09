@@ -75,6 +75,8 @@ class FArrayLazy<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
 
+        debugger;
+
         this.unkLazyInt = pkg.read(new BufferValue(BufferValue.int32)).value as number;
 
         super.load(pkg, tag);
@@ -245,6 +247,8 @@ class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_
     public unkLazyInt: number;
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
+
+        debugger;
 
         this.unkLazyInt = pkg.read(new BufferValue(BufferValue.int32)).value as number;
 
