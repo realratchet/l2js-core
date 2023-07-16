@@ -243,9 +243,9 @@ declare global {
             }
 
             export type UField = import("./src/unreal/un-field").UField;
-            export type UStruct = import("./src/unreal/un-struct").UStruct;
-            export type UState = import("./src/unreal/un-state").UState;
-            export type UClass = import("./src/unreal/un-class").UClass;
+            export type UStruct<T extends UObject = UObject> = import("./src/unreal/un-struct").UStruct<T>;
+            export type UState<T extends UObject = UObject> = import("./src/unreal/un-state").UState<T>;
+            export type UClass<T extends UObject = UObject> = import("./src/unreal/un-class").UClass<T>;
             export type UEnum = import("./src/unreal/un-enum").UEnum;
             export type UFunction = import("./src/unreal/un-function").UFunction;
             export type UConst = import("./src/unreal/un-const").UConst;
@@ -266,6 +266,7 @@ declare global {
             export type FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArray<T>;
             export type FArrayLazy<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArrayLazy<T>;
             export type FNameArray = import("./src/unreal/un-array").FNameArray;
+            export type FIndexArray = import("./src/unreal/un-array").FIndexArray;
             export type FObjectArray<T extends UObject = UObject> = import("./src/unreal/un-array").FObjectArray<T>;
             export type FPrimitiveArray<T extends NumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArray<T>;
             export type FPrimitiveArrayLazy<T extends NumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArrayLazy<T>;

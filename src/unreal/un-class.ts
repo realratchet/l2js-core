@@ -25,7 +25,7 @@ class FDependencies implements IConstructable {
     }
 }
 
-class UClass extends UState {
+class UClass<Class extends UObject = UObject> extends UState<Class> {
     declare ["constructor"]: typeof UClass;
 
     protected _classFlags: number;
@@ -61,6 +61,8 @@ class UClass extends UState {
 
         return this;
     }
+
+    public getDynamicTag(friendlyName: string) { return `[C*]${friendlyName}`; }
 
     protected doLoad(pkg: C.APackage, exp: C.UExport<UObject>): void {
         // if (exp.objectName === "Pawn")

@@ -1,5 +1,4 @@
 import * as rsaKeys from "../keys/rsa";
-import * as modKeys from "../keys/modulo";
 import { decryptRSA } from "./decrypt-rsa";
 import { decryptModulo as _decryptModulo } from "./decrypt-modulo";
 
@@ -10,7 +9,7 @@ const DecodersRSA: Readonly<{
 });
 
 function decryptModulo(array: Uint8Array, key: number) {
-    return _decryptModulo(array, modKeys.modulo ^ key);
+    return _decryptModulo(array, key);
 }
 
 export { decryptModulo };

@@ -1,6 +1,7 @@
 import BufferValue from "../buffer-value";
 import * as decoders from "../crypto/decryption/decoders";
 import * as _gmp from "gmp-wasm";
+import * as modKeys from "../crypto/keys/modulo";
 
 let gmp: _gmp.GMPLib = null;
 
@@ -183,7 +184,11 @@ abstract class UEncodedFile implements IEncodedFile {
 
                 if (version.startsWith("1")) {
 
-                    this.moduloCryptKey = this.read(new BufferValue(BufferValue.uint8)).value;
+                    if (this.version === "111") {
+                        this.moduloCryptKey = modKeys.modulo111;
+                    } else {
+                        this.moduloCryptKey = this.read(new BufferValue(BufferValue.uint8)).value ^ modKeys.modulo121;
+                    }
 
                     this.contentOffset = HEADER_SIZE;
                     this.seek(0, "set");

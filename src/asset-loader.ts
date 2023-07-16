@@ -83,8 +83,8 @@ abstract class AAssetLoader<
         return getPackage(this.packages, pkgName, impType) !== null;
     }
 
-    public async load(pkg: TPackage): Promise<TPackage> {
-        const pkgsToLoad = [pkg];
+    public async load<T extends TPackage = TPackage>(pkg: T): Promise<T> {
+        const pkgsToLoad: Array<C.APackage> = [pkg];
 
         while (pkgsToLoad.length > 0) {
             const pkg = pkgsToLoad.shift();

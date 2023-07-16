@@ -2,7 +2,7 @@ import UStruct from "./un-struct";
 import BufferValue from "../buffer-value";
 import { flagBitsToDict } from "../utils/flags";
 
-abstract class UState extends UStruct {
+abstract class UState<Class extends C.UObject = C.UObject> extends UStruct<Class> {
     protected probeMask: bigint;
     protected ignoreMask: bigint;
     protected _stateFlags: number;

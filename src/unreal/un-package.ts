@@ -66,8 +66,6 @@ abstract class APackage extends UEncodedFile {
         header._packageFlags = readable.read(int32).value;
         header.packageFlags = flagBitsToDict(header._packageFlags, PackageFlags_T);
 
-        header.packageFlags
-
         header.nameCount = readable.read(int32).value;
         header.nameOffset = readable.read(int32).value;
         header.exportCount = readable.read(int32).value;

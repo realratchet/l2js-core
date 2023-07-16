@@ -11,8 +11,8 @@ class FArray<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> ex
     public getElem(idx: number): T { return this[idx]; }
     public getConstructor() { return this.Constructor; }
 
-    public constructor(constr: { new(...pars: any): T }) {
-        super();
+    public constructor(constr: { new(...pars: any): T }, len = 0) {
+        super(len);
 
         if (!constr)
             debugger;
@@ -278,8 +278,6 @@ class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_
     public unkLazyInt: number;
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
-
-        debugger;
 
         this.unkLazyInt = pkg.read(new BufferValue(BufferValue.int32)).value as number;
 

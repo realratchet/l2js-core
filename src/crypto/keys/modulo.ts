@@ -1,5 +1,6 @@
-const modulo = 0xC1 as ModuloKey;
+const modulo111 = 0xAC as ModuloKey;
+const modulo121 = 0xC1 as ModuloKey;
 
-export { modulo };
+export { modulo111, modulo121 };
 
 type ModuloKey = number;

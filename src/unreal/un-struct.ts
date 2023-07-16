@@ -7,7 +7,30 @@ import APackage from "./un-package";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
 import * as UnProperties from "./un-property/un-properties";
 
-class UStruct extends UField {
+type MakeParams<T> = ConstructorParameters<{ new(): never } & T>;
+
+type GenericConstructorParameters<T> = ConstructorParameters<new ( ...args: any[] ) => T>;
+
+class FNTimeHSV extends UObject {
+    public forceAbstract(): void {
+        throw new Error("Method not implemented.");
+    }
+    declare public readonly time: number;
+    declare public readonly hue: number;
+    declare public readonly sat: number;
+    declare public readonly bri: number;
+    
+    public constructor(time = 0, hue = 0, sat = 0, bri = 0) {
+        super();
+
+        this.time = time;
+        this.hue = hue;
+        this.sat = sat;
+        this.bri = bri;
+    }
+}
+
+class UStruct<Class extends UObject = UObject> extends UField {
     declare ["constructor"]: typeof UStruct;
 
     protected textBufferId: number;
@@ -26,7 +49,7 @@ class UStruct extends UField {
     protected unkObjectId: number = 0;
     protected unkObject: UObject;
     protected scriptSize: number;
-    protected kls: new () => UObject;
+    protected kls: new () => Class;
 
     public readonly isStruct = true;
 
@@ -192,7 +215,8 @@ class UStruct extends UField {
             this.readToken(native, core, pkg, 0);
     }
 
-    public buildClass<T extends UObject = UObject>(pkgNative: C.ANativePackage): new () => T {
+    // TODO: make sure constructor infers constructor parameters
+    public buildClass<T extends UObject = Class>(pkgNative: C.ANativePackage): new (...args: any) => T {
         if (this.kls)
             return this.kls as any as new () => T;
 
@@ -245,6 +269,7 @@ class UStruct extends UField {
 
         const clsExtendedProperties = Object.assign({}, clsNamedProperties);
         const clsUnserializedProperties = Constructor.collectUnserializedProperties();
+        const dynamicTag = this.getDynamicTag(friendlyName);
 
         for (const [propertyName, propertyType, ...propsExtra] of clsUnserializedProperties) {
             if (propertyName in clsExtendedProperties)
@@ -342,7 +367,7 @@ class UStruct extends UField {
                     this.isConstructed = true;
                 }
 
-                public toString() { return Constructor === UObject ? `[D|S]${friendlyName}` : Constructor.prototype.toString.call(this); }
+                public toString() { return Constructor === UObject ? dynamicTag : Constructor.prototype.toString.call(this); }
 
                 public constructor(...args: any) {
                     super(...args);
@@ -351,8 +376,6 @@ class UStruct extends UField {
                 }
             }
         }[this.friendlyName];
-
-        
 
         const clsNamedPropertiesKeys = Object.keys(clsNamedProperties);
         const cls = eval([
@@ -379,6 +402,8 @@ class UStruct extends UField {
 
         return this.kls as any as new () => T;
     }
+
+    public getDynamicTag(friendlyName: string) { return `[S*]${friendlyName}`; }
 
     protected bytecodePlainText = "";
     protected bytecode: { type: string, value: any, tokenName?: string }[] = [];
@@ -730,7 +755,7 @@ function getUnsetDefaultValue(pkgNative: C.ANativePackage, property: UnPropertie
         case UNP_PropertyTypes.UNP_ClassProperty:
         case UNP_PropertyTypes.UNP_NameProperty:
         case UNP_PropertyTypes.UNP_ArrayProperty:
-            return property.getDefaultValue(pkgNative);
+            return property.getDefaultValue();
         // case UNP_PropertyTypes.UNP_ClassProperty:
         // case UNP_PropertyTypes.UNP_StructProperty:
         // case UNP_PropertyTypes.UNP_ObjectProperty:
