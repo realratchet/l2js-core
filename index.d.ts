@@ -262,11 +262,12 @@ declare global {
                 // buildBuffer(): BufferValue<T>;
             }
 
-            export type FNumber<T extends ValueTypeNames_T = ValueTypeNames_T> = import("./src/unreal/un-number").FNumber<T>;
+            export type FNumber<T extends ValueTypeNames_T = ValueTypeNames_T> = import("./src/unreal/un-array-primitive").FNumber<T>;
             export type FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArray<T>;
             export type FArrayLazy<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArrayLazy<T>;
             export type FNameArray = import("./src/unreal/un-array").FNameArray;
             export type FIndexArray = import("./src/unreal/un-array").FIndexArray;
+            export type FStringArray = import("./src/unreal/un-array").FStringArray;
             export type FObjectArray<T extends UObject = UObject> = import("./src/unreal/un-array").FObjectArray<T>;
             export type FPrimitiveArray<T extends NumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArray<T>;
             export type FPrimitiveArrayLazy<T extends NumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArrayLazy<T>;

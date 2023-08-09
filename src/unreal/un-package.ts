@@ -385,7 +385,7 @@ abstract class APackage extends UEncodedFile {
 
             if (obj === null) {
                 console.log(pkg);
-                debugger;
+                // debugger;
                 throw new Error(`(${packageName}) [${className}, ${objectName}, ${groupName}] should not be null`);
             }
 

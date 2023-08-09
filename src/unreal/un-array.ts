@@ -1,8 +1,8 @@
 import BufferValue from "../buffer-value";
 import UExport from "./un-export";
-import FNumber from "./un-number";
+import FArrayPrimitive from "./un-array-primitive";
 
-class FArray<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> extends Array<T> implements IConstructable {
+class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTypes_T> | IConstructable> extends Array<T> implements IConstructable {
     declare ["constructor"]: typeof FArray;
 
     protected Constructor: { new(...pars: any): T };
@@ -72,7 +72,7 @@ class FArray<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> ex
     public nativeClone(): FArray<T> { return new this.constructor(this.Constructor).copy(this); }
 }
 
-class FArrayLazy<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable> extends FArray<T>{
+class FArrayLazy<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTypes_T> | IConstructable> extends FArray<T>{
     public unkLazyInt: number;
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
@@ -95,9 +95,15 @@ class FArrayLazy<T extends C.UObject | FNumber<C.NumberTypes_T> | IConstructable
     }
 }
 
-class FIndexArray extends FArray<FNumber<"compat32">> {
-    public constructor() {
-        super(FNumber.forType(BufferValue.compat32));
+class FIndexArray extends FArray<FArrayPrimitive<"compat32">> {
+    public constructor(len = 0) {
+        super(FArrayPrimitive.forType(BufferValue.compat32), len);
+    }
+}
+
+class FStringArray extends FArray<FArrayPrimitive<"char">> {
+    public constructor(len = 0) {
+        super(FArrayPrimitive.forType(BufferValue.char), len);
     }
 }
 
@@ -300,4 +306,4 @@ class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_
 }
 
 export default FArray;
-export { FArray, FArrayLazy, FIndexArray, FNameArray, FPrimitiveArray, FObjectArray, FPrimitiveArrayLazy };
+export { FArray, FArrayLazy, FIndexArray, FStringArray, FNameArray, FPrimitiveArray, FObjectArray, FPrimitiveArrayLazy };
