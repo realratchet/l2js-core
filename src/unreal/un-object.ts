@@ -6,11 +6,40 @@ import { FPrimitiveArray } from "./un-array";
 import ObjectFlags_T from "./un-object-flags";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
 
+class MapReflectable extends Map<string, any> {
+    protected object: UObject;
+
+    public constructor(object: UObject) {
+        super();
+
+        this.object = object;
+    }
+
+    public set(key: string, value: any): this {
+        super.set(key, value);
+
+        const propMap = (this.object as any).getPropertyMap();
+
+        if (key in propMap) {
+            const varName = propMap[key];
+
+            // this.object[varName] = value;
+
+            Object.defineProperty(this.object, varName, {
+                value: value,
+                writable: true
+            });
+        }
+
+        return this;
+    }
+}
+
 abstract class UObject implements C.ISerializable {
     declare public ["constructor"]: typeof UObject & { friendlyName?: string };
 
     public static readonly LAZY_CLONE_ON_USE = true;
-
+    public static ALLOW_EDITING = true;
     public static readonly CLEANUP_NAMESPACE = true;
     public static readonly isSerializable = true;
     public static UNREAD_AS_NATIVE = false;
@@ -34,7 +63,8 @@ abstract class UObject implements C.ISerializable {
     protected isReady = false;
 
     protected pkg: APackage;
-    public readonly propertyDict = new Map<string, any>();
+    // public readonly propertyDict = new Map<string, any>();
+    public readonly propertyDict = UObject.ALLOW_EDITING ? new Map<string, any>() : new MapReflectable(this);
     public nativeBytes?: BufferValue<"buffer"> = null;
 
     public constructor(..._: any) {
@@ -140,6 +170,7 @@ abstract class UObject implements C.ISerializable {
         return this.load(this.pkg, this.exp);
     }
 
+    
     protected loadNative(pkg: APackage) {
         for (const propName of this.propertyDict.keys()) {
             const property = this.findPropReader(propName);

@@ -9,7 +9,7 @@ import * as UnProperties from "./un-property/un-properties";
 
 type MakeParams<T> = ConstructorParameters<{ new(): never } & T>;
 
-type GenericConstructorParameters<T> = ConstructorParameters<new ( ...args: any[] ) => T>;
+type GenericConstructorParameters<T> = ConstructorParameters<new (...args: any[]) => T>;
 
 class FNTimeHSV extends UObject {
     public forceAbstract(): void {
@@ -19,7 +19,7 @@ class FNTimeHSV extends UObject {
     declare public readonly hue: number;
     declare public readonly sat: number;
     declare public readonly bri: number;
-    
+
     public constructor(time = 0, hue = 0, sat = 0, bri = 0) {
         super();
 
@@ -331,49 +331,53 @@ class UStruct<Class extends UObject = UObject> extends UField {
                             // Attach proxies to varnames
                             const varname = propNames[propName];
 
-                            if (Object.hasOwn(this, varname))
-                                throw new Error(`Variable name '${varname}' already used, cannot assign proxy for '${propName}' property!`);
+                            if (UStruct.ALLOW_EDITING) {
+                                if (Object.hasOwn(this, varname))
+                                    throw new Error(`Variable name '${varname}' already used, cannot assign proxy for '${propName}' property!`);
 
-                            Object.defineProperty(this, varname, {
-                                get: () => {
+                                Object.defineProperty(this, varname, {
+                                    get: () => {
 
-                                    // if (property.arrayDimensions !== 1)
-                                    //     return new FixedArrayContainer(property);
+                                        // if (property.arrayDimensions !== 1)
+                                        //     return new FixedArrayContainer(property);
 
-                                    return this.propertyDict.get(propName);//.getPropertyValue();
-                                },
-                                set: (v: any) => {
-                                    this.propertyDict.set(propName, v);
-                                    // if (property.arrayDimensions !== 1)
-                                    //     throw new Error(`Not implemented`);
+                                        return this.propertyDict.get(propName);//.getPropertyValue();
+                                    },
+                                    set: (v: any) => {
+                                        this.propertyDict.set(propName, v);
+                                        // if (property.arrayDimensions !== 1)
+                                        //     throw new Error(`Not implemented`);
 
-                                    // const value = property.propertyValue[0];
+                                        // const value = property.propertyValue[0];
 
-                                    // if (value instanceof BufferValue || value instanceof UnProperties.BooleanValue)
-                                    //     value.value = v;
-                                    // else if (property instanceof UnProperties.UArrayProperty)
-                                    //     property.propertyValue[0] = v;
-                                    // else if (property instanceof UnProperties.UStructProperty)
-                                    //     property.propertyValue[0] = v;
-                                    // else {
-                                    //     debugger;
-                                    //     throw new Error(`Not implemented`);
-                                    // }
-                                }
-                            })
+                                        // if (value instanceof BufferValue || value instanceof UnProperties.BooleanValue)
+                                        //     value.value = v;
+                                        // else if (property instanceof UnProperties.UArrayProperty)
+                                        //     property.propertyValue[0] = v;
+                                        // else if (property instanceof UnProperties.UStructProperty)
+                                        //     property.propertyValue[0] = v;
+                                        // else {
+                                        //     debugger;
+                                        //     throw new Error(`Not implemented`);
+                                        // }
+                                    }
+                                });
+                            }
                         }
                     }
 
                     this.isConstructed = true;
+
+                    this.initialize();
                 }
 
                 public toString() { return Constructor === UObject ? dynamicTag : Constructor.prototype.toString.call(this); }
 
-                public constructor(...args: any) {
-                    super(...args);
+                // public constructor(...args: any) {
+                //     super(...args);
 
-                    this.initialize();
-                }
+                //     this.initialize();
+                // }
             }
         }[this.friendlyName];
 
