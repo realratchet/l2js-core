@@ -241,8 +241,8 @@ class FPrimitiveArray<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T = 
 
     public getArrayBufferSlice() {
         // throw new Error("not implemented")
-        return this.array.buffer.slice(0, 0);
-        // return this.array.buffer.slice(this.array.byteOffset, this.array.byteOffset + this.getByteLength());
+        // return this.array.buffer.slice(0, 0);
+        return this.array.buffer.slice(this.array.byteOffset, this.array.byteOffset + this.getByteLength());
     }
 
     public getTypedArray(): ReturnType<T> {
