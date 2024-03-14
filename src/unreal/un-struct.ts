@@ -181,9 +181,10 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
                 const field = pkg.fetchObject(childPropId).loadSelf() as UnProperties.UProperty | UField;
 
-                if (field instanceof UnProperties.UProperty)
+                if (field instanceof UnProperties.UProperty) {
                     this.childPropFields.set(field.propertyName, field);
-                else if (field instanceof UField) {
+                } else if (field instanceof UField) {
+
                     switch (field.constructor.getConstructorName()) {
                         case "Function": this.childFunctions.push(field as C.UFunction); break;
                         case "Enum": this.childEnums.push(field as C.UEnum); break;
@@ -192,7 +193,6 @@ class UStruct<Class extends UObject = UObject> extends UField {
                         case "State": this.childStates.push(field as C.UState); break;
                         default: debugger; break;
                     }
-
                 } else {
                     debugger;
                 }
@@ -221,6 +221,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
             return this.kls as any as new () => T;
 
         if (this.friendlyName === "Mover") debugger;
+        if (this.friendlyName === "L2Event") debugger;
 
         this.loadSelf();
         const dependencyTree = this.collectDependencies<UStruct>();

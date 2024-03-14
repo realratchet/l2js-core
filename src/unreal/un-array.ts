@@ -70,6 +70,9 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
     }
 
     public nativeClone(): FArray<T> { return new this.constructor(this.Constructor).copy(this); }
+    public toString() {
+        return `ArrayLazy<${this.Constructor?.name ?? undefined}>(len=${this.getElemCount()}, ...)`;
+    }
 }
 
 class FArrayLazy<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTypes_T> | IConstructable> extends FArray<T>{
@@ -93,17 +96,29 @@ class FArrayLazy<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.Strin
 
         return this;
     }
+
+    public toString() {
+        return `ArrayLazy<${this.Constructor?.name ?? undefined}>(len=${this.getElemCount()}, ...)`;
+    }
 }
 
 class FIndexArray extends FArray<FArrayPrimitive<"compat32">> {
     public constructor(len = 0) {
         super(FArrayPrimitive.forType(BufferValue.compat32), len);
     }
+
+    public toString() {
+        return `IndexArray(len=${this.getElemCount()}, ...)`;
+    }
 }
 
 class FStringArray extends FArray<FArrayPrimitive<"char">> {
     public constructor(len = 0) {
         super(FArrayPrimitive.forType(BufferValue.char), len);
+    }
+
+    public toString() {
+        return `StringArray(len=${this.getElemCount()}, ...)`;
     }
 }
 
@@ -143,6 +158,10 @@ class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements 
     }
 
     public nativeClone(): FObjectArray<T> { return new FObjectArray<T>().copy(this); }
+    public getElemCount() { return this.length; }
+    public toString() {
+        return `ObjectArray(len=${this.getElemCount()}, ...)`;
+    }
 }
 
 class FNameArray extends Array<string> implements IConstructable {
@@ -174,6 +193,11 @@ class FNameArray extends Array<string> implements IConstructable {
     }
 
     public nativeClone(): FNameArray { return new FNameArray().copy(this); }
+    public getElemCount() { return this.length; }
+
+    public toString() {
+        return `NameArray(len=${this.getElemCount()}, ...)`;
+    }
 }
 
 class FPrimitiveArray<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T = any> implements IConstructable {
@@ -181,6 +205,10 @@ class FPrimitiveArray<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T = 
 
     protected array = new DataView(new ArrayBuffer(0));
     protected Constructor: C.ValidTypes_T<T>;
+
+    public toString() {
+        return `PrimitiveArray<${this.Constructor?.name ?? undefined}>(len=${this.getElemCount()}, ...)`;
+    }
 
     public getElemCount() { return this.array ? this.array.byteLength / this.Constructor.bytes : 0; }
     public getElem(idx: number): number {
@@ -302,6 +330,10 @@ class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_
         this.unkLazyInt = other.unkLazyInt;
 
         return this;
+    }
+
+    public toString() {
+        return `PrimitiveArrayLazy<${this.Constructor?.name ?? undefined}>(len=${this.getElemCount()}, ...)`;
     }
 }
 
