@@ -78,33 +78,26 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
             this.type.bytes = Math.max(length.value - 1, 0);
 
         } else if (this.type.name === "compat32") {
-            const byte = new BufferValue(uint8);
-            let startOffset = offset;
-
-            byte.readValue(buffer, offset);
-            offset += byte.bytes.byteLength;
-
-            let b = byte.bytes.getUint8(0);
+            // Fast compat32 reading using direct DataView access
+            const view = new DataView(buffer, offset);
+            let b = view.getUint8(0);
             const sign = b & 0x80; // sign bit
             let shift = 6;
             let r = b & 0x3f;
+            let bytesRead = 1;
 
-            if (b & 0x40)   // has 2nd byte
-            {
+            if (b & 0x40) {  // has 2nd byte
                 do {
-                    byte.readValue(buffer, offset);
-                    b = byte.bytes.getUint8(0);
-                    offset += byte.bytes.byteLength;
+                    if (bytesRead >= 5) break; // Prevent overflow
+                    b = view.getUint8(bytesRead++);
                     r |= (b & 0x7F) << shift;
-                    shift += 7
+                    shift += 7;
                 } while (b & 0x80); // has more bytes
             }
 
             r = sign ? -r : r;
-
             this.bytes.setInt32(0, r, this.endianess === "little");
-
-            return offset - startOffset;
+            return bytesRead;
         } else if (this.type.name === "utf16") {
             const length = new BufferValue(uint32);
 
