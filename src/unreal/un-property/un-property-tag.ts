@@ -11,11 +11,54 @@ class PropertyTag {
     public boolValue: boolean;
     public enumName: string;
 
-    static from(pkg: C.APackage, offset: number): PropertyTag {
-        return new PropertyTag().load(pkg, offset);
+    // Configurable object pool to reduce allocations
+    private static pool: PropertyTag[] = [];
+    private static poolSize = 0;
+    private static maxPoolSize = 10000; // Configurable pool size
+
+    // Configure pool size (call before loading packages)
+    static setMaxPoolSize(size: number): void {
+        PropertyTag.maxPoolSize = Math.max(0, size);
+        // Trim pool if shrinking
+        if (PropertyTag.poolSize > PropertyTag.maxPoolSize) {
+            PropertyTag.pool.length = PropertyTag.maxPoolSize;
+            PropertyTag.poolSize = PropertyTag.maxPoolSize;
+        }
     }
 
-    public isValid() { return !this.name || this.name !== "None"; }
+    static getMaxPoolSize(): number {
+        return PropertyTag.maxPoolSize;
+    }
+
+    static from(pkg: C.APackage, offset: number): PropertyTag {
+        // Try to get from pool first
+        let tag: PropertyTag;
+        if (PropertyTag.poolSize > 0) {
+            tag = PropertyTag.pool[--PropertyTag.poolSize];
+        } else {
+            tag = new PropertyTag();
+        }
+
+        return tag.load(pkg, offset);
+    }
+
+    // Return to pool when done (call this after using the tag)
+    release(): void {
+        // Reset fields for reuse
+        this.name = undefined;
+        this.type = undefined;
+        this.structName = undefined;
+        this.arrayIndex = 0;
+        this.dataSize = 0;
+        this.boolValue = false;
+        this.enumName = undefined;
+
+        if (PropertyTag.poolSize < PropertyTag.maxPoolSize) {
+            PropertyTag.pool[PropertyTag.poolSize++] = this;
+        }
+    }
+
+    public isValid() { return this.name && this.name !== "None"; }
 
     protected load(pkg: C.APackage, offset: number) {
         pkg.seek(offset, "set");

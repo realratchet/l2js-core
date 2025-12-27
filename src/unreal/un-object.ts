@@ -77,7 +77,15 @@ abstract class UObject implements C.ISerializable {
     }
 
     public static getUnserializedProperties(): C.UnserializedProperty_T[] { return []; }
+
+    // Cache for collectUnserializedProperties to avoid repeated prototype traversal
+    private static unserializedPropsCache = new Map<Function, C.UnserializedProperty_T[]>();
+
     public static collectUnserializedProperties(): C.UnserializedProperty_T[] {
+        // Check cache first
+        const cached = UObject.unserializedPropsCache.get(this);
+        if (cached) return cached;
+
         if (this === UObject)
             return this.getUnserializedProperties();
 
@@ -92,7 +100,10 @@ abstract class UObject implements C.ISerializable {
 
         } while (base !== UObject);
 
-        return Object.values(dependencyProps);
+        const result = Object.values(dependencyProps);
+        // Cache the result
+        UObject.unserializedPropsCache.set(this, result);
+        return result;
     }
 
     protected onSuperConstructed(): void { }
@@ -141,11 +152,15 @@ abstract class UObject implements C.ISerializable {
             do {
                 const tag = PropertyTag.from(pkg, this.readHead);
 
-                if (!tag.isValid()) break;
+                if (!tag.isValid()) {
+                    tag.release();
+                    break;
+                }
 
                 this.loadProperty(pkg, tag);
 
                 this.readHead = pkg.tell();
+                tag.release();
 
             } while (this.readHead < this.readTail);
         }
@@ -368,16 +383,19 @@ export default UObject;
 export { UObject };
 
 function deepClone<T = any>(value: T | T[]): T | T[] {
-    if (value instanceof Array && value.constructor === Array)
-        return value.map(v => deepClone(v)) as T[];
-
-    if (["number", "boolean", "string"].includes(typeof value)) return value;
+    // Fast path for primitives
     if (value == null) return null;
-    if (value instanceof UObject) return value.nativeClone() as T;
+    if (typeof value === "number" || typeof value === "boolean" || typeof value === "string") return value;
 
+    // Handle arrays
+    if (value instanceof Array && value.constructor === Array) {
+        return value.map(v => deepClone(v)) as T[];
+    }
+
+    // Handle Unreal objects
+    if (value instanceof UObject) return value.nativeClone() as T;
     if (value instanceof FPrimitiveArray) return value.nativeClone() as T;
 
     debugger;
     throw new Error("not yet implemented");
-
 }

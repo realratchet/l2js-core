@@ -213,6 +213,10 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
         while (this.bytecodeLength < this.scriptSize)
             this.readToken(native, core, pkg, 0);
+
+        // Finalize bytecode plain text
+        this.bytecodePlainText = this.bytecodePlainTextParts.join("");
+        this.bytecodePlainTextParts = null; // Free memory
     }
 
     // TODO: make sure constructor infers constructor parameters
@@ -410,18 +414,61 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
     public getDynamicTag(friendlyName: string) { return `[S*]${friendlyName}`; }
 
+    protected bytecodePlainTextParts: string[] = [];
     protected bytecodePlainText = "";
     protected bytecode: { type: string, value: any, tokenName?: string }[] = [];
     protected bytecodeLength = 0;
 
+    // Configurable BufferValue pool for readToken to reduce allocations
+    private static bufferPool = {
+        uint8: [] as BufferValue[],
+        uint16: [] as BufferValue[],
+        uint32: [] as BufferValue[],
+        compat32: [] as BufferValue[],
+        float: [] as BufferValue[]
+    };
+
+    private static maxBufferPoolSize = 100; // Configurable pool size per type
+
+    // Configure buffer pool size (call before loading packages)
+    static setMaxBufferPoolSize(size: number): void {
+        UStruct.maxBufferPoolSize = Math.max(0, size);
+        // Trim existing pools if shrinking
+        Object.keys(UStruct.bufferPool).forEach(type => {
+            const pool = (UStruct.bufferPool as any)[type];
+            if (pool && pool.length > UStruct.maxBufferPoolSize) {
+                pool.length = UStruct.maxBufferPoolSize;
+            }
+        });
+    }
+
+    static getMaxBufferPoolSize(): number {
+        return UStruct.maxBufferPoolSize;
+    }
+
+    private static getBufferValue(type: string): BufferValue {
+        const pool = (UStruct.bufferPool as any)[type];
+        if (pool && pool.length > 0) {
+            return pool.pop();
+        }
+        return new BufferValue((BufferValue as any)[type]);
+    }
+
+    private static releaseBufferValue(type: string, buffer: BufferValue): void {
+        const pool = (UStruct.bufferPool as any)[type];
+        if (pool && pool.length < UStruct.maxBufferPoolSize) {
+            pool.push(buffer);
+        }
+    }
+
     protected readToken(native: C.ANativePackage, core: APackage, pkg: APackage, depth: number): ExprToken_T {
         if (depth === 64) throw new Error("Too deep");
 
-        const uint8 = new BufferValue(BufferValue.uint8);
-        const uint16 = new BufferValue(BufferValue.uint16);
-        const uint32 = new BufferValue(BufferValue.uint32);
-        const compat32 = new BufferValue(BufferValue.compat32);
-        const float = new BufferValue(BufferValue.float);
+        const uint8 = UStruct.getBufferValue("uint8") as BufferValue<"uint8">;
+        const uint16 = UStruct.getBufferValue("uint16") as BufferValue<"uint16">;
+        const uint32 = UStruct.getBufferValue("uint32") as BufferValue<"uint32">;
+        const compat32 = UStruct.getBufferValue("compat32") as BufferValue<"compat32">;
+        const float = UStruct.getBufferValue("float") as BufferValue<"float">;
 
         depth++;
 
@@ -441,7 +488,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
         let tokenDebug = new Array(depth - 1).fill("\t").join("");
 
         tokenDebug += tokenName + "\r\n";
-        this.bytecodePlainText += tokenDebug;
+        this.bytecodePlainTextParts.push(tokenDebug);
 
         if (tokenValue < ExprToken_T.MaxConversion) {
             switch (tokenValue) {
@@ -738,6 +785,13 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 pkg.seek(pos, "set");
             }
         }
+
+        // Release pooled buffers
+        UStruct.releaseBufferValue("uint8", uint8 as BufferValue);
+        UStruct.releaseBufferValue("uint16", uint16 as BufferValue);
+        UStruct.releaseBufferValue("uint32", uint32 as BufferValue);
+        UStruct.releaseBufferValue("compat32", compat32 as BufferValue);
+        UStruct.releaseBufferValue("float", float as BufferValue);
 
         depth++;
 
