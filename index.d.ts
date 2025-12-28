@@ -48,7 +48,8 @@ declare global {
 
             export type BigNumberTypes_T = "int64" | "uint64";
             export type PrimitiveNumberTypes_T = "float" | "int32" | "uint32" | "int8" | "uint8" | "int16" | "uint16";
-            export type NumberTypes_T = "compat32" | BigNumberTypes_T | PrimitiveNumberTypes_T;
+            export type AllPrimitiveNumberTypes_T = BigNumberTypes_T | PrimitiveNumberTypes_T;
+            export type NumberTypes_T = "compat32" | AllPrimitiveNumberTypes_T;
             export type StringTypes_T = "char" | "utf16";
 
             export type ValueTypeNames_T = NumberTypes_T | StringTypes_T | "guid" | "buffer";
@@ -229,7 +230,7 @@ declare global {
 
             export type UProperty<T1 = any, T2 = T1> = import("./src/unreal/un-property/un-properties").UProperty<T1, T2>;
             
-            export type UStructProperty<T1 = any> = import("./src/unreal/un-property/un-properties").UStructProperty<T1>;
+            export type UStructProperty<T1 extends UObject = any> = import("./src/unreal/un-property/un-properties").UStructProperty<T1>;
             
             export type PropertyTag = import("./src/unreal/un-property/un-property-tag").PropertyTag;
 
@@ -267,15 +268,14 @@ declare global {
                 // buildBuffer(): BufferValue<T>;
             }
 
-            export type FNumber<T extends ValueTypeNames_T = ValueTypeNames_T> = import("./src/unreal/un-array-primitive").FNumber<T>;
-            export type FArray<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArray<T>;
-            export type FArrayLazy<T extends UObject | FNumber<ValueTypeNames_T> | IConstructable> = import("./src/unreal/un-array").FArrayLazy<T>;
+            export type FArray<T extends UObject | IConstructable> = import("./src/unreal/un-array").FArray<T>;
+            export type FArrayLazy<T extends UObject | IConstructable> = import("./src/unreal/un-array").FArrayLazy<T>;
             export type FNameArray = import("./src/unreal/un-array").FNameArray;
             export type FIndexArray = import("./src/unreal/un-array").FIndexArray;
             export type FStringArray = import("./src/unreal/un-array").FStringArray;
             export type FObjectArray<T extends UObject = UObject> = import("./src/unreal/un-array").FObjectArray<T>;
-            export type FPrimitiveArray<T extends NumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArray<T>;
-            export type FPrimitiveArrayLazy<T extends NumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArrayLazy<T>;
+            export type FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArray<T>;
+            export type FPrimitiveArrayLazy<T extends AllPrimitiveNumberTypes_T> = import("./src/unreal/un-array").FPrimitiveArrayLazy<T>;
 
             export type APackageConstructor<T extends APackage = APackage> = new (loader: AAssetLoader, downloadPath: string) => T;
             export type ACorePackageConstructor<T extends ACorePackage = ACorePackage> = new (loader: AAssetLoader, downloadPath: string) => T;

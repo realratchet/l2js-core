@@ -200,7 +200,7 @@ class FNameArray extends Array<string> implements IConstructable {
     }
 }
 
-class FPrimitiveArray<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T = any> implements IConstructable {
+class FPrimitiveArray<T extends C.AllPrimitiveNumberTypes_T> implements IConstructable {
     declare ["constructor"]: typeof FPrimitiveArray;
 
     protected array = new DataView(new ArrayBuffer(0));
