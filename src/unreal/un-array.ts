@@ -75,7 +75,7 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
     }
 }
 
-class FArrayLazy<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTypes_T> | IConstructable> extends FArray<T>{
+class FArrayLazy<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTypes_T> | IConstructable> extends FArray<T> {
     public unkLazyInt: number;
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
@@ -107,6 +107,16 @@ class FIndexArray extends FArray<FArrayPrimitive<"compat32">> {
         super(FArrayPrimitive.forType(BufferValue.compat32), len);
     }
 
+    public static loadOfSize(pkg: C.APackage, size: number): FIndexArray {
+        const indexArray = new FIndexArray();
+        const Constructor = FArrayPrimitive.forType(BufferValue.compat32);
+
+        for (let i = 0; i < size; i++)
+            indexArray.push(new Constructor().load(pkg));
+
+        return indexArray;
+    }
+
     public toString() {
         return `IndexArray(len=${this.getElemCount()}, ...)`;
     }
@@ -124,6 +134,28 @@ class FStringArray extends FArray<FArrayPrimitive<"char">> {
 
 class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements IConstructable {
     protected indexArray = new FIndexArray();
+
+    public static loadOfIndex<T extends C.UObject = C.UObject>(indexArray: FIndexArray, pkg: C.APackage, tag?: C.PropertyTag): FObjectArray<T> {
+        const objectArray = new FObjectArray<T>();
+        objectArray.indexArray = indexArray;
+
+        let i = 0;
+        for (const index of indexArray)
+            objectArray[i++] = pkg.fetchObject<T>(index.value);
+
+        return objectArray;
+    }
+
+    public static loadOfSize<T extends C.UObject = C.UObject>(size: number, pkg: C.APackage, tag?: C.PropertyTag): FObjectArray<T> {
+        const objectArray = new FObjectArray<T>();
+        objectArray.indexArray = FIndexArray.loadOfSize(pkg, size);
+
+        let i = 0;
+        for (const index of objectArray.indexArray)
+            objectArray[i++] = pkg.fetchObject<T>(index.value);
+
+        return objectArray;
+    }
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
         this.indexArray.load(pkg, tag);
@@ -308,7 +340,7 @@ type ReturnType<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> =
     : T extends "int64" ? BigInt64Array
     : never;
 
-class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> extends FPrimitiveArray<T>{
+class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> extends FPrimitiveArray<T> {
     public unkLazyInt: number;
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
