@@ -29,10 +29,14 @@ class MapReflectable extends Map<string, any> {
 
             // this.object[varName] = value;
 
-            Object.defineProperty(this.object, varName, {
-                value: value,
-                writable: true
-            });
+            if (UObject.USE_REFLECTABLE) {
+                Object.defineProperty(this.object, varName, {
+                    value: value,
+                    writable: true
+                });
+            } else {
+                (this.object as any)[varName] = value;
+            }
         }
 
         return this;
@@ -44,27 +48,28 @@ abstract class UObject implements C.ISerializable {
 
     public static readonly LAZY_CLONE_ON_USE = true;
     public static ALLOW_EDITING = true;
+    public static USE_REFLECTABLE = false;
     public static readonly CLEANUP_NAMESPACE = true;
     public static readonly isSerializable = true;
     public static UNREAD_AS_NATIVE = false;
 
-    public readonly isObject = true;
-    public isConstructed: boolean = false;
+    declare public readonly isObject: boolean;
+    declare public isConstructed: boolean;
 
-    public objectName = "Exp_None";
+    declare public objectName: string;
     public exportIndex?: number = null;
     public exp?: UExport = null;
     public stack?: UStack = null;
 
-    protected skipRemaining = false;
-    protected careUnread = true;
+    declare protected skipRemaining: boolean;
+    declare protected careUnread: boolean;
 
     protected readHead: number = NaN;
     protected readStart: number = NaN;
     protected readTail: number = NaN;
 
-    protected isLoading = false;
-    protected isReady = false;
+    declare protected isLoading: boolean;
+    declare protected isReady: boolean;
 
     protected pkg: APackage;
     // public readonly propertyDict = new Map<string, any>();
@@ -403,3 +408,13 @@ function deepClone<T = any>(value: T | T[]): T | T[] {
     debugger;
     throw new Error("not yet implemented");
 }
+
+Object.assign(UObject.prototype, {
+    isObject: true,
+    isConstructed: false,
+    objectName: "Exp_None",
+    skipRemaining: false,
+    careUnread: true,
+    isLoading: false,
+    isReady: false,
+});
