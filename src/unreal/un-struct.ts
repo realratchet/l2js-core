@@ -302,6 +302,8 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 public static readonly inheretenceChain = Object.freeze(inheretenceChain);
                 public static readonly inheritedProps = Object.freeze(clsInheritedProps);
 
+                public static _propertyMapCache: Record<string, string> = null;
+
                 protected static getConstructorName(): string { return friendlyName; }
                 protected findPropReader<T1 = any, T2 = any>(propName: string): C.UProperty<T1, T2> {
                     if (!(propName in clsExtendedProperties))
@@ -325,7 +327,11 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 }
 
                 protected makeLayout() {
-                    const propNames = this.getPropertyMap();
+                    let propNames = (this.constructor as any)._propertyMapCache;
+                    if (!propNames) {
+                        propNames = this.getPropertyMap();
+                        (this.constructor as any)._propertyMapCache = propNames;
+                    }
 
                     for (const [propName, property] of Object.entries(clsExtendedProperties)) {
                         const defaultValue = getDefaultValue(propName, property, defaultNamedProperties)

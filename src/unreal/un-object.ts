@@ -18,7 +18,11 @@ class MapReflectable extends Map<string, any> {
     public set(key: string, value: any): this {
         super.set(key, value);
 
-        const propMap = (this.object as any).getPropertyMap();
+        let propMap = (this.object.constructor as any)._propertyMapCache;
+        if (!propMap) {
+            propMap = (this.object as any).getPropertyMap();
+            (this.object.constructor as any)._propertyMapCache = propMap;
+        }
 
         if (key in propMap) {
             const varName = propMap[key];
@@ -185,7 +189,7 @@ abstract class UObject implements C.ISerializable {
         return this.load(this.pkg, this.exp);
     }
 
-    
+
     protected loadNative(pkg: APackage) {
         for (const propName of this.propertyDict.keys()) {
             const property = this.findPropReader(propName);
