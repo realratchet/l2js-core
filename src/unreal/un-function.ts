@@ -1,5 +1,4 @@
 import { allFlags, flagBitsToDict } from "../utils/flags";
-import BufferValue from "../buffer-value";
 import UExport from "./un-export";
 import UObject from "./un-object";
 import APackage from "./un-package";

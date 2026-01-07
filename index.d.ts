@@ -42,11 +42,6 @@ declare global {
             export type ACorePackage = C.APackage & C.ICorePackage;
             export type AEnginePackage = C.APackage & C.IEnginePackage;
 
-            export function configurePerformance(config: {
-                propertyTagPoolSize?: number;
-                bufferValuePoolSize?: number;
-            }): void;
-
             export type BigNumberTypes_T = "int64" | "uint64";
             export type PrimitiveNumberTypes_T = "float" | "int32" | "uint32" | "int8" | "uint8" | "int16" | "uint16";
             export type AllPrimitiveNumberTypes_T = BigNumberTypes_T | PrimitiveNumberTypes_T;

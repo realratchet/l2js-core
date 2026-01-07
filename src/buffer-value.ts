@@ -121,7 +121,7 @@ class BufferValue<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> {
     public get string(): string {
 
         if (this.type.name === "utf16") {
-            return decoderUTF16.decode(this.bytes.buffer/*.slice(3)*/);
+            return decoderUTF16.decode(this.bytes);
         }
 
         let string = "";

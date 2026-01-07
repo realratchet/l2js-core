@@ -5,7 +5,7 @@ class FString implements IConstructable {
 
     public load(pkg: C.APackage): this {
         const bufLen = pkg.read("compat32");
-        const buf = pkg.read(bufLen).value;
+        const buf = pkg.read(bufLen);
 
         decoder = decoder ?? new TextDecoder("ascii");
 

@@ -6,7 +6,8 @@ import * as modKeys from "../crypto/keys/modulo";
 let gmp: _gmp.GMPLib = null;
 
 interface IEncodedFile {
-    read(target: number): BufferValue<"buffer">;
+    read(target: number | "guid"): DataView<ArrayBuffer>;
+    read(target: "char" | "utf16"): string;
     read<T extends C.PrimitiveNumberTypes_T | "compat32">(target: T): number;
     read<T extends C.BigNumberTypes_T>(target: T): bigint;
     read<T extends C.ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
@@ -18,10 +19,12 @@ const numberTypes = [
     "compat32",
     "int32", "uint32",
     "int8", "uint8",
-    "int16", "uint16"
+    "int16", "uint16",
+    "guid", "char", "utf16"
 ] as const;
 
-const buffInstances: Record<C.NumberTypes_T, BufferValue<C.NumberTypes_T>> = numberTypes.reduce((acc, t) => {
+type InstancedTypes = C.NumberTypes_T | "guid" | "char" | "utf16";
+const buffInstances: Record<InstancedTypes, BufferValue<InstancedTypes>> = numberTypes.reduce((acc, t) => {
     acc[t] = new BufferValue(BufferValue[t]);
     return acc;
 }, {} as any);
@@ -81,7 +84,8 @@ abstract class UEncodedFile implements IEncodedFile {
         return new DataView(this.buffer, byteOffset + this.contentOffset, byteLength)
     }
 
-    public read(target: number): BufferValue<"buffer">;
+    public read(target: number | "guid"): DataView<ArrayBuffer>;
+    public read(target: "char" | "utf16"): string;
     public read<T extends C.PrimitiveNumberTypes_T | "compat32">(target: T): number;
     public read<T extends C.BigNumberTypes_T>(target: T): bigint;
     public read<T extends C.ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
@@ -90,7 +94,7 @@ abstract class UEncodedFile implements IEncodedFile {
         this.ensureReadable();
 
         if (target in buffInstances) {
-            target = buffInstances[target as C.NumberTypes_T];
+            target = buffInstances[target as C.NumberTypes_T | "guid"];
 
             this.offset += target.readValue(this.buffer, this.offset);
 
@@ -101,7 +105,7 @@ abstract class UEncodedFile implements IEncodedFile {
 
             this.offset += _target.readValue(this.buffer, this.offset);
 
-            return _target;
+            return _target.value;
         } else if (target instanceof BufferValue) {
             this.offset += target.readValue(this.buffer, this.offset);
 
@@ -119,6 +123,7 @@ abstract class UEncodedFile implements IEncodedFile {
         let oldHeader = this.offset;
         let constructedString = "";
         let divisor = 0XF, lineCountHex = 1;
+        const buff = BufferValue.allocBytes(2);
 
         do {
             if ((lineCount / divisor) < 1) break;
@@ -136,7 +141,7 @@ abstract class UEncodedFile implements IEncodedFile {
 
         for (let i = 0; i < lineCount; i++) {
             const bytes = Math.min(this.buffer.byteLength - this.offset, 8);
-            const groups = new Array(bytes).fill('.').map(() => this.read(2));
+            const groups = new Array(bytes).fill('.').map(() => this.read(buff));
 
             const string1 = groups.map(g => g.hex.slice(2)).join(" ");
             const string2 = groups.map(g => g.string).join("");
@@ -204,7 +209,7 @@ abstract class UEncodedFile implements IEncodedFile {
             if (signature.value === 0x0069004C) {
                 this.seek(HEADER_VER_OFFSET, "set");
 
-                const version = new TextDecoder("utf-16").decode(this.read(6).value);
+                const version = new TextDecoder("utf-16").decode(this.read(6));
 
                 this.seek(HEADER_SIZE, "set");
 

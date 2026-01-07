@@ -1,5 +1,4 @@
 import UStruct from "./un-struct";
-import BufferValue from "../buffer-value";
 import { flagBitsToDict } from "../utils/flags";
 
 abstract class UState<Class extends C.UObject = C.UObject> extends UStruct<Class> {

@@ -306,7 +306,7 @@ class FPrimitiveArray<T extends C.AllPrimitiveNumberTypes_T> implements IConstru
 
     public getTypedArray(): ReturnType<T> {
         try {
-            return new this.Constructor.dtype(this.array.buffer, this.array.byteOffset, this.getElemCount()) as any;
+            return new (this.Constructor.dtype as any)(this.array.buffer, this.array.byteOffset, this.getElemCount()) as any;
         } catch (e) {
             if (e.message.includes("should be a multiple of"))
                 return new this.Constructor.dtype(this.getArrayBufferSlice()) as any;

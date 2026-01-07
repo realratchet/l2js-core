@@ -11,7 +11,6 @@ export { UImport } from "./unreal/un-import";
 
 export { UNP_PropertyMasks, UNP_PropertyTypes, UNP_DataTypeSizes } from "./unreal/un-property/un-property-tag";
 export { SUPPORTED_EXTENSIONS } from "./supported-extensions";
-export { configurePerformance } from "./performance-config";
 
 import * as UnArrays from "./unreal/un-array";
 import * as UnProperties from "./unreal/un-property/un-properties";

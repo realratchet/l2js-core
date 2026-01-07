@@ -1,4 +1,3 @@
-import BufferValue from "../buffer-value";
 import APackage from "./un-package";
 
 class UStack {

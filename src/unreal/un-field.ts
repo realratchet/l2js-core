@@ -1,6 +1,5 @@
 import UExport from "src/unreal/un-export";
 import APackage from "src/unreal/un-package";
-import BufferValue from "../buffer-value";
 import UObject from "./un-object";
 
 abstract class UField extends UObject {

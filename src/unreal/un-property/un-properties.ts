@@ -6,7 +6,6 @@ import UField from "../un-field";
 import UObject from "../un-object";
 import APackage from "../un-package";
 import PropertyTag, { UNP_PropertyTypes, getPropertyTypeName } from "./un-property-tag";
-import { pathToPkgName } from "../../asset-loader";
 import UExport from "src/unreal/un-export";
 
 type PropertyConstructorParams_T = PropertyExtraPars_T & {
@@ -124,13 +123,13 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
         return this;
     }
 
-    public nativeClone() {
+    public nativeClone(): any {
         const Constructor = this.constructor as any as new () => UProperty<T1, T2>;
         const clone = new Constructor();
 
         clone.copy(this);
 
-        return clone;
+        return clone as any;
     }
 
     protected preLoad(pkg: APackage, exp: UExport<UObject>): void {
@@ -190,22 +189,6 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
 
         return super.toString("ObjectProperty", friendlyName);
     }
-
-    public toJSON() {
-        const pkg = this.propertyValuePkg;
-        const values = this.propertyValue.map(v => v.value);
-        const names = values.map(v => pkg.getPackageName(v));
-
-        return {
-            type: "object",
-            package: pathToPkgName(pkg.path),
-            value: this.arrayDimensions === 1 ? values[0] : values,
-            names: this.arrayDimensions === 1 ? names[0] : names,
-            category: this.categoryName,
-            isSet: this.isSet,
-            isDefault: this.isDefault
-        };
-    }
 }
 
 
@@ -246,19 +229,6 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
 
         return super.toString("ClassProperty", friendlyName);
     }
-
-    public toJSON() {
-        const values = this.propertyValue.map(v => v.value);
-
-        return {
-            type: "class",
-            package: pathToPkgName(this.propertyValuePkg.path),
-            value: this.arrayDimensions === 1 ? values[0] : values,
-            category: this.categoryName,
-            isSet: this.isSet,
-            isDefault: this.isDefault
-        };
-    }
 }
 
 class UStructProperty<T extends UObject = UObject> extends UBaseExportProperty<C.UStruct, T, T> {
@@ -290,22 +260,6 @@ class UStructProperty<T extends UObject = UObject> extends UBaseExportProperty<C
 
         return super.toString("StructProperty", friendlyName);
     }
-
-    public toJSON(): any {
-        const unserialized = this.getPropertyValue();
-        const value = unserialized instanceof Array
-            ? unserialized.map(v => v?.toJSON() || null)
-            : (unserialized?.toJSON() || null);
-
-        return {
-            type: "struct",
-            name: this.value.friendlyName,
-            value,
-            category: this.categoryName,
-            isSet: this.isSet,
-            isDefault: this.isDefault
-        };
-    }
 }
 
 abstract class UNumericProperty<T extends C.NumberTypes_T | C.StringTypes_T> extends UProperty<BufferValue<T>, ReturnType<T>> implements IBufferValueProperty<T> {
@@ -315,16 +269,6 @@ abstract class UNumericProperty<T extends C.NumberTypes_T | C.StringTypes_T> ext
 
     public readValue(pkg: APackage) { return pkg.read(this.reader).value; }
     protected makeReader() { return new BufferValue<T>(this.constructor.dtype); }
-
-    public toJSON() {
-        return {
-            type: this.constructor.dtype.name,
-            value: this.getPropertyValue(),
-            category: this.categoryName,
-            isSet: this.isSet,
-            isDefault: this.isDefault
-        };
-    }
 }
 
 class UFloatProperty extends UNumericProperty<"float"> {
@@ -355,16 +299,6 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
     protected makeDefaultValue(): string { return ""; }
 
     public toString() { return super.toString(this.constructor.name, undefined); }
-
-    public toJSON(): any {
-        return {
-            type: "string",
-            value: this.getPropertyValue(),
-            category: this.categoryName,
-            isSet: this.isSet,
-            isDefault: this.isDefault
-        };
-    }
 }
 
 class UDelegateProperty extends UProperty<any, any> {
@@ -390,16 +324,6 @@ class UBoolProperty extends UProperty<boolean, boolean> {
     public readValue(pkg: APackage, tag: PropertyTag): boolean { return tag.boolValue; }
 
     public toString() { return super.toString("BoolProperty", undefined); }
-
-    public toJSON(): any {
-        return {
-            type: "boolean",
-            value: this.getPropertyValue(),
-            category: this.categoryName,
-            isSet: this.isSet,
-            isDefault: this.isDefault
-        };
-    }
 }
 
 class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
@@ -413,15 +337,6 @@ class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
 
     public toString() { return super.toString("NameProperty", undefined); }
 
-    public toJSON(): any {
-        return {
-            type: "name",
-            value: this.getPropertyValue(),
-            category: this.categoryName,
-            isSet: this.isSet,
-            isDefault: this.isDefault
-        };
-    }
 }
 
 class UByteProperty extends UBaseExportProperty<C.UEnum, BufferValue<"uint8">, number> {
@@ -449,29 +364,6 @@ class UByteProperty extends UBaseExportProperty<C.UEnum, BufferValue<"uint8">, n
         const name = this._value.friendlyName;
 
         return super.toString("ByteProperty", name);
-    }
-
-    public toJSON(): any {
-        if (this.valueId !== 0) {
-            const names = Array.from(this.value.names);
-
-            return {
-                type: "enum",
-                enumName: this.value.friendlyName,
-                names,
-                value: this.getPropertyValue(),
-                category: this.categoryName,
-                isSet: this.isSet,
-                isDefault: this.isDefault
-            };
-        }
-
-        return {
-            type: this.constructor.dtype.name,
-            value: this.getPropertyValue(),
-            isSet: this.isSet,
-            isDefault: this.isDefault
-        };
     }
 }
 
@@ -507,35 +399,6 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
         }
     }
 
-    // public readProperty(pkg: APackage, tag: PropertyTag) {
-    //     this.propertyName = tag.name;
-    //     this.propertyValuePkg = pkg;
-
-    //     if (this.arrayDimensions !== 1 || tag.arrayIndex !== 0)
-    //         debugger;
-
-    //     const type = this.value.loadSelf();
-
-    //     if (type instanceof UStructProperty || type instanceof UClassProperty) {
-    //         this.propertyValue[tag.arrayIndex] = new FArray(type.value.buildClass(pkg.loader.getNativePackage())).load(pkg, tag);
-    //     } else if (type instanceof UObjectProperty) {
-    //         this.propertyValue[tag.arrayIndex] = new FObjectArray().load(pkg, tag);
-    //     } else if (type instanceof UIntProperty) {
-    //         this.propertyValue[tag.arrayIndex] = new FPrimitiveArray(BufferValue.int32).load(pkg, tag);
-    //     } else if (type instanceof UFloatProperty) {
-    //         this.propertyValue[tag.arrayIndex] = new FPrimitiveArray(BufferValue.float).load(pkg, tag);
-    //     } else if (type instanceof UByteProperty) {
-    //         this.propertyValue[tag.arrayIndex] = new FPrimitiveArray(BufferValue.uint8).load(pkg, tag);
-    //     } else if (type instanceof UClass) {
-    //         this.propertyValue[tag.arrayIndex] = new FArray(type.buildClass(pkg.loader.getNativePackage())).load(pkg, tag);
-    //     } else {
-    //         debugger;
-    //         throw new Error("Not yet implemented!");
-    //     }
-
-    //     return this;
-    // }
-
     public toString() {
         const type = this.value.loadSelf();
         let value: string;
@@ -552,51 +415,6 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
         }
 
         return super.toString("ArrayProperty", undefined);
-    }
-
-    public toJSON(): any {
-        const type = this.value.loadSelf();
-        const unserialized = this.getPropertyValue();
-        const extras: Record<string, any> = {};
-        let value = null;
-        let dtype = null;
-
-        if (this.arrayDimensions !== 1)
-            debugger;
-
-        if (type instanceof UStructProperty) {
-            value = unserialized?.map(v => v?.toJSON() || null) || [];
-            dtype = "struct";
-        } else if (type instanceof UObjectProperty) {
-            value = (unserialized as FObjectArray)?.getIndexList() || [];
-            extras.package = pathToPkgName(this.propertyValuePkg.path);
-            extras.names = value !== null ? value.map(v => this.propertyValuePkg.getPackageName(v)) : [];
-            dtype = "object";
-        } else if (type instanceof UIntProperty || type instanceof UFloatProperty) {
-            value = (unserialized as FPrimitiveArray<"int32" | "float">)?.getTypedArray() || [];
-            dtype = (type instanceof UIntProperty) ? "int32" : "float";
-        } else if (type instanceof UByteProperty) {
-            if (type.valueId !== 0) {
-                debugger;
-                throw new Error("Not yet implemented!");
-            } else {
-                value = (unserialized as FPrimitiveArray<"uint8">)?.getTypedArray() || [];
-                extras.type = "uint8";
-            }
-        } else {
-            debugger;
-            throw new Error("Not yet implemented!");
-        }
-
-        return {
-            type: dtype,
-            dynamic: true,
-            value,
-            ...extras,
-            category: this.categoryName,
-            isSet: this.isSet,
-            isDefault: this.isDefault
-        };
     }
 }
 

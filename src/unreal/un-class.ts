@@ -1,5 +1,4 @@
 import UState from "./un-state";
-import BufferValue from "../buffer-value";
 import { flagBitsToDict } from "../utils/flags";
 import { FArray, FIndexArray } from "./un-array";
 import UObject from "./un-object";
@@ -80,7 +79,7 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
 
         this._classFlags = pkg.read("uint32");
         this.classFlags = flagBitsToDict(this._classFlags, EClassFlags_T);
-        this.classGuid = pkg.read(16).value;
+        this.classGuid = pkg.read("guid");
 
         // debugger;
 
