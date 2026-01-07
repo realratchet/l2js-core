@@ -25,6 +25,7 @@ declare global {
             export type APackage = import("./src/unreal/un-package").APackage;
             export type ANativePackage = import("./src/unreal/un-package").ANativePackage;
             export type PackageFlags_T = import("./src/unreal/un-package").PackageFlags_T;
+            export type UEncodedFile = import("./src/unreal/un-encoded-file").UEncodedFile;
 
             export interface ICorePackage extends APackage {
                 isCore: true;

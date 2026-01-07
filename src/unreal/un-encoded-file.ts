@@ -195,7 +195,7 @@ abstract class UEncodedFile implements IEncodedFile {
 
                     tStart = performance.now();
 
-                    this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), this.moduloCryptKey);
+                    this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), this.moduloCryptKey) as ArrayBuffer;
 
                     this.read(signature);
                 } else if (version.startsWith("4")) {
