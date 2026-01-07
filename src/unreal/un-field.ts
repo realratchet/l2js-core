@@ -16,10 +16,8 @@ abstract class UField extends UObject {
         if (this.constructor.name !== "UClass")
             super.doLoad(pkg, exp);
 
-        const compat32 = new BufferValue(BufferValue.compat32);
-
-        this.superFieldId = pkg.read(compat32).value;
-        this.nextFieldId = pkg.read(compat32).value;
+        this.superFieldId = pkg.read("compat32");
+        this.nextFieldId = pkg.read("compat32");
     }
 
     protected makeLayout() {

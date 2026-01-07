@@ -64,24 +64,18 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
         this.readHead = pkg.tell();
 
-        const uint32 = new BufferValue(BufferValue.uint32);
-        const uint16 = new BufferValue(BufferValue.uint16);
-        const compat32 = new BufferValue(BufferValue.compat32);
-
-        this.arrayDimensions = pkg.read(uint32).value;
-        this.flags = pkg.read(uint32).value;
+        this.arrayDimensions = pkg.read("uint32");
+        this.flags = pkg.read("uint32");
         this.flagNames = flagBitsToDict(this.flags, PropertyFlags_T);
 
-        this.categoryNameId = pkg.read(compat32).value;
+        this.categoryNameId = pkg.read("compat32");
         this.categoryName = pkg.nameTable[this.categoryNameId].name;
 
         if (this.flags & PropertyFlags_T.Net)
-            this.replicationOffset = pkg.read(uint16).value;
+            this.replicationOffset = pkg.read("uint16");
 
         this.readHead = pkg.tell();
     }
-
-
 
     public copy(other: UProperty<T1, T2>) {
         if (this.constructor.name !== other.constructor.name)
@@ -171,9 +165,7 @@ abstract class UBaseExportProperty<T1 extends UObject, T2 = T1, T3 = T2> extends
     protected doLoad(pkg: APackage, exp: C.UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
-        const compat32 = new BufferValue(BufferValue.compat32);
-
-        this.valueId = pkg.read(compat32).value;
+        this.valueId = pkg.read("compat32");
         this.readHead = pkg.tell();
     }
 
@@ -230,9 +222,7 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
     protected doLoad(pkg: APackage, exp: C.UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
-        const compat32 = new BufferValue(BufferValue.compat32);
-
-        this.metaClassId = pkg.read(compat32).value;
+        this.metaClassId = pkg.read("compat32");
         this.readHead = pkg.tell();
     }
 

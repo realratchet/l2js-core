@@ -63,23 +63,23 @@ class PropertyTag {
     protected load(pkg: C.APackage, offset: number) {
         pkg.seek(offset, "set");
 
-        const compat32 = pkg.read(new BufferValue(BufferValue.compat32));
+        const nameIndex = pkg.read("compat32") as number;
 
-        const propName = compat32.value >= 0 && compat32.value < pkg.nameTable.length
-            ? pkg.nameTable[compat32.value].name
+        const propName = nameIndex >= 0 && nameIndex < pkg.nameTable.length
+            ? pkg.nameTable[nameIndex].name
             : "None";
 
         this.name = propName;
 
         if (propName === "None") return this;
 
-        const info = pkg.read(new BufferValue(BufferValue.int8)).value;
+        const info = pkg.read("int8") as number;
         const isArray = (info & UNP_PropertyMasks.PROPERTY_ARRAY_MASK) !== 0;
         this.type = info & UNP_PropertyMasks.PROPERTY_TYPE_MASK;
 
         if (this.type === UNP_PropertyTypes.UNP_StructProperty) {
-            pkg.read(compat32);
-            this.structName = pkg.nameTable[compat32.value].name;
+            const structNameIndex = pkg.read("compat32") as number;
+            this.structName = pkg.nameTable[structNameIndex].name;
         }
 
 
@@ -90,25 +90,24 @@ class PropertyTag {
             case UNP_DataTypeSizes.StaticSize4: this.dataSize = 4; break;
             case UNP_DataTypeSizes.StaticSize12: this.dataSize = 12; break;
             case UNP_DataTypeSizes.StaticSize16: this.dataSize = 16; break;
-            case UNP_DataTypeSizes.DynamicSizeUint8: this.dataSize = pkg.read(new BufferValue(BufferValue.uint8)).value; break;
-            case UNP_DataTypeSizes.DynamicSizeUint16: this.dataSize = pkg.read(new BufferValue(BufferValue.uint16)).value; break;
-            case UNP_DataTypeSizes.DynamicSizeUint32: this.dataSize = pkg.read(new BufferValue(BufferValue.uint32)).value; break;
+            case UNP_DataTypeSizes.DynamicSizeUint8: this.dataSize = pkg.read("uint8"); break;
+            case UNP_DataTypeSizes.DynamicSizeUint16: this.dataSize = pkg.read("uint16"); break;
+            case UNP_DataTypeSizes.DynamicSizeUint32: this.dataSize = pkg.read("uint32"); break;
         }
 
         this.arrayIndex = 0;
 
         if (isArray && this.type !== UNP_PropertyTypes.UNP_BoolProperty) {
-            const int8 = new BufferValue(BufferValue.int8);
-            const b = pkg.read(int8).value;
+            const b = pkg.read("int8") as number;
 
             if (b < 0x80) {
                 this.arrayIndex = b;
             } else {
-                const b2 = pkg.read(int8).value;
+                const b2 = pkg.read("int8") as number;
 
                 if (b & 0x40) { // really, (b & 0xC0) == 0xC0
-                    const b3 = pkg.read(int8).value;
-                    const b4 = pkg.read(int8).value;
+                    const b3 = pkg.read("int8") as number;
+                    const b4 = pkg.read("int8") as number;
                     this.arrayIndex = ((b << 24) | (b2 << 16) | (b3 << 8) | b4) & 0x3FFFFF;
                 } else this.arrayIndex = ((b << 8) | b2) & 0x3FFF;
             }

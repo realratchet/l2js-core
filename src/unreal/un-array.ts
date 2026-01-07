@@ -25,7 +25,7 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
-        const count = pkg.read(new BufferValue(BufferValue.compat32)).value;
+        const count = pkg.read("compat32");
         const headerOffset = hasTag ? pkg.tell() - beginIndex : null;
         const dataSize = hasTag ? tag.dataSize - headerOffset : null;
 
@@ -79,7 +79,7 @@ class FArrayLazy<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.Strin
     public unkLazyInt: number;
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
-        this.unkLazyInt = pkg.read(new BufferValue(BufferValue.int32)).value as number;
+        this.unkLazyInt = pkg.read("int32") as number;
 
         super.load(pkg, tag);
 
@@ -279,8 +279,7 @@ class FPrimitiveArray<T extends C.AllPrimitiveNumberTypes_T> implements IConstru
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
-        const count = pkg.read(new BufferValue(BufferValue.compat32));
-        const elementCount = count.value as number;
+        const elementCount = pkg.read("compat32") as number;
 
         if (elementCount === 0) {
             this.array = new DataView(new ArrayBuffer(0));
@@ -345,7 +344,7 @@ class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
 
-        this.unkLazyInt = pkg.read(new BufferValue(BufferValue.int32)).value as number;
+        this.unkLazyInt = pkg.read("int32") as number;
 
         super.load(pkg, tag);
 

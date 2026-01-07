@@ -24,28 +24,24 @@ class UFunction extends UStruct {
 
         const verArchive = pkg.header.getArchiveFileVersion();
 
-        const uint8 = new BufferValue(BufferValue.uint8);
-        const uint16 = new BufferValue(BufferValue.uint16);
-        const uint32 = new BufferValue(BufferValue.uint32);
+        if (verArchive <= 0x40)
+            this.paramSize = pkg.read("uint16");
+
+        this.nativeFuncIndex = pkg.read("uint16");
 
         if (verArchive <= 0x40)
-            this.paramSize = pkg.read(uint16).value;
+            this.numParams = pkg.read("uint8");
 
-        this.nativeFuncIndex = pkg.read(uint16).value;
-
-        if (verArchive <= 0x40)
-            this.numParams = pkg.read(uint8).value;
-
-        this.operatorPrecendence = pkg.read(uint8).value;
+        this.operatorPrecendence = pkg.read("uint8");
 
         if (verArchive <= 0x40)
-            this.returnValueOffset = pkg.read(uint16).value;
+            this.returnValueOffset = pkg.read("uint16");
 
-        this._funcFlags = pkg.read(uint32).value;
+        this._funcFlags = pkg.read("uint32");
         this.funcFlags = flagBitsToDict(this._funcFlags, FunctionFlags_T);
 
         if (allFlags(this._funcFlags, FunctionFlags_T.Net))
-            this.replicationOffset = pkg.read(uint16).value;
+            this.replicationOffset = pkg.read("uint16");
 
         this.readHead = pkg.tell();
     }

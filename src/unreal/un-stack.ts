@@ -12,20 +12,16 @@ class UStack {
     private constructor() { }
 
     public static loadStack(pkg: APackage) {
-        const compat32 = new BufferValue(BufferValue.compat32);
-        const int64 = new BufferValue(BufferValue.int64);
-        const int32 = new BufferValue(BufferValue.int32);
-
         const stack = new UStack();
 
-        stack.nodeId = pkg.read(compat32).value;
-        stack.stateNodeId = pkg.read(compat32).value;
+        stack.nodeId = pkg.read("compat32");
+        stack.stateNodeId = pkg.read("compat32");
 
-        stack.probeMask = pkg.read(int64).value;
-        stack.latentAction = pkg.read(int32).value;
+        stack.probeMask = pkg.read("int64");
+        stack.latentAction = pkg.read("int32");
 
         if (stack.nodeId !== 0) {
-            stack.offset = pkg.read(compat32).value;
+            stack.offset = pkg.read("compat32");
         }
 
         return stack;

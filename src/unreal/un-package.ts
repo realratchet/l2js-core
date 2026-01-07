@@ -58,20 +58,18 @@ abstract class APackage extends UEncodedFile {
             throw new Error(`Invalid signature: '0x${signature.value.toString(16).toUpperCase()}' expected '0x9E2A83C1'`);
 
         const header = new UHeader();
-        const uint32 = new BufferValue(BufferValue.uint32);
-        const int32 = new BufferValue(BufferValue.uint32);
 
-        header.version = readable.read(uint32).value;
+        header.version = readable.read("uint32");
 
-        header._packageFlags = readable.read(int32).value;
+        header._packageFlags = readable.read("uint32");
         header.packageFlags = flagBitsToDict(header._packageFlags, PackageFlags_T);
 
-        header.nameCount = readable.read(int32).value;
-        header.nameOffset = readable.read(int32).value;
-        header.exportCount = readable.read(int32).value;
-        header.exportOffset = readable.read(int32).value;
-        header.importCount = readable.read(int32).value;
-        header.importOffset = readable.read(int32).value;
+        header.nameCount = readable.read("uint32");
+        header.nameOffset = readable.read("uint32");
+        header.exportCount = readable.read("uint32");
+        header.exportOffset = readable.read("uint32");
+        header.importCount = readable.read("uint32");
+        header.importOffset = readable.read("uint32");
 
         const dbgNameCount = header.nameCount;
         const dbgNameOffset = header.nameOffset.toString(16).toUpperCase();
@@ -94,12 +92,12 @@ abstract class APackage extends UEncodedFile {
         }
 
         if (header.getArchiveFileVersion() < 68) {
-            header.heritageCount = readable.read(uint32).value;
-            header.heritageOffset = readable.read(uint32).value;
+            header.heritageCount = readable.read("uint32");
+            header.heritageOffset = readable.read("uint32");
         } else {
             readable.read(header.guid);
 
-            const generationCount = readable.read(new BufferValue(BufferValue.int32)).value;
+            const generationCount = readable.read("int32");
 
             if (readable.path === "assets/maps/20_21.unr") {
                 console.assert(generationCount === 1);
@@ -108,8 +106,8 @@ abstract class APackage extends UEncodedFile {
             for (let i = 0, gc = generationCount; i < gc; i++) {
                 const gen = new UGeneration();
 
-                gen.exportCount = readable.read(uint32).value;
-                gen.nameCount = readable.read(uint32).value;
+                gen.exportCount = readable.read("uint32");
+                gen.nameCount = readable.read("uint32");
 
                 header.generations.push(gen);
             }
@@ -200,13 +198,12 @@ abstract class APackage extends UEncodedFile {
         const nameHash = new Map<string, number>();
 
         const char = new BufferValue<"char">(BufferValue.char);
-        const uint32 = new BufferValue<"uint32">(BufferValue.uint32);
 
         for (let i = 0, nc = header.nameCount; i < nc; i++) {
             const uname = new UName();
 
             uname.name = this.read(char).string;
-            uname.flags = this.read(uint32).value;
+            uname.flags = this.read("uint32");
 
             nameTable.push(uname);
             nameHash.set(uname.name, i);
@@ -219,25 +216,23 @@ abstract class APackage extends UEncodedFile {
         this.seek(header.exportOffset, "set");
 
         const exports: UExport[] = [];
-        const compat32 = new BufferValue(BufferValue.compat32);
-        const uint32 = new BufferValue(BufferValue.uint32);
 
         for (let i = 0, ec = header.exportCount; i < ec; i++) {
             const uexport = new UExport();
 
-            uexport.idClass = this.read(compat32).value;
-            uexport.idSuper = this.read(compat32).value;
-            uexport.idPackage = this.read(uint32).value;
-            uexport.idObjectName = this.read(compat32).value;
+            uexport.idClass = this.read("compat32");
+            uexport.idSuper = this.read("compat32");
+            uexport.idPackage = this.read("uint32");
+            uexport.idObjectName = this.read("compat32");
 
             uexport.index = i;
             uexport.objectName = nameTable[uexport.idObjectName].name;
 
-            uexport.flags = this.read(uint32).value;
-            uexport.size = this.read(compat32).value;
+            uexport.flags = this.read("uint32");
+            uexport.size = this.read("compat32");
 
             if (uexport.size > 0)
-                uexport.offset = this.read(compat32).value;
+                uexport.offset = this.read("compat32");
 
             exports.push(uexport);
         }
@@ -249,23 +244,21 @@ abstract class APackage extends UEncodedFile {
         this.seek(header.importOffset, "set");
 
         const imports: UImport[] = [];
-        const compat32 = new BufferValue(BufferValue.compat32);
-        const int32 = new BufferValue(BufferValue.int32);
 
         for (let i = 0, ic = header.importCount; i < ic; i++) {
             const uimport = new UImport();
 
             uimport.index = i;
 
-            uimport.idClassPackage = this.read(compat32).value;
+            uimport.idClassPackage = this.read("compat32");
             uimport.classPackage = nameTable[uimport.idClassPackage].name;
 
-            uimport.idClassName = this.read(compat32).value;
+            uimport.idClassName = this.read("compat32");
             uimport.className = nameTable[uimport.idClassName].name;
 
-            uimport.idPackage = this.read(int32).value;
+            uimport.idPackage = this.read("int32");
 
-            uimport.idObjectName = this.read(compat32).value;
+            uimport.idObjectName = this.read("compat32");
             uimport.objectName = nameTable[uimport.idObjectName].name;
 
             imports.push(uimport);

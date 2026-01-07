@@ -12,14 +12,9 @@ class FDependencies implements IConstructable {
     public class: UClass;
 
     public load(pkg: C.APackage): this {
-        const compat32 = new BufferValue(BufferValue.compat32);
-        const uint32 = new BufferValue(BufferValue.uint32);
-        const int32 = new BufferValue(BufferValue.int32);
-
-
-        this.classId = pkg.read(compat32).value;
-        this.depth = pkg.read(uint32).value;
-        this.scriptTextCRC = pkg.read(int32).value;
+        this.classId = pkg.read("compat32");
+        this.depth = pkg.read("uint32");
+        this.scriptTextCRC = pkg.read("int32");
 
         return this;
     }
@@ -74,9 +69,6 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
 
         const verArchive = pkg.header.getArchiveFileVersion();
 
-        const uint32 = new BufferValue(BufferValue.uint32);
-        const compat32 = new BufferValue(BufferValue.compat32);
-
         if (verArchive < 0x3e) {
             debugger;
         }
@@ -86,9 +78,9 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
 
         // debugger
 
-        this._classFlags = pkg.read(uint32).value;
+        this._classFlags = pkg.read("uint32");
         this.classFlags = flagBitsToDict(this._classFlags, EClassFlags_T);
-        this.classGuid = pkg.read(BufferValue.allocBytes(16)).value;
+        this.classGuid = pkg.read(16).value;
 
         // debugger;
 
@@ -107,9 +99,9 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
         this.pkgImportIds.load(pkg);
 
         if (verArchive >= 0x3e) {
-            this.classWithinId = pkg.read(compat32).value;
+            this.classWithinId = pkg.read("compat32");
             ``
-            const nameId = pkg.read(compat32).value;
+            const nameId = pkg.read("compat32");
 
             this.classConfigName = pkg.nameTable[nameId].name;
         } else {

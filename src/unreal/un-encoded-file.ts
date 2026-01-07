@@ -7,8 +7,29 @@ let gmp: _gmp.GMPLib = null;
 
 interface IEncodedFile {
     read(target: number): BufferValue<"buffer">;
+    read<T extends C.PrimitiveNumberTypes_T | "compat32">(target: T): number;
+    read<T extends C.BigNumberTypes_T>(target: T): bigint;
     read<T extends C.ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
 };
+
+const numberTypes = [
+    "int64", "uint64",
+    "float",
+    "compat32",
+    "int32", "uint32",
+    "int8", "uint8",
+    "int16", "uint16"
+] as const;
+
+const buffInstances: Record<C.NumberTypes_T, BufferValue<C.NumberTypes_T>> = numberTypes.reduce((acc, t) => {
+    acc[t] = new BufferValue(BufferValue[t]);
+    return acc;
+}, {} as any);
+
+
+// const instances: Record<C.NumberTypes_T, BufferValue<any>> = {
+//     compat32: new BufferValue(BufferValue.compat32)
+// }
 
 abstract class UEncodedFile implements IEncodedFile {
     public readonly path: string;
@@ -61,12 +82,21 @@ abstract class UEncodedFile implements IEncodedFile {
     }
 
     public read(target: number): BufferValue<"buffer">;
+    public read<T extends C.PrimitiveNumberTypes_T | "compat32">(target: T): number;
+    public read<T extends C.BigNumberTypes_T>(target: T): bigint;
     public read<T extends C.ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
 
     public read(target: any) {
         this.ensureReadable();
 
-        if (typeof target === "number") {
+        if (target in buffInstances) {
+            target = buffInstances[target as C.NumberTypes_T];
+
+            this.offset += target.readValue(this.buffer, this.offset);
+
+            return target.value;
+
+        } else if (typeof target === "number") {
             const _target = BufferValue.allocBytes(target);
 
             this.offset += _target.readValue(this.buffer, this.offset);
@@ -174,7 +204,7 @@ abstract class UEncodedFile implements IEncodedFile {
             if (signature.value === 0x0069004C) {
                 this.seek(HEADER_VER_OFFSET, "set");
 
-                const version = new TextDecoder("utf-16").decode(this.read(BufferValue.allocBytes(6)).value);
+                const version = new TextDecoder("utf-16").decode(this.read(6).value);
 
                 this.seek(HEADER_SIZE, "set");
 
@@ -187,7 +217,7 @@ abstract class UEncodedFile implements IEncodedFile {
                     if (this.version === "111") {
                         this.moduloCryptKey = modKeys.modulo111;
                     } else {
-                        this.moduloCryptKey = this.read(new BufferValue(BufferValue.uint8)).value ^ modKeys.modulo121;
+                        this.moduloCryptKey = (this.read("uint8") as number) ^ modKeys.modulo121;
                     }
 
                     this.contentOffset = HEADER_SIZE;
