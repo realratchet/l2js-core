@@ -281,7 +281,7 @@ abstract class UObject implements C.ISerializable {
         pkg.seek(exp.offset, "set");
         this.setReadPointers(exp);
 
-        if (flags & ObjectFlags_T.HasStack && exp.size > 0) {
+        if (flags & ObjectFlags_T.RF_HasStack && exp.size > 0) {
 
             this.stack = UStack.loadStack(pkg);
         }

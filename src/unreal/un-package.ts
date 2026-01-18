@@ -149,7 +149,7 @@ abstract class APackage extends UEncodedFile {
                         exp.idPackage = nativeIndex;
                         exp.idObjectName = nameHash.get(className);
                         exp.objectName = className;
-                        exp.flags = ObjectFlags_T.Native;
+                        exp.flags = ObjectFlags_T.RF_Native;
                         exp.size = 0;
                         exp.offset = 0;
                         exp.isFake = true;
@@ -325,7 +325,7 @@ abstract class APackage extends UEncodedFile {
                 this.exports[index].object = obj as unknown as UObject;
 
                 if (entry.size === 0) {
-                    if (entry.flags !== ObjectFlags_T.Native)
+                    if (entry.flags !== ObjectFlags_T.RF_Native)
                         throw new Error("0xdeadbeef")
 
                     obj.friendlyName = objname;
@@ -490,7 +490,7 @@ abstract class APackage extends UEncodedFile {
         exp.idPackage = 0;
         exp.idObjectName = this.nameHash.get(className);
         exp.objectName = className;
-        exp.flags = ObjectFlags_T.Native;
+        exp.flags = ObjectFlags_T.RF_Native;
         exp.size = 0;
         exp.offset = 0;
         exp.isFake = true;
@@ -591,13 +591,12 @@ abstract class ANativePackage extends APackage {
 }
 
 enum PackageFlags_T {
-    NoFlags = 0,
-    AllowDownload = 0x0001, // Allow downloading package
-    ClientOptional = 0x0002, // Purely optional for clients
-    ServerSideOnly = 0x0004, // Only needed on the server side
-    BrokenLinks = 0x0008, // Loaded from linker with broken import links
-    Unsecure = 0x0010, // Not trusted
-    Need = 0x8000 // Client needs to download this package
+    PKG_AllowDownload = 0x0001,	// Allow downloading package.
+    PKG_ClientOptional = 0x0002,	// Purely optional for clients.
+    PKG_ServerSideOnly = 0x0004,   // Only needed on the server side.
+    PKG_BrokenLinks = 0x0008,   // Loaded from linker with broken import links.
+    PKG_Unsecure = 0x0010,   // Not trusted.
+    PKG_Need = 0x8000,	// Client needs to download this package.
 };
 
 
@@ -665,7 +664,7 @@ function addClassDependency(nameTable: UName[], nameHash: Map<string, number>, i
     exp.idPackage = nativeIndex;
     exp.idObjectName = idObjectName;
     exp.objectName = objectName;
-    exp.flags = ObjectFlags_T.Native;
+    exp.flags = ObjectFlags_T.RF_Native;
     exp.size = 0;
     exp.offset = 0;
     exp.isFake = true;

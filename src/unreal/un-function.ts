@@ -39,7 +39,7 @@ class UFunction extends UStruct {
         this._funcFlags = pkg.read("uint32");
         this.funcFlags = flagBitsToDict(this._funcFlags, FunctionFlags_T);
 
-        if (allFlags(this._funcFlags, FunctionFlags_T.Net))
+        if (allFlags(this._funcFlags, FunctionFlags_T.FUNC_Net))
             this.replicationOffset = pkg.read("uint16");
 
         this.readHead = pkg.tell();
@@ -49,23 +49,32 @@ class UFunction extends UStruct {
 }
 
 enum FunctionFlags_T {
-    Final = 0x00000001,         // Function is final(prebindable, non - overridable function)
-    Defined = 0x00000002,       // Function has been defined(not just declared)
-    Iterator = 0x00000004,      // Function is an iterator
-    Latent = 0x00000008,        // Function is a latent state function
-    PreOperator = 0x00000010,   // Unary operator is a prefix operator
-    Singular = 0x00000020,      // Function cannot be reentered
-    Net = 0x00000040,           // Function is network - replicated
-    NetReliable = 0x00000080,   // Function should be sent reliably on the network
-    Simulated = 0x00000100,     // Function executed on the client side
-    Exec = 0x00000200,          // Executable from command line
-    Native = 0x00000400,        // Native function
-    Event = 0x00000800,         // Event function
-    Operator = 0x00001000,      // Operator function
-    Static = 0x00002000,        // Static function
-    NoExport = 0x00004000,      // Don't export intrinsic function to C++
-    Const = 0x00008000,         // Function doesn't modify this object
-    Invariant = 0x00010000      // Return value is purely dependent on parameters; no state dependencies or internal state changes
+    FUNC_Final = 0x00000001,         // Function is final(prebindable, non - overridable function)
+    FUNC_Defined = 0x00000002,       // Function has been defined(not just declared)
+    FUNC_Iterator = 0x00000004,      // Function is an iterator
+    FUNC_Latent = 0x00000008,        // Function is a latent state function
+    FUNC_PreOperator = 0x00000010,   // Unary operator is a prefix operator
+    FUNC_Singular = 0x00000020,      // Function cannot be reentered
+    FUNC_Net = 0x00000040,           // Function is network - replicated
+    FUNC_NetReliable = 0x00000080,   // Function should be sent reliably on the network
+    FUNC_Simulated = 0x00000100,     // Function executed on the client side
+    FUNC_Exec = 0x00000200,          // Executable from command line
+    FUNC_Native = 0x00000400,        // Native function
+    FUNC_Event = 0x00000800,         // Event function
+    FUNC_Operator = 0x00001000,      // Operator function
+    FUNC_Static = 0x00002000,        // Static function
+    FUNC_NoExport = 0x00004000,      // Don't export intrinsic function to C++
+    FUNC_Const = 0x00008000,         // Function doesn't modify this object
+    FUNC_Invariant = 0x00010000,      // Return value is purely dependent on parameters; no state dependencies or internal state changes,
+
+    FUNC_Public = 0x00020000,
+    FUNC_Private = 0x00040000,
+    FUNC_Protected = 0x00080000,
+    FUNC_Delegate = 0x00100000,
+
+    FUNC_FuncInherit = FUNC_Exec | FUNC_Event,
+    FUNC_FuncOverrideMatch = FUNC_Exec | FUNC_Final | FUNC_Latent | FUNC_PreOperator | FUNC_Iterator | FUNC_Static | FUNC_Public | FUNC_Protected,
+    FUNC_NetFuncFlags = FUNC_Net | FUNC_NetReliable,
 };
 
 export default UFunction;

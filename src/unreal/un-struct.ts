@@ -220,7 +220,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
             inheretenceChain.push(base.friendlyName);
             const propNames = clsInheritedProps[base.friendlyName] = new Array<string>();
 
-            if (!base.exp || base.exp.anyFlags(ObjectFlags_T.Native))
+            if (!base.exp || base.exp.anyFlags(ObjectFlags_T.RF_Native))
                 lastNative = base;
 
             if (base.constructor !== this.constructor && (base.constructor as any as UStruct)?.friendlyName !== this.constructor.getConstructorName())
