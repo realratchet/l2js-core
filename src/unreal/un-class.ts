@@ -59,40 +59,19 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
     public getDynamicTag(friendlyName: string) { return `[C*]${friendlyName}`; }
 
     protected doLoad(pkg: C.APackage, exp: C.UExport<UObject>): void {
-        // if (exp.objectName === "Pawn")
-        //     debugger;
-
         super.doLoad(pkg, exp);
 
         this.readHead = pkg.tell();
 
         const verArchive = pkg.header.getArchiveFileVersion();
 
-        if (verArchive < 0x3e) {
-            debugger;
-        }
-
-        // if (exp.objectName === "Pawn")
-        //     debugger;
-
-        // debugger
-
         this._classFlags = pkg.read("uint32");
         this.classFlags = flagBitsToDict(this._classFlags, EClassFlags_T);
         this.classGuid = pkg.read("guid");
 
-        // debugger;
-
-        // console.log()
-
-        // ebp+arg_0 -> 0x19EFF0 -> 0x102D3D74 -> 274
-
-        // debugger;
 
         if (this._classFlags === 1150)
             debugger;
-
-        const guidBytes = new Uint8Array(this.classGuid.buffer);
 
         this.dependencies.load(pkg);
         this.pkgImportIds.load(pkg);
@@ -107,13 +86,7 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
             debugger;
         }
 
-        if (0x62 < verArchive) {
-            this.pkgImportIds2.load(pkg);
-            // debugger;
-        }
-
-        // if (exp.objectName === "Pawn")
-        //     debugger;
+        if (0x62 < verArchive) this.pkgImportIds2.load(pkg);
 
         this.readHead = pkg.tell();
 

@@ -265,7 +265,7 @@ abstract class UObject implements C.ISerializable {
     }
 
     public setExport(pkg: APackage, exp: UExport) {
-        this.objectName = `Exp_${exp.objectName}`;
+        this.objectName = exp.objectName;
         this.exportIndex = exp.index;
         this.exp = exp;
         this.pkg = pkg.asReadable();
@@ -386,6 +386,51 @@ abstract class UObject implements C.ISerializable {
     public toString() {
         return `${this.constructor.name}=(name=${this.exp?.objectName ?? this.objectName}${this.exp ? `, exp=${this.exp.index}` : ''})`;
     }
+
+    public toStringHierarchical(visited?: Set<UObject>, indent: string = ""): string {
+        if (!visited) visited = new Set();
+        if (visited.has(this)) {
+            return `${this.toString()} (cycle detected)`;
+        }
+        visited.add(this);
+
+        let result = `${this.toString()}\n`;
+        const nextIndent = indent + "  ";
+
+        for (const [propName, propValue] of this.propertyDict.entries()) {
+            result += `${nextIndent}${propName}: `;
+            result += this.formatValueHierarchical(propValue, visited, nextIndent);
+            result += "\n";
+        }
+
+        return result.trimEnd();
+    }
+
+    protected formatValueHierarchical(value: any, visited: Set<UObject>, indent: string): string {
+        if (value === null || value === undefined) return "None";
+
+        if (value instanceof UObject) {
+            return value.toStringHierarchical(visited, indent);
+        }
+
+        if (Array.isArray(value)) {
+            if (value.length === 0) return "[]";
+            let res = "\n";
+            const itemIndent = indent + "  ";
+            for (const item of value) {
+                res += `${indent}- `;
+                res += this.formatValueHierarchical(item, visited, itemIndent);
+                res += "\n";
+            }
+            return res.trimEnd();
+        }
+
+        if (value instanceof FPrimitiveArray) {
+            return this.formatValueHierarchical([...value.iter()], visited, indent);
+        }
+
+        return String(value);
+    }
 }
 
 export default UObject;
@@ -412,7 +457,7 @@ function deepClone<T = any>(value: T | T[]): T | T[] {
 Object.assign(UObject.prototype, {
     isObject: true,
     isConstructed: false,
-    objectName: "Exp_None",
+    objectName: "None",
     skipRemaining: false,
     careUnread: true,
     isLoading: false,

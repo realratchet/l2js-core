@@ -78,7 +78,7 @@ abstract class APackage extends UEncodedFile {
         const dbgImportCount = header.importCount;
         const dbgImportOffset = header.importOffset.toString(16).toUpperCase();
 
-        console.log(`'${readable.path}' => Names:${dbgNameOffset}[${dbgNameCount}] Exports:${dbgExportOffset}[${dbgExportCount}] Imports:${dbgImportOffset}[${dbgImportCount}]`);
+        // console.log(`'${readable.path}' => Names:${dbgNameOffset}[${dbgNameCount}] Exports:${dbgExportOffset}[${dbgExportCount}] Imports:${dbgImportOffset}[${dbgImportCount}]`);
 
         if (readable.path === "assets/maps/20_21.unr") {
             console.assert(header.getArchiveFileVersion() === 123);

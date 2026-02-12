@@ -388,7 +388,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
         this.kls = cls as any;
 
-        console.log(`%cRegistered new class: %c${friendlyName}`, "color: blue", "color: green")
+        // console.log(`%cRegistered new class: %c${friendlyName}`, "color: blue", "color: green")
 
         return this.kls as any as new () => T;
     }

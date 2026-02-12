@@ -19,20 +19,12 @@ abstract class UState<Class extends C.UObject = C.UObject> extends UStruct<Class
 
         this.readHead = pkg.tell();
 
-        // if (exp.objectName === "Pawn")
-        //     debugger;
-
         this.probeMask = pkg.read("uint64");
         this.ignoreMask = pkg.read("uint64");
         this._stateFlags = pkg.read("uint32");
         this.stateFlags = flagBitsToDict(this._stateFlags, EStateFlags_T);
 
         this.labelTableOffset = pkg.read("uint16");
-
-        // debugger;
-
-        // if (exp.objectName === "Pawn")
-        //     debugger;
     }
 }
 
