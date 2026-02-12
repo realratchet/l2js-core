@@ -76,12 +76,12 @@ abstract class APackage extends UEncodedFile {
         header.importCount = readable.read("uint32");
         header.importOffset = readable.read("uint32");
 
-        const dbgNameCount = header.nameCount;
-        const dbgNameOffset = header.nameOffset.toString(16).toUpperCase();
-        const dbgExportCount = header.exportCount;
-        const dbgExportOffset = header.exportOffset.toString(16).toUpperCase();
-        const dbgImportCount = header.importCount;
-        const dbgImportOffset = header.importOffset.toString(16).toUpperCase();
+        // const dbgNameCount = header.nameCount;
+        // const dbgNameOffset = header.nameOffset.toString(16).toUpperCase();
+        // const dbgExportCount = header.exportCount;
+        // const dbgExportOffset = header.exportOffset.toString(16).toUpperCase();
+        // const dbgImportCount = header.importCount;
+        // const dbgImportOffset = header.importOffset.toString(16).toUpperCase();
 
         // console.log(`'${readable.path}' => Names:${dbgNameOffset}[${dbgNameCount}] Exports:${dbgExportOffset}[${dbgExportCount}] Imports:${dbgImportOffset}[${dbgImportCount}]`);
 
@@ -450,14 +450,14 @@ abstract class APackage extends UEncodedFile {
         for (const exp of this.exports) {
             if (exp.objectName !== objectName) continue;
             if (groupName !== "None") {
-                if ((exp.idPackage as number) > 0) {
-                    const pkg = this.exports[(exp.idPackage as number) - 1];
+                if (exp.idPackage > 0) {
+                    const pkg = this.exports[exp.idPackage - 1];
 
                     if (pkg && groupName !== pkg.objectName) {
                         continue;
                     }
 
-                } else if ((exp.idPackage as number) < 0) {
+                } else if (exp.idPackage < 0) {
                     debugger;
                 } else {
                     debugger;
