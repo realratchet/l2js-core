@@ -1,6 +1,6 @@
 class UImport {
     public index: number;
-    public idPackage: number;
+    public idPackage: number | C.UExport | UImport;
 
     public idClassName = 0;
     public className = "None";

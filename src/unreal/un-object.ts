@@ -56,6 +56,7 @@ abstract class UObject implements C.ISerializable {
     declare public readonly isObject: boolean;
     declare public isConstructed: boolean;
 
+    declare public name: string;
     declare public objectName: string;
     public exportIndex?: number = null;
     public exp?: UExport = null;
@@ -269,6 +270,7 @@ abstract class UObject implements C.ISerializable {
         this.exportIndex = exp.index;
         this.exp = exp;
         this.pkg = pkg.asReadable();
+        this.name = (this.pkg as any as APackage).getObjectPath(exp);
     }
 
     protected preLoad(pkg: APackage, exp: UExport): void {
@@ -305,7 +307,13 @@ abstract class UObject implements C.ISerializable {
     protected loadWithPropertyTag(pkg: APackage, tag: PropertyTag): this {
         const exp = new UExport();
 
+        exp.index = -1;  // Fake exports don't have a real index
+        exp.idClass = 0;
+        exp.idSuper = 0;
+        exp.idPackage = pkg.getActiveObjectRef();
+        exp.idObjectName = 0;
         exp.objectName = `${tag.name}[Struct<${tag.structName}>]`;
+        exp.flags = 0;
         exp.offset = pkg.tell();
         exp.size = tag.dataSize;
         exp.isFake = true;
@@ -322,20 +330,26 @@ abstract class UObject implements C.ISerializable {
         if (this.isReady)
             debugger;
 
-        this.preLoad(pkg, exp);
+        pkg.pushLoadingObject(exp.isFake ? exp : exp.index + 1);
 
-        if (!isFinite(this.readHead))
-            debugger;
+        try {
+            this.preLoad(pkg, exp);
 
-        if (!isFinite(this.readTail))
-            debugger;
+            if (!isFinite(this.readHead))
+                debugger;
 
-        if (this.isReady)
-            debugger;
+            if (!isFinite(this.readTail))
+                debugger;
 
-        if ((this.readTail - this.readHead) > 0) {
-            this.doLoad(pkg, exp);
-            this.postLoad(pkg, exp);
+            if (this.isReady)
+                debugger;
+
+            if ((this.readTail - this.readHead) > 0) {
+                this.doLoad(pkg, exp);
+                this.postLoad(pkg, exp);
+            }
+        } finally {
+            pkg.popLoadingObject();
         }
 
         this.isLoading = false;
@@ -356,7 +370,7 @@ abstract class UObject implements C.ISerializable {
         if (this.skipRemaining) this.readHead = this.readTail;
         if (this.bytesUnread > 0 && this.careUnread) {
             const constructorName = (this.constructor as any).isDynamicClass ? `${(this.constructor as any).friendlyName}[Dynamic]` : this.constructor.name;
-            // console.warn(`Unread '${this.objectName}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}', only ${this.readHead - this.readStart} bytes read.`);
+            // console.warn(`Unread '${this.name}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}', only ${this.readHead - this.readStart} bytes read.`);
         }
 
         if (UObject.CLEANUP_NAMESPACE) {
@@ -375,7 +389,7 @@ abstract class UObject implements C.ISerializable {
 
         return {
             type: this.constructor.name,
-            name: this.exp?.objectName ?? this.objectName ?? "None",
+            name: this.name ?? "None",
             index: this.exportIndex ?? null,
             filename: this.pkg?.path ?? null,
             value: properties
@@ -384,7 +398,7 @@ abstract class UObject implements C.ISerializable {
 
     public toString(...args: any): string;
     public toString() {
-        return `${this.constructor.name}=(name=${this.exp?.objectName ?? this.objectName}${this.exp ? `, exp=${this.exp.index}` : ''})`;
+        return `${this.constructor.name}=(name=${this.name}${this.exp ? `, exp=${this.exp.index}` : ''})`;
     }
 
     public toStringHierarchical(visited?: Set<UObject>, indent: string = ""): string {
@@ -457,6 +471,7 @@ function deepClone<T = any>(value: T | T[]): T | T[] {
 Object.assign(UObject.prototype, {
     isObject: true,
     isConstructed: false,
+    name: "None",
     objectName: "None",
     skipRemaining: false,
     careUnread: true,

@@ -39,9 +39,16 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
             const exp = hasTag ? (function () {
                 const exp = new UExport();
 
-                exp.size = elementSize;
-                exp.objectName = `${tag.name}[${i + 1}/${count}]`
+                exp.index = -1;  // Fake exports don't have a real index
+                exp.idClass = 0;
+                exp.idSuper = 0;
+                exp.idPackage = pkg.getActiveObjectRef();
+                exp.idObjectName = 0;
+                exp.objectName = `${tag.name}[${i + 1}/${count}]`;
+                exp.flags = 0;
                 exp.offset = pkg.tell();
+                exp.size = elementSize;
+                exp.isFake = true;
 
                 return exp;
             })() : null;

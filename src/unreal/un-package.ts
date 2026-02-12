@@ -15,6 +15,7 @@ import UConst from "./un-const";
 import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
 import { flagBitsToDict } from "../utils/flags";
+import { pathToPkgName } from "../asset-loader";
 
 
 abstract class APackage extends UEncodedFile {
@@ -36,10 +37,14 @@ abstract class APackage extends UEncodedFile {
 
     public isDecoded() { return !!this.buffer; }
 
+    public readonly name: string;
+    private loadingStack: (number | UExport)[] = [];
+
     public constructor(loader: C.AAssetLoader, path: string) {
         super(path);
 
         this.loader = loader;
+        this.name = pathToPkgName(path)[0];
     }
 
     protected addClassDependencies(nameTable: C.UName[], nameHash: Map<string, number>, imports: UImport[], exports: UExport<UObject>[]): void { }
@@ -222,7 +227,7 @@ abstract class APackage extends UEncodedFile {
 
             uexport.idClass = this.read("compat32");
             uexport.idSuper = this.read("compat32");
-            uexport.idPackage = this.read("uint32");
+            uexport.idPackage = this.read("int32");
             uexport.idObjectName = this.read("compat32");
 
             uexport.index = i;
@@ -275,9 +280,52 @@ abstract class APackage extends UEncodedFile {
                 : null;
     }
 
+    public getObjectPath(objref: number | UExport | UImport): string {
+        if (typeof objref !== "number") {
+            if (objref instanceof UImport) {
+                if (objref.idPackage === 0) return objref.objectName;
+                return `${this.getObjectPath(objref.idPackage)}.${objref.objectName}`;
+            } else {
+                const outerPath = this.getObjectPath(objref.idPackage);
+                return `${outerPath}.${objref.objectName}`;
+            }
+        }
+
+        if (objref === 0) return this.name;
+
+        if (objref > 0) {
+            const exp = this.exports[objref - 1];
+
+            if (!exp) throw Error(`InvalidExport: ${this.name}:${objref}:${objref - 1}`);
+
+            return this.getObjectPath(exp);
+        } else {
+            const imp = this.imports[-objref - 1];
+
+            if (!imp) throw Error(`InvalidImport: ${this.name}:${objref}:${-objref - 1}`);
+
+            return this.getObjectPath(imp);
+        }
+    }
+
+    public getActiveObjectRef(): number | UExport {
+        return this.loadingStack.length > 0 ? this.loadingStack[this.loadingStack.length - 1] : 0;
+    }
+
+    public pushLoadingObject(objref: number | UExport) {
+        this.loadingStack.push(objref);
+    }
+
+    public popLoadingObject() {
+        this.loadingStack.pop();
+    }
+
     public toString() { return `Package=(${this.path}, imports=${this.imports.length}, exports=${this.exports.length})`; }
 
-    public getImportEntry(objref: number) {
+    public getImportEntry(objref: number | UImport) {
+        if (typeof objref !== "number")
+            return objref;
+
         if (objref === 0)
             return null;
         else if (objref > 0)
@@ -352,14 +400,14 @@ abstract class APackage extends UEncodedFile {
         } else if (objref < 0) {    // Import table object
 
             const entry = this.getImportEntry(objref);
-            let entrypackage = this.getImportEntry(entry.idPackage);
+            let entrypackage = this.getImportEntry(entry.idPackage as number);
 
             let groupName = "None";
-            if (entrypackage.idPackage !== 0)
+            if ((entrypackage.idPackage as number) !== 0)
                 groupName = entrypackage.objectName;
 
-            while (entrypackage.idPackage !== 0)
-                entrypackage = this.getImportEntry(entrypackage.idPackage);
+            while ((entrypackage.idPackage as number) !== 0)
+                entrypackage = this.getImportEntry(entrypackage.idPackage as number);
 
             const packageName = entrypackage.objectName;
             const objectName = entry.objectName;
@@ -405,14 +453,14 @@ abstract class APackage extends UEncodedFile {
         for (const exp of this.exports) {
             if (exp.objectName !== objectName) continue;
             if (groupName !== "None") {
-                if (exp.idPackage > 0) {
-                    const pkg = this.exports[exp.idPackage - 1];
+                if ((exp.idPackage as number) > 0) {
+                    const pkg = this.exports[(exp.idPackage as number) - 1];
 
                     if (pkg && groupName !== pkg.objectName) {
                         continue;
                     }
 
-                } else if (exp.idPackage < 0) {
+                } else if ((exp.idPackage as number) < 0) {
                     debugger;
                 } else {
                     debugger;
