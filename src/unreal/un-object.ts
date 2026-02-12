@@ -56,8 +56,9 @@ abstract class UObject implements C.ISerializable {
     declare public readonly isObject: boolean;
     declare public isConstructed: boolean;
 
-    declare public name: string;
-    declare public objectName: string;
+    public name: string;
+    public objectName: string;
+
     public exportIndex?: number = null;
     public exp?: UExport = null;
     public stack?: UStack = null;
@@ -270,7 +271,7 @@ abstract class UObject implements C.ISerializable {
         this.exportIndex = exp.index;
         this.exp = exp;
         this.pkg = pkg.asReadable();
-        this.name = (this.pkg as any as APackage).getObjectPath(exp);
+        this.name = this.pkg.getObjectPath(exp);
     }
 
     protected preLoad(pkg: APackage, exp: UExport): void {
@@ -330,27 +331,27 @@ abstract class UObject implements C.ISerializable {
         if (this.isReady)
             debugger;
 
-        pkg.pushLoadingObject(exp.isFake ? exp : exp.index + 1);
+        pkg.pushLoadingObject(exp.index >= 0 ? exp.index + 1 : 0);
 
-        try {
-            this.preLoad(pkg, exp);
 
-            if (!isFinite(this.readHead))
-                debugger;
+        this.preLoad(pkg, exp);
 
-            if (!isFinite(this.readTail))
-                debugger;
+        if (!isFinite(this.readHead))
+            debugger;
 
-            if (this.isReady)
-                debugger;
+        if (!isFinite(this.readTail))
+            debugger;
 
-            if ((this.readTail - this.readHead) > 0) {
-                this.doLoad(pkg, exp);
-                this.postLoad(pkg, exp);
-            }
-        } finally {
-            pkg.popLoadingObject();
+        if (this.isReady)
+            debugger;
+
+        if ((this.readTail - this.readHead) > 0) {
+            this.doLoad(pkg, exp);
+            this.postLoad(pkg, exp);
         }
+
+        pkg.popLoadingObject();
+
 
         this.isLoading = false;
         this.isReady = true;
@@ -369,7 +370,7 @@ abstract class UObject implements C.ISerializable {
 
         if (this.skipRemaining) this.readHead = this.readTail;
         if (this.bytesUnread > 0 && this.careUnread) {
-            const constructorName = (this.constructor as any).isDynamicClass ? `${(this.constructor as any).friendlyName}[Dynamic]` : this.constructor.name;
+            // const constructorName = (this.constructor as any).isDynamicClass ? `${(this.constructor as any).friendlyName}[Dynamic]` : this.constructor.name;
             // console.warn(`Unread '${this.name}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}', only ${this.readHead - this.readStart} bytes read.`);
         }
 
@@ -389,7 +390,7 @@ abstract class UObject implements C.ISerializable {
 
         return {
             type: this.constructor.name,
-            name: this.name ?? "None",
+            name: this.exp?.objectName ?? this.objectName ?? "None",
             index: this.exportIndex ?? null,
             filename: this.pkg?.path ?? null,
             value: properties
@@ -398,7 +399,7 @@ abstract class UObject implements C.ISerializable {
 
     public toString(...args: any): string;
     public toString() {
-        return `${this.constructor.name}=(name=${this.name}${this.exp ? `, exp=${this.exp.index}` : ''})`;
+        return `${this.constructor.name}=(name=${this.exp?.objectName ?? this.objectName}${this.exp ? `, exp=${this.exp.index}` : ''})`;
     }
 
     public toStringHierarchical(visited?: Set<UObject>, indent: string = ""): string {

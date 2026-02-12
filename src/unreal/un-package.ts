@@ -38,7 +38,7 @@ abstract class APackage extends UEncodedFile {
     public isDecoded() { return !!this.buffer; }
 
     public readonly name: string;
-    private loadingStack: (number | UExport)[] = [];
+    private loadingStack: number[] = [];
 
     public constructor(loader: C.AAssetLoader, path: string) {
         super(path);
@@ -308,11 +308,11 @@ abstract class APackage extends UEncodedFile {
         }
     }
 
-    public getActiveObjectRef(): number | UExport {
+    public getActiveObjectRef(): number {
         return this.loadingStack.length > 0 ? this.loadingStack[this.loadingStack.length - 1] : 0;
     }
 
-    public pushLoadingObject(objref: number | UExport) {
+    public pushLoadingObject(objref: number) {
         this.loadingStack.push(objref);
     }
 
@@ -322,10 +322,7 @@ abstract class APackage extends UEncodedFile {
 
     public toString() { return `Package=(${this.path}, imports=${this.imports.length}, exports=${this.exports.length})`; }
 
-    public getImportEntry(objref: number | UImport) {
-        if (typeof objref !== "number")
-            return objref;
-
+    public getImportEntry(objref: number) {
         if (objref === 0)
             return null;
         else if (objref > 0)
@@ -400,14 +397,14 @@ abstract class APackage extends UEncodedFile {
         } else if (objref < 0) {    // Import table object
 
             const entry = this.getImportEntry(objref);
-            let entrypackage = this.getImportEntry(entry.idPackage as number);
+            let entrypackage = this.getImportEntry(entry.idPackage);
 
             let groupName = "None";
-            if ((entrypackage.idPackage as number) !== 0)
+            if (entrypackage.idPackage !== 0)
                 groupName = entrypackage.objectName;
 
-            while ((entrypackage.idPackage as number) !== 0)
-                entrypackage = this.getImportEntry(entrypackage.idPackage as number);
+            while (entrypackage.idPackage !== 0)
+                entrypackage = this.getImportEntry(entrypackage.idPackage);
 
             const packageName = entrypackage.objectName;
             const objectName = entry.objectName;

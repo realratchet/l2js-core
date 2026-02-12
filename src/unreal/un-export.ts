@@ -6,7 +6,7 @@ class UExport<T extends C.UObject = C.UObject> {
 
     public idClass: number;
     public idSuper: number;
-    public idPackage: number | UExport | C.UImport;
+    public idPackage: number;
 
     public idObjectName: number;
     public objectName: string = "None";
