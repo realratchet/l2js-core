@@ -56,7 +56,9 @@ abstract class UObject implements C.ISerializable {
     declare public readonly isObject: boolean;
     declare public isConstructed: boolean;
 
-    declare public objectName: string;
+    public name: string;
+    public objectName: string;
+
     public exportIndex?: number = null;
     public exp?: UExport = null;
     public stack?: UStack = null;
@@ -251,7 +253,7 @@ abstract class UObject implements C.ISerializable {
             throw new Error(`Cannot map '${tag.getTypeName()}' property '${propName}' -> '${varName}' for '${this.constructor.friendlyName ?? this.constructor.name}'`);
 
         if (property.type !== tag.type)
-            throw new Error(`Property type mismatch got '${tag.getTypeName()}' expected '${property.getTypeName()}'`);
+            throw new Error(`Property '${tag.name}' type mismatch got '${tag.getTypeName()}' expected '${property.getTypeName()}'`);
 
         property.readProperty(pkg, tag, this.propertyDict);
 
@@ -265,10 +267,11 @@ abstract class UObject implements C.ISerializable {
     }
 
     public setExport(pkg: APackage, exp: UExport) {
-        this.objectName = `Exp_${exp.objectName}`;
+        this.objectName = exp.objectName;
         this.exportIndex = exp.index;
         this.exp = exp;
         this.pkg = pkg.asReadable();
+        this.name = this.pkg.getObjectPath(exp);
     }
 
     protected preLoad(pkg: APackage, exp: UExport): void {
@@ -281,7 +284,7 @@ abstract class UObject implements C.ISerializable {
         pkg.seek(exp.offset, "set");
         this.setReadPointers(exp);
 
-        if (flags & ObjectFlags_T.HasStack && exp.size > 0) {
+        if (flags & ObjectFlags_T.RF_HasStack && exp.size > 0) {
 
             this.stack = UStack.loadStack(pkg);
         }
@@ -305,7 +308,13 @@ abstract class UObject implements C.ISerializable {
     protected loadWithPropertyTag(pkg: APackage, tag: PropertyTag): this {
         const exp = new UExport();
 
+        exp.index = -1;  // Fake exports don't have a real index
+        exp.idClass = 0;
+        exp.idSuper = 0;
+        exp.idPackage = pkg.getActiveObjectRef();
+        exp.idObjectName = 0;
         exp.objectName = `${tag.name}[Struct<${tag.structName}>]`;
+        exp.flags = 0;
         exp.offset = pkg.tell();
         exp.size = tag.dataSize;
         exp.isFake = true;
@@ -322,6 +331,9 @@ abstract class UObject implements C.ISerializable {
         if (this.isReady)
             debugger;
 
+        pkg.pushLoadingObject(exp.index >= 0 ? exp.index + 1 : 0);
+
+
         this.preLoad(pkg, exp);
 
         if (!isFinite(this.readHead))
@@ -337,6 +349,9 @@ abstract class UObject implements C.ISerializable {
             this.doLoad(pkg, exp);
             this.postLoad(pkg, exp);
         }
+
+        pkg.popLoadingObject();
+
 
         this.isLoading = false;
         this.isReady = true;
@@ -355,8 +370,8 @@ abstract class UObject implements C.ISerializable {
 
         if (this.skipRemaining) this.readHead = this.readTail;
         if (this.bytesUnread > 0 && this.careUnread) {
-            const constructorName = (this.constructor as any).isDynamicClass ? `${(this.constructor as any).friendlyName}[Dynamic]` : this.constructor.name;
-            // console.warn(`Unread '${this.objectName}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}', only ${this.readHead - this.readStart} bytes read.`);
+            // const constructorName = (this.constructor as any).isDynamicClass ? `${(this.constructor as any).friendlyName}[Dynamic]` : this.constructor.name;
+            // console.warn(`Unread '${this.name}' (${constructorName}) ${this.bytesUnread} bytes (${((this.bytesUnread) / 1024).toFixed(2)} kB) in package '${pkg.path}', only ${this.readHead - this.readStart} bytes read.`);
         }
 
         if (UObject.CLEANUP_NAMESPACE) {
@@ -386,6 +401,51 @@ abstract class UObject implements C.ISerializable {
     public toString() {
         return `${this.constructor.name}=(name=${this.exp?.objectName ?? this.objectName}${this.exp ? `, exp=${this.exp.index}` : ''})`;
     }
+
+    public toStringHierarchical(visited?: Set<UObject>, indent: string = ""): string {
+        if (!visited) visited = new Set();
+        if (visited.has(this)) {
+            return `${this.toString()} (cycle detected)`;
+        }
+        visited.add(this);
+
+        let result = `${this.toString()}\n`;
+        const nextIndent = indent + "  ";
+
+        for (const [propName, propValue] of this.propertyDict.entries()) {
+            result += `${nextIndent}${propName}: `;
+            result += this.formatValueHierarchical(propValue, visited, nextIndent);
+            result += "\n";
+        }
+
+        return result.trimEnd();
+    }
+
+    protected formatValueHierarchical(value: any, visited: Set<UObject>, indent: string): string {
+        if (value === null || value === undefined) return "None";
+
+        if (value instanceof UObject) {
+            return value.toStringHierarchical(visited, indent);
+        }
+
+        if (Array.isArray(value)) {
+            if (value.length === 0) return "[]";
+            let res = "\n";
+            const itemIndent = indent + "  ";
+            for (const item of value) {
+                res += `${indent}- `;
+                res += this.formatValueHierarchical(item, visited, itemIndent);
+                res += "\n";
+            }
+            return res.trimEnd();
+        }
+
+        if (value instanceof FPrimitiveArray) {
+            return this.formatValueHierarchical([...value.iter()], visited, indent);
+        }
+
+        return String(value);
+    }
 }
 
 export default UObject;
@@ -412,7 +472,8 @@ function deepClone<T = any>(value: T | T[]): T | T[] {
 Object.assign(UObject.prototype, {
     isObject: true,
     isConstructed: false,
-    objectName: "Exp_None",
+    name: "None",
+    objectName: "None",
     skipRemaining: false,
     careUnread: true,
     isLoading: false,

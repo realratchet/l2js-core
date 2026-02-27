@@ -15,6 +15,7 @@ import UConst from "./un-const";
 import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
 import { flagBitsToDict } from "../utils/flags";
+import { pathToPkgName } from "../asset-loader";
 
 
 abstract class APackage extends UEncodedFile {
@@ -36,10 +37,14 @@ abstract class APackage extends UEncodedFile {
 
     public isDecoded() { return !!this.buffer; }
 
+    public readonly name: string;
+    private loadingStack: number[] = [];
+
     public constructor(loader: C.AAssetLoader, path: string) {
         super(path);
 
         this.loader = loader;
+        this.name = pathToPkgName(path)[0];
     }
 
     protected addClassDependencies(nameTable: C.UName[], nameHash: Map<string, number>, imports: UImport[], exports: UExport<UObject>[]): void { }
@@ -71,14 +76,14 @@ abstract class APackage extends UEncodedFile {
         header.importCount = readable.read("uint32");
         header.importOffset = readable.read("uint32");
 
-        const dbgNameCount = header.nameCount;
-        const dbgNameOffset = header.nameOffset.toString(16).toUpperCase();
-        const dbgExportCount = header.exportCount;
-        const dbgExportOffset = header.exportOffset.toString(16).toUpperCase();
-        const dbgImportCount = header.importCount;
-        const dbgImportOffset = header.importOffset.toString(16).toUpperCase();
+        // const dbgNameCount = header.nameCount;
+        // const dbgNameOffset = header.nameOffset.toString(16).toUpperCase();
+        // const dbgExportCount = header.exportCount;
+        // const dbgExportOffset = header.exportOffset.toString(16).toUpperCase();
+        // const dbgImportCount = header.importCount;
+        // const dbgImportOffset = header.importOffset.toString(16).toUpperCase();
 
-        console.log(`'${readable.path}' => Names:${dbgNameOffset}[${dbgNameCount}] Exports:${dbgExportOffset}[${dbgExportCount}] Imports:${dbgImportOffset}[${dbgImportCount}]`);
+        // console.log(`'${readable.path}' => Names:${dbgNameOffset}[${dbgNameCount}] Exports:${dbgExportOffset}[${dbgExportCount}] Imports:${dbgImportOffset}[${dbgImportCount}]`);
 
         if (readable.path === "assets/maps/20_21.unr") {
             console.assert(header.getArchiveFileVersion() === 123);
@@ -149,7 +154,7 @@ abstract class APackage extends UEncodedFile {
                         exp.idPackage = nativeIndex;
                         exp.idObjectName = nameHash.get(className);
                         exp.objectName = className;
-                        exp.flags = ObjectFlags_T.Native;
+                        exp.flags = ObjectFlags_T.RF_Native;
                         exp.size = 0;
                         exp.offset = 0;
                         exp.isFake = true;
@@ -222,7 +227,7 @@ abstract class APackage extends UEncodedFile {
 
             uexport.idClass = this.read("compat32");
             uexport.idSuper = this.read("compat32");
-            uexport.idPackage = this.read("uint32");
+            uexport.idPackage = this.read("int32");
             uexport.idObjectName = this.read("compat32");
 
             uexport.index = i;
@@ -275,6 +280,46 @@ abstract class APackage extends UEncodedFile {
                 : null;
     }
 
+    public getObjectPath(objref: number | UExport | UImport): string {
+        if (typeof objref !== "number") {
+            if (objref instanceof UImport) {
+                if (objref.idPackage === 0) return objref.objectName;
+                return `${this.getObjectPath(objref.idPackage)}.${objref.objectName}`;
+            } else {
+                const outerPath = this.getObjectPath(objref.idPackage);
+                return `${outerPath}.${objref.objectName}`;
+            }
+        }
+
+        if (objref === 0) return this.name;
+
+        if (objref > 0) {
+            const exp = this.exports[objref - 1];
+
+            if (!exp) throw Error(`InvalidExport: ${this.name}:${objref}:${objref - 1}`);
+
+            return this.getObjectPath(exp);
+        } else {
+            const imp = this.imports[-objref - 1];
+
+            if (!imp) throw Error(`InvalidImport: ${this.name}:${objref}:${-objref - 1}`);
+
+            return this.getObjectPath(imp);
+        }
+    }
+
+    public getActiveObjectRef(): number {
+        return this.loadingStack.length > 0 ? this.loadingStack[this.loadingStack.length - 1] : 0;
+    }
+
+    public pushLoadingObject(objref: number) {
+        this.loadingStack.push(objref);
+    }
+
+    public popLoadingObject() {
+        this.loadingStack.pop();
+    }
+
     public toString() { return `Package=(${this.path}, imports=${this.imports.length}, exports=${this.exports.length})`; }
 
     public getImportEntry(objref: number) {
@@ -325,7 +370,7 @@ abstract class APackage extends UEncodedFile {
                 this.exports[index].object = obj as unknown as UObject;
 
                 if (entry.size === 0) {
-                    if (entry.flags !== ObjectFlags_T.Native)
+                    if (entry.flags !== ObjectFlags_T.RF_Native)
                         throw new Error("0xdeadbeef")
 
                     obj.friendlyName = objname;
@@ -490,7 +535,7 @@ abstract class APackage extends UEncodedFile {
         exp.idPackage = 0;
         exp.idObjectName = this.nameHash.get(className);
         exp.objectName = className;
-        exp.flags = ObjectFlags_T.Native;
+        exp.flags = ObjectFlags_T.RF_Native;
         exp.size = 0;
         exp.offset = 0;
         exp.isFake = true;
@@ -591,13 +636,12 @@ abstract class ANativePackage extends APackage {
 }
 
 enum PackageFlags_T {
-    NoFlags = 0,
-    AllowDownload = 0x0001, // Allow downloading package
-    ClientOptional = 0x0002, // Purely optional for clients
-    ServerSideOnly = 0x0004, // Only needed on the server side
-    BrokenLinks = 0x0008, // Loaded from linker with broken import links
-    Unsecure = 0x0010, // Not trusted
-    Need = 0x8000 // Client needs to download this package
+    PKG_AllowDownload = 0x0001,	// Allow downloading package.
+    PKG_ClientOptional = 0x0002,	// Purely optional for clients.
+    PKG_ServerSideOnly = 0x0004,   // Only needed on the server side.
+    PKG_BrokenLinks = 0x0008,   // Loaded from linker with broken import links.
+    PKG_Unsecure = 0x0010,   // Not trusted.
+    PKG_Need = 0x8000,	// Client needs to download this package.
 };
 
 
@@ -665,7 +709,7 @@ function addClassDependency(nameTable: UName[], nameHash: Map<string, number>, i
     exp.idPackage = nativeIndex;
     exp.idObjectName = idObjectName;
     exp.objectName = objectName;
-    exp.flags = ObjectFlags_T.Native;
+    exp.flags = ObjectFlags_T.RF_Native;
     exp.size = 0;
     exp.offset = 0;
     exp.isFake = true;

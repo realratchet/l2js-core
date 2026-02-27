@@ -26,22 +26,32 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
         const count = pkg.read("compat32");
-        const headerOffset = hasTag ? pkg.tell() - beginIndex : null;
-        const dataSize = hasTag ? tag.dataSize - headerOffset : null;
 
         this.length = count;
 
         if (count === 0) return this;
 
-        const elementSize = hasTag ? dataSize / this.length : null;
+        const headerSize = hasTag ? pkg.tell() - beginIndex : null;
+        const dataBytes = hasTag ? tag.dataSize - headerSize : null;
+        const isFixedSize = hasTag ? (dataBytes % this.length) === 0 : false;
+        const elementSize = isFixedSize ? dataBytes / this.length : null;
 
         for (let i = 0, len = this.length; i < len; i++) {
             const exp = hasTag ? (function () {
                 const exp = new UExport();
 
-                exp.size = elementSize;
-                exp.objectName = `${tag.name}[${i + 1}/${count}]`
-                exp.offset = pkg.tell();
+                const elementOffset = pkg.tell();
+
+                exp.index = -1;  // Fake exports don't have a real index
+                exp.idClass = 0;
+                exp.idSuper = 0;
+                exp.idPackage = pkg.getActiveObjectRef();
+                exp.idObjectName = 0;
+                exp.objectName = `${tag.name}[${i + 1}/${count}]`;
+                exp.flags = 0;
+                exp.offset = elementOffset;
+                exp.size = isFixedSize ? elementSize : tag.dataSize - (elementOffset - beginIndex);
+                exp.isFake = true;
 
                 return exp;
             })() : null;
