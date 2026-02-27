@@ -253,7 +253,7 @@ abstract class UObject implements C.ISerializable {
             throw new Error(`Cannot map '${tag.getTypeName()}' property '${propName}' -> '${varName}' for '${this.constructor.friendlyName ?? this.constructor.name}'`);
 
         if (property.type !== tag.type)
-            throw new Error(`Property type mismatch got '${tag.getTypeName()}' expected '${property.getTypeName()}'`);
+            throw new Error(`Property '${tag.name}' type mismatch got '${tag.getTypeName()}' expected '${property.getTypeName()}'`);
 
         property.readProperty(pkg, tag, this.propertyDict);
 
