@@ -13,7 +13,7 @@ declare global {
                 | [string, "ArrayProperty", ["Struct" | "Class", string], PropertyExtraPars_T?];
 
             export type IAssetListInfo = Record<string, string>;
-            export type SupportedExtensions_T = "UNR" | "UTX" | "USX" | "UAX" | "U" | "UKX" | "USK" | "NATIVE";
+            export type SupportedExtensions_T = "UNR" | "UTX" | "USX" | "UAX" | "U" | "UKX" | "USK" | "NATIVE" | "OGG" | "DAT" | "INT";
 
             export type AAssetLoader<
                 TPackage extends C.APackage = C.APackage,

@@ -151,6 +151,7 @@ addImpExtension("USX", "StaticMesh");
 addImpExtension("UKX", "Animation", "SkeletalMesh", "VertMesh");
 addImpExtension("USK", "Effect");
 addImpExtension("U", "Script", "State", "Class", "Struct", "Function", "Enum", ...impProperties, "Texture");
+addImpExtension("OGG", "Music");
 
 function pathToPkgName(path: string): [string, C.SupportedExtensions_T] {
     const ext = _path.extname(path);
