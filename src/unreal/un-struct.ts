@@ -199,8 +199,8 @@ class UStruct<Class extends UObject = UObject> extends UField {
         if (this.kls)
             return this.kls as any as new () => T;
 
-        if (this.friendlyName === "Mover") debugger;
-        if (this.friendlyName === "L2Event") debugger;
+        // if (this.friendlyName === "Mover") debugger;
+        // if (this.friendlyName === "L2Event") debugger;
 
         this.loadSelf();
         const dependencyTree = this.collectDependencies<UStruct>();
