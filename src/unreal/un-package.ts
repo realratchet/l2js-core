@@ -16,6 +16,7 @@ import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
 import { flagBitsToDict } from "../utils/flags";
 import { pathToPkgName } from "../asset-loader";
+import BufferStream from "../buffer-stream";
 
 
 abstract class APackage extends UEncodedFile {
@@ -551,7 +552,7 @@ abstract class ANativePackage extends APackage {
 
     public constructor(loader: C.AAssetLoader) { super(loader, "__native__.u"); }
 
-    protected readArrayBuffer(): Promise<ArrayBuffer> { throw new Error("Method not used by native package."); }
+    protected readArrayBuffer(): Promise<BufferStream> { throw new Error("Method not used by native package."); }
     public toBuffer(): ArrayBuffer { throw new Error("Method not used by native package."); }
 
     protected registerNativeClasses() {
@@ -595,7 +596,7 @@ abstract class ANativePackage extends APackage {
 
         this.registerNativeClasses();
 
-        this.buffer = new ArrayBuffer(0);
+        this.buffer = new BufferStream(0);
 
         console.log(`'${this.path}' loaded in ${performance.now() - tStart} ms`);
 

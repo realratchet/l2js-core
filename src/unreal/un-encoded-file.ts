@@ -2,8 +2,11 @@ import BufferValue from "../buffer-value";
 import * as decoders from "../crypto/decryption/decoders";
 import * as _gmp from "gmp-wasm";
 import * as modKeys from "../crypto/keys/modulo";
+import type BufferStream from "../buffer-stream";
 
 let gmp: _gmp.GMPLib = null;
+
+const decoderUTF16 = new TextDecoder("utf-16");
 
 interface IEncodedFile {
     read(target: number | "guid"): DataView<ArrayBuffer>;
@@ -34,6 +37,8 @@ const buffInstances: Record<InstancedTypes, BufferValue<InstancedTypes>> = numbe
 //     compat32: new BufferValue(BufferValue.compat32)
 // }
 
+
+
 abstract class UEncodedFile implements IEncodedFile {
     public readonly path: string;
     public readonly isReadable = false;
@@ -43,7 +48,7 @@ abstract class UEncodedFile implements IEncodedFile {
 
     protected handle: this = null;
     protected promiseDecoding: Promise<BufferValue>;
-    protected buffer: ArrayBuffer = null;
+    protected buffer: BufferStream = null;
     protected offset = 0;
     protected contentOffset = 0;
     protected version: string;
@@ -190,7 +195,7 @@ abstract class UEncodedFile implements IEncodedFile {
         return this;
     }
 
-    protected abstract readArrayBuffer(): Promise<ArrayBuffer>;
+    protected abstract readArrayBuffer(): Promise<BufferStream>;
 
     protected _doDecode(): Promise<BufferValue> {
         this.ensureReadable();
@@ -202,6 +207,8 @@ abstract class UEncodedFile implements IEncodedFile {
         return this.handle.promiseDecoding = this.promiseDecoding = new Promise(async resolve => {
             this.buffer = await this.readArrayBuffer();
 
+            
+
             const signature = this.read(new BufferValue(BufferValue.uint32));
             const HEADER_SIZE = 28;
             const HEADER_VER_OFFSET = 22;
@@ -209,7 +216,7 @@ abstract class UEncodedFile implements IEncodedFile {
             if (signature.value === 0x0069004C) {
                 this.seek(HEADER_VER_OFFSET, "set");
 
-                const version = new TextDecoder("utf-16").decode(this.read(6));
+                const version = decoderUTF16.decode(this.read(6));
 
                 this.seek(HEADER_SIZE, "set");
 
@@ -230,7 +237,7 @@ abstract class UEncodedFile implements IEncodedFile {
 
                     tStart = performance.now();
 
-                    this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), this.moduloCryptKey) as ArrayBuffer;
+                    this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), this.moduloCryptKey);
 
                     this.read(signature);
                 } else if (version.startsWith("4")) {

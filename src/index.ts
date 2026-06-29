@@ -1,5 +1,6 @@
 export { AAssetLoader } from "./asset-loader";
 export { BufferValue } from "./buffer-value";
+export { BufferStream } from "./buffer-stream";
 
 export { UEncodedFile } from "./unreal/un-encoded-file";
 export { ObjectFlags_T } from "./unreal/un-object-flags";
