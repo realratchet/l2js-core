@@ -193,7 +193,7 @@ function pathToPkgName(path: string): [string, C.SupportedExtensions_T] {
     if (!packageTypes.has(extUpper))
         throw new Error(`Unsupported package type '${ext}' for package '${_path.basename(path)}'`);
 
-    return [_path.basename(path, ext), extUpper];
+    return [_path.basename(path, ext).toLowerCase(), extUpper];
 }
 
 export { pathToPkgName };

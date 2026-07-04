@@ -57,6 +57,11 @@ abstract class UEncodedFile implements IEncodedFile {
     }
 
     public free() {
+        this.signature = undefined;
+        this.moduloCryptKey = undefined;
+        this.version = undefined;
+        this.offset = 0;
+        this.contentOffset = 0;
         this.buffer = null;
         this.promiseDecoding = null;
     }
@@ -218,7 +223,8 @@ abstract class UEncodedFile implements IEncodedFile {
             if (signature.value === 0x0069004C) {
                 this.seek(HEADER_VER_OFFSET, "set");
 
-                const version = decoderUTF16.decode(this.read(6));
+                const vv = this.read(6);
+                const version = decoderUTF16.decode(vv);
 
                 this.seek(HEADER_SIZE, "set");
 
@@ -268,6 +274,8 @@ abstract class UEncodedFile implements IEncodedFile {
 
                 this.signature = signature.value;
                 resolve(signature);
+            } else {
+                throw new Error(`unknown signature: ${signature}`);
             }
           
         });

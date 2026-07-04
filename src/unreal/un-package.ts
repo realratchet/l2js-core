@@ -56,10 +56,10 @@ abstract class APackage extends UEncodedFile {
             return this;
         }
 
-        if (this.header) return this; // was freed, no need to re-read header
-
         const readable = this.asReadable();
         const signature = await readable._doDecode();
+        
+        if (readable.header) return this; // was freed, no need to re-read header
 
         if (signature.value !== 0x9E2A83C1)
             throw new Error(`Invalid signature: '0x${signature.value.toString(16).toUpperCase()}' expected '0x9E2A83C1'`);
