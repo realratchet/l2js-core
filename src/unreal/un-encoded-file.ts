@@ -2,7 +2,6 @@ import BufferValue from "../buffer-value";
 import * as decoders from "../crypto/decryption/decoders";
 import * as _gmp from "gmp-wasm";
 import * as modKeys from "../crypto/keys/modulo";
-import type BufferStream from "../buffer-stream";
 
 let gmp: _gmp.GMPLib = null;
 
@@ -48,13 +47,18 @@ abstract class UEncodedFile implements IEncodedFile {
 
     protected handle: this = null;
     protected promiseDecoding: Promise<BufferValue>;
-    protected buffer: BufferStream = null;
+    protected buffer: ArrayBuffer = null;
     protected offset = 0;
     protected contentOffset = 0;
     protected version: string;
 
     constructor(path: string) {
         this.path = path;
+    }
+
+    public free() {
+        this.buffer = null;
+        this.promiseDecoding = null;
     }
 
     public asReadable(): this {
@@ -195,7 +199,7 @@ abstract class UEncodedFile implements IEncodedFile {
         return this;
     }
 
-    protected abstract readArrayBuffer(): Promise<BufferStream>;
+    protected abstract readArrayBuffer(): Promise<ArrayBuffer>;
 
     protected _doDecode(): Promise<BufferValue> {
         this.ensureReadable();
@@ -206,8 +210,6 @@ abstract class UEncodedFile implements IEncodedFile {
 
         return this.handle.promiseDecoding = this.promiseDecoding = new Promise(async resolve => {
             this.buffer = await this.readArrayBuffer();
-
-            
 
             const signature = this.read(new BufferValue(BufferValue.uint32));
             const HEADER_SIZE = 28;
@@ -241,7 +243,6 @@ abstract class UEncodedFile implements IEncodedFile {
 
                     this.read(signature);
                 } else if (version.startsWith("4")) {
-
                     if (gmp === null) {
                         gmp = await _gmp.init();
                     }
@@ -264,10 +265,11 @@ abstract class UEncodedFile implements IEncodedFile {
 
                 // if (size > 1024 * 1024)
                 //     console.log(`'${this.path}' loaded in ${(performance.now() - tStart).toFixed(3)} ms (${sizeString})`);
-            }
 
-            this.signature = signature.value;
-            resolve(signature);
+                this.signature = signature.value;
+                resolve(signature);
+            }
+          
         });
     }
 

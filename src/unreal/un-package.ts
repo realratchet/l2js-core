@@ -16,7 +16,6 @@ import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
 import { flagBitsToDict } from "../utils/flags";
 import { pathToPkgName } from "../asset-loader";
-import BufferStream from "../buffer-stream";
 
 
 abstract class APackage extends UEncodedFile {
@@ -56,6 +55,8 @@ abstract class APackage extends UEncodedFile {
             await this.promiseDecoding;
             return this;
         }
+
+        if (this.header) return this; // was freed, no need to re-read header
 
         const readable = this.asReadable();
         const signature = await readable._doDecode();
@@ -552,7 +553,7 @@ abstract class ANativePackage extends APackage {
 
     public constructor(loader: C.AAssetLoader) { super(loader, "__native__.u"); }
 
-    protected readArrayBuffer(): Promise<BufferStream> { throw new Error("Method not used by native package."); }
+    protected readArrayBuffer(): Promise<ArrayBuffer> { throw new Error("Method not used by native package."); }
     public toBuffer(): ArrayBuffer { throw new Error("Method not used by native package."); }
 
     protected registerNativeClasses() {
@@ -596,7 +597,7 @@ abstract class ANativePackage extends APackage {
 
         this.registerNativeClasses();
 
-        this.buffer = new BufferStream(0);
+        this.buffer = new ArrayBuffer(0);
 
         console.log(`'${this.path}' loaded in ${performance.now() - tStart} ms`);
 
