@@ -31,6 +31,10 @@ abstract class APackage extends UEncodedFile {
 
     public nameHash = new Map<string, number>();
 
+    private exportsByName?: Map<string, UExport[]>;
+    private exportsByNameSource?: UExport[];
+    private exportsByNameCount: number = 0;
+
     public readonly isCore: boolean = false;
     public readonly isEngine: boolean = false;
     public readonly isNative: boolean = false;
@@ -449,8 +453,28 @@ abstract class APackage extends UEncodedFile {
     public findObjectRef(className: string, objectName: string, groupName: string = "None"): number {
         const isClass = className == "Class";
 
-        for (const exp of this.exports) {
-            if (exp.objectName !== objectName) continue;
+        if (!this.exportsByName || this.exportsByNameSource !== this.exports) {
+            this.exportsByName = new Map();
+            this.exportsByNameSource = this.exports;
+            this.exportsByNameCount = 0;
+        }
+
+        // `this.exports` can grow between calls (e.g. ANativePackage.registerNativeClass()
+        // pushes one export at a time while resolving base classes via findObjectRef), so
+        // only the newly appended exports are indexed rather than assuming a fixed array.
+        for (let i = this.exportsByNameCount, len = this.exports.length; i < len; i++) {
+            const exp = this.exports[i];
+            const list = this.exportsByName.get(exp.objectName);
+
+            if (list) list.push(exp);
+            else this.exportsByName.set(exp.objectName, [exp]);
+        }
+
+        this.exportsByNameCount = this.exports.length;
+
+        const candidates = this.exportsByName.get(objectName) ?? [];
+
+        for (const exp of candidates) {
             if (groupName !== "None") {
                 if (exp.idPackage > 0) {
                     const pkg = this.exports[exp.idPackage - 1];

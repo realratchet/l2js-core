@@ -1,6 +1,6 @@
 import UField from "./un-field";
 import ObjectFlags_T from "./un-object-flags";
-import UObject from "./un-object";
+import UObject, { LazyPropertyValue } from "./un-object";
 import UNativeRegistry from "./un-native-registry";
 import APackage from "./un-package";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
@@ -267,6 +267,8 @@ class UStruct<Class extends UObject = UObject> extends UField {
             clsExtendedProperties[propertyName] = property;
         }
 
+        const clsExtendedPropertyEntries = Object.entries(clsExtendedProperties);
+
         // @ts-ignore
         const _clsBase = {
             [friendlyName]: class DynamicStruct extends Constructor {
@@ -278,6 +280,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 public static readonly inheritedProps = Object.freeze(clsInheritedProps);
 
                 public static _propertyMapCache: Record<string, string> = null;
+                public static _classLayout: Map<string, any> = null;
 
                 protected static getConstructorName(): string { return friendlyName; }
                 protected findPropReader<T1 = any, T2 = any>(propName: string): C.UProperty<T1, T2> {
@@ -287,74 +290,11 @@ class UStruct<Class extends UObject = UObject> extends UField {
                     return clsExtendedProperties[propName];
                 }
 
-                protected initialize(): this {
-                    for (const [propName, property] of Object.entries(clsExtendedProperties)) {
-                        if (property.type !== UNP_PropertyTypes.UNP_StructProperty) continue;
-                        if (this.propertyDict.get(propName) !== null) continue;
-
-                        const struct = (property as C.UStructProperty).initializeDefault(pkgNative);
-
-                        this.propertyDict.set(propName, struct);
-
-                    }
-
-                    return this;
-                }
-
                 protected makeLayout() {
-                    let propNames = (this.constructor as any)._propertyMapCache;
-                    if (!propNames) {
-                        propNames = this.getPropertyMap();
-                        (this.constructor as any)._propertyMapCache = propNames;
-                    }
+                    const ctor = this.constructor as any;
 
-                    for (const [propName, property] of Object.entries(clsExtendedProperties)) {
-                        const defaultValue = getDefaultValue(propName, property, defaultNamedProperties)
-
-                        this.propertyDict.set(propName, defaultValue);
-
-                        if (propName in propNames) {
-                            // Attach proxies to varnames
-                            const varname = propNames[propName];
-
-                            if (UStruct.ALLOW_EDITING) {
-                                if (Object.hasOwn(this, varname))
-                                    throw new Error(`Variable name '${varname}' already used, cannot assign proxy for '${propName}' property!`);
-
-                                Object.defineProperty(this, varname, {
-                                    get: () => {
-
-                                        // if (property.arrayDimensions !== 1)
-                                        //     return new FixedArrayContainer(property);
-
-                                        return this.propertyDict.get(propName);//.getPropertyValue();
-                                    },
-                                    set: (v: any) => {
-                                        this.propertyDict.set(propName, v);
-                                        // if (property.arrayDimensions !== 1)
-                                        //     throw new Error(`Not implemented`);
-
-                                        // const value = property.propertyValue[0];
-
-                                        // if (value instanceof BufferValue || value instanceof UnProperties.BooleanValue)
-                                        //     value.value = v;
-                                        // else if (property instanceof UnProperties.UArrayProperty)
-                                        //     property.propertyValue[0] = v;
-                                        // else if (property instanceof UnProperties.UStructProperty)
-                                        //     property.propertyValue[0] = v;
-                                        // else {
-                                        //     debugger;
-                                        //     throw new Error(`Not implemented`);
-                                        // }
-                                    }
-                                });
-                            }
-                        }
-                    }
-
-                    this.isConstructed = true;
-
-                    this.initialize();
+                    if (!ctor._classLayout)
+                        buildClassLayout(ctor, this);
                 }
 
                 public toString() { return Constructor === UObject ? dynamicTag : Constructor.prototype.toString.call(this); }
@@ -366,6 +306,62 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 // }
             }
         }[this.friendlyName];
+
+        /**
+         * Runs once per dynamic class, on first construction. Bakes everything makeLayout
+         * used to redo per instance: the defaults template (consumed lazily through
+         * LazyPropertyMap.layout) and the friendly-name defaults, which move to the class
+         * prototype - immutable ones as plain data properties, mutable/pending ones as
+         * accessors that resolve through the propertyDict and cache themselves as own
+         * data properties on first read.
+         */
+        const buildClassLayout = (ctor: any, instance: UObject) => {
+            let propNames = ctor._propertyMapCache as Record<string, string>;
+
+            if (!propNames)
+                propNames = ctor._propertyMapCache = (instance as any).getPropertyMap();
+
+            const layout = new Map<string, any>();
+
+            for (const [propName, property] of clsExtendedPropertyEntries) {
+                let defaultValue = getDefaultValue(propName, property, defaultNamedProperties);
+
+                if (defaultValue === null && property.type === UNP_PropertyTypes.UNP_StructProperty)
+                    defaultValue = new PendingStructDefault(property as C.UStructProperty, pkgNative); // stateless - safe to share across instances
+                else if (defaultValue !== null && typeof defaultValue === "object" && !(defaultValue instanceof LazyPropertyValue))
+                    defaultValue = new PerInstanceDefault(propName, property, defaultNamedProperties); // mutable - must not be shared across instances
+
+                layout.set(propName, defaultValue);
+            }
+
+            const proto = ctor.prototype;
+
+            for (const [propName, varName] of Object.entries(propNames)) {
+                if (!layout.has(propName)) continue;
+
+                const defaultValue = layout.get(propName);
+
+                if (defaultValue instanceof LazyPropertyValue) {
+                    Object.defineProperty(proto, varName, {
+                        configurable: true,
+                        get() {
+                            const resolved = this.propertyDict.get(propName);
+
+                            Object.defineProperty(this, varName, { value: resolved, writable: true, enumerable: true, configurable: true });
+
+                            return resolved;
+                        },
+                        set(v: any) {
+                            Object.defineProperty(this, varName, { value: v, writable: true, enumerable: true, configurable: true });
+                        }
+                    });
+                } else Object.defineProperty(proto, varName, { value: defaultValue, writable: true, enumerable: true, configurable: true });
+            }
+
+            proto.isConstructed = true; // instances no longer flag themselves in makeLayout
+
+            ctor._classLayout = layout;
+        };
 
         const clsNamedPropertiesKeys = Object.keys(clsNamedProperties);
         const cls = eval([
@@ -727,6 +723,41 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
 export default UStruct;
 export { UStruct };
+
+// The default value for a struct-typed property (Location, Rotation, ...) with no explicit
+// class default. Constructing it eagerly is wasted work whenever the actor's real serialized
+// value gets read moments later (readValue() always builds its own fresh struct and overwrites
+// this), so it's deferred until something actually reads the property.
+class PendingStructDefault<T extends UObject = UObject> extends LazyPropertyValue<T> {
+    public constructor(
+        private readonly property: C.UStructProperty,
+        private readonly pkgNative: C.ANativePackage
+    ) {
+        super();
+    }
+
+    public resolve(): T {
+        return this.property.initializeDefault(this.pkgNative) as T;
+    }
+}
+
+// A mutable class default (fixed-size array, struct/object clone). Sharing one across
+// instances would let one object's writes leak into another (readProperty mutates
+// fixed-size array defaults in place), so a fresh copy is produced per instance on
+// first read instead.
+class PerInstanceDefault<T = any> extends LazyPropertyValue<T> {
+    public constructor(
+        private readonly propName: string,
+        private readonly property: UnProperties.UProperty,
+        private readonly defaultNamedProperties: Record<string, any>
+    ) {
+        super();
+    }
+
+    public resolve(): T {
+        return getDefaultValue(this.propName, this.property, this.defaultNamedProperties) as T;
+    }
+}
 
 function getUnsetDefaultValue(pkgNative: C.ANativePackage, property: UnProperties.UProperty) {
     switch (property.type) {
