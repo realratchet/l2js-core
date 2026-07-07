@@ -81,6 +81,8 @@ abstract class AAssetLoader<
     }
 
     public hasPackage(pkgName: string, impType: string) {
+        if (!this.packages.has(pkgName.toLowerCase())) return false;
+
         return getPackage(this.packages, pkgName, impType) !== null;
     }
 
