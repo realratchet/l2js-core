@@ -62,8 +62,13 @@ abstract class APackage extends UEncodedFile {
 
         const readable = this.asReadable();
         const signature = await readable._doDecode();
-        
-        if (readable.header) return this; // was freed, no need to re-read header
+
+        if (readable.header) {
+            // was freed, no need to re-read header - but the fresh buffer must be moved
+            // back off the readable or this package stays undecodable forever
+            Object.assign(this, readable, { isReadable: false });
+            return this;
+        }
 
         if (signature.value !== 0x9E2A83C1)
             throw new Error(`Invalid signature: '0x${signature.value.toString(16).toUpperCase()}' expected '0x9E2A83C1'`);
@@ -428,15 +433,10 @@ abstract class APackage extends UEncodedFile {
             let obj = pkg.fetchObjectByType(className, objectName, groupName);
 
             if (obj === null) {
-                console.log(pkg);
-                debugger;
-                throw new Error(`(${packageName}) [${className}, ${objectName}, ${groupName}] should not be null`);
+                // ue treats unresolvable references as None
+                console.warn(`(${packageName}) [${className}, ${objectName}, ${groupName}] could not be resolved, treating as None`);
+                return null;
             }
-
-            if (!obj && packageName == "UnrealI")
-                throw new Error("Not yet implemented");
-            else if (!obj && packageName == "UnrealShare")
-                throw new Error("Not yet implemented");
 
             return obj as T;
         }

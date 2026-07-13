@@ -214,7 +214,7 @@ class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements 
 
     public loadSelf(): this {
         for (const obj of this)
-            obj.loadSelf();
+            obj?.loadSelf(); // null elements are legal - deleted objects serialize as None
 
         return this;
     }
@@ -239,6 +239,7 @@ class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements 
 }
 
 class FNameArray extends Array<string> implements IConstructable {
+
     protected indexArray = new FIndexArray();
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
@@ -409,6 +410,13 @@ class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_
         return `PrimitiveArrayLazy<${this.Constructor?.name ?? undefined}>(len=${this.getElemCount()}, ...)`;
     }
 }
+
+// map/filter/slice results are data, not deserializers - keep them plain Arrays so
+// FArray fields don't leak through structured clone. defineProperty because an in-class
+// accessor trips TS2611 and a loose static field compiles to an assignment that throws
+// on Array's getter-only Symbol.species.
+for (const ArrayClass of [FArray, FObjectArray, FNameArray])
+    Object.defineProperty(ArrayClass, Symbol.species, { value: Array });
 
 export default FArray;
 export { FArray, FArrayLazy, FIndexArray, FStringArray, FNameArray, FPrimitiveArray, FObjectArray, FPrimitiveArrayLazy };

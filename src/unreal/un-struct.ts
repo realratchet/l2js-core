@@ -61,8 +61,11 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
         const property = this.findValidProperty(varName);
 
-        if (!property)
-            throw new Error(`Cannot map property '${propName}' -> ${varName}`);
+        if (!property) {
+            console.warn(`Cannot map property '${propName}' -> '${varName}' for '${this.constructor.name}', skipping`);
+            pkg.seek(offEnd, "set");
+            return;
+        }
 
         if (!this.propertyDict.has(varName))
             this.propertyDict.set(varName, property.getDefaultValue());
@@ -269,6 +272,13 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
         const clsExtendedPropertyEntries = Object.entries(clsExtendedProperties);
 
+        // ue name comparisons are case-insensitive, old packages may serialize
+        // property names with different casing
+        const clsPropertyNamesByLower: Record<string, string> = {};
+
+        for (const key of Object.keys(clsExtendedProperties))
+            clsPropertyNamesByLower[key.toLowerCase()] = key;
+
         // @ts-ignore
         const _clsBase = {
             [friendlyName]: class DynamicStruct extends Constructor {
@@ -284,10 +294,15 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
                 protected static getConstructorName(): string { return friendlyName; }
                 protected findPropReader<T1 = any, T2 = any>(propName: string): C.UProperty<T1, T2> {
-                    if (!(propName in clsExtendedProperties))
-                        throw new Error(`Property '${propName}' does not exist!`);
+                    if (propName in clsExtendedProperties)
+                        return clsExtendedProperties[propName];
 
-                    return clsExtendedProperties[propName];
+                    const canonical = clsPropertyNamesByLower[propName.toLowerCase()];
+
+                    if (canonical !== undefined)
+                        return clsExtendedProperties[canonical];
+
+                    return null; // unknown property - callers skip it via the tag size
                 }
 
                 protected makeLayout() {
@@ -808,7 +823,7 @@ function getDefaultValue(propName: string, property: UnProperties.UProperty, def
             if (property.arrayDimensions > 1)
                 return defaultValue.map((x: UObject) => x?.nativeClone() ?? null);
 
-            return defaultValue.nativeClone();
+            return defaultValue?.nativeClone() ?? null; // defaultproperties can set None
         default:
             debugger;
             throw new Error(`Property type '${property.getTypeName()}' not yet implemented.`)

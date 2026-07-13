@@ -395,8 +395,12 @@ abstract class UObject implements C.ISerializable {
         const varName = this.getPropertyVarName(tag);
         const { name: propName } = tag;
 
-        if (!varName)
-            throw new Error(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${tag.getTypeName()}'`);
+        if (!varName) {
+            // properties can vanish between engine revisions, skip via the tag size like ue does
+            console.warn(`Unrecognized property '${propName}' for '${this.constructor.name}' of type '${tag.getTypeName()}', skipping`);
+            pkg.seek(offEnd, "set");
+            return;
+        }
 
         // const propReader = this.findPropReader(varName);
 
@@ -413,11 +417,18 @@ abstract class UObject implements C.ISerializable {
 
         const property = this.findValidProperty(varName);
 
-        if (!property)
-            throw new Error(`Cannot map '${tag.getTypeName()}' property '${propName}' -> '${varName}' for '${this.constructor.friendlyName ?? this.constructor.name}'`);
+        if (!property) {
+            console.warn(`Cannot map '${tag.getTypeName()}' property '${propName}' -> '${varName}' for '${this.constructor.friendlyName ?? this.constructor.name}', skipping`);
+            pkg.seek(offEnd, "set");
+            return;
+        }
 
-        if (property.type !== tag.type)
-            throw new Error(`Property '${tag.name}' type mismatch got '${tag.getTypeName()}' expected '${property.getTypeName()}'`);
+        if (property.type !== tag.type) {
+            // older data can serialize a property under a different type (e.g. Int vs Bool)
+            console.warn(`Property '${tag.name}' type mismatch got '${tag.getTypeName()}' expected '${property.getTypeName()}', skipping`);
+            pkg.seek(offEnd, "set");
+            return;
+        }
 
         property.readProperty(pkg, tag, this.propertyDict);
 

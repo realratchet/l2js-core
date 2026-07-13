@@ -134,8 +134,11 @@ abstract class AAssetLoader<
                 const packageName = entrypackage.objectName;
                 const className = entry.className;
 
-                if (!this.hasPackage(packageName, className))
-                    throw new Error(`Package '${packageName}' for type '${className}' does not exist.`);
+                if (!this.hasPackage(packageName, className)) {
+                    // only fatal if something actually fetches the import later
+                    console.warn(`Package '${packageName}' for type '${className}' does not exist, skipping dependency.`);
+                    continue;
+                }
 
                 const dependency = this.getPackage(packageName, className);
 
@@ -180,7 +183,7 @@ function addImpExtension(ext: C.SupportedExtensions_T, ...classList: string[]) {
 }
 
 addImpExtension("UNR", "Level");
-addImpExtension("UTX", "Texture", "TexOscillator", "Shader", "ColorModifier", "FinalBlend", "TexEnvMap", "Combiner", "TexCoordSource", "TexPanner");
+addImpExtension("UTX", "Texture", "TexOscillator", "Shader", "ColorModifier", "FinalBlend", "TexEnvMap", "Combiner", "TexCoordSource", "TexPanner", "WetTexture", "TexRotator", "FadeColor", "ConstantColor", "VertexColor", "Cubemap");
 addImpExtension("UAX", "Sound");
 addImpExtension("USX", "StaticMesh");
 addImpExtension("UKX", "Animation", "SkeletalMesh", "VertMesh");
@@ -203,6 +206,11 @@ export { pathToPkgName };
 function getPackage<T extends string | "native", TPackage, TCorePackage, TEnginePackage, TNativePackage>(allPackages: Map<string, Map<C.SupportedExtensions_T, TPackage | TNativePackage | TCorePackage | TEnginePackage>>, pkgName: T, impType: string): ReturnType<T, TPackage, TCorePackage, TEnginePackage, TNativePackage> {
     const packages = allPackages.get(pkgName.toLowerCase());
     const validExts = impToTypes.get(impType);
+
+    if (!validExts) {
+        console.warn(`Unknown import class type '${impType}' (package '${pkgName}')`);
+        return null;
+    }
 
     let pkg: TPackage | TNativePackage | TCorePackage | TEnginePackage = null;
 
