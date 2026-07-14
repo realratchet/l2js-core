@@ -484,9 +484,14 @@ abstract class APackage extends UEncodedFile {
                     }
 
                 } else if (exp.idPackage < 0) {
-                    debugger;
+                    const outer = this.imports[-exp.idPackage - 1];
+
+                    if (outer && groupName !== outer.objectName) {
+                        continue;
+                    }
+
                 } else {
-                    debugger;
+                    continue;
                 }
             }
 
