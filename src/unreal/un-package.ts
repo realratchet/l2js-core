@@ -64,8 +64,7 @@ abstract class APackage extends UEncodedFile {
         const signature = await readable._doDecode();
 
         if (readable.header) {
-            // was freed, no need to re-read header - but the fresh buffer must be moved
-            // back off the readable or this package stays undecodable forever
+            // was freed, no need to re-read header, but the fresh buffer must come off the readable or the package stays undecodable
             Object.assign(this, readable, { isReadable: false });
             return this;
         }
@@ -459,9 +458,7 @@ abstract class APackage extends UEncodedFile {
             this.exportsByNameCount = 0;
         }
 
-        // `this.exports` can grow between calls (e.g. ANativePackage.registerNativeClass()
-        // pushes one export at a time while resolving base classes via findObjectRef), so
-        // only the newly appended exports are indexed rather than assuming a fixed array.
+        // exports can grow between calls (registerNativeClass pushes while resolving), only index the newly appended ones
         for (let i = this.exportsByNameCount, len = this.exports.length; i < len; i++) {
             const exp = this.exports[i];
             const list = this.exportsByName.get(exp.objectName);

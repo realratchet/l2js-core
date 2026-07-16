@@ -6,21 +6,13 @@ import { FPrimitiveArray } from "./un-array";
 import ObjectFlags_T from "./un-object-flags";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
 
-// A value that hasn't been computed yet. LazyPropertyMap resolves these transparently
-// on first read (via get()/entries()/values()/forEach()/the default iterator), caching
-// the result back into the map so resolve() only ever runs once.
+// deferred value, LazyPropertyMap resolves on first read and caches the result back into the map
 abstract class LazyPropertyValue<T = any> {
     public abstract resolve(): T;
 }
 
 class LazyPropertyMap extends Map<string, any> {
-    /**
-     * Per-class defaults template (built once on a class's first construction). Keys
-     * missing from the instance map fall back to it; lazy/mutable defaults resolve per
-     * instance and are cached as own entries on first read. Iteration presents the
-     * merged view: template keys first (in layout order, which loadNative relies on
-     * for native struct reads), then own keys the template doesn't know about.
-     */
+    // per-class defaults template, iteration yields layout keys first in layout order (loadNative relies on it)
     protected layout: Map<string, any> = null;
 
     public setLayout(layout: Map<string, any>): this {
@@ -130,8 +122,7 @@ class MapReflectable extends LazyPropertyMap {
             const varName = propMap[key];
 
             if (value instanceof LazyPropertyValue) {
-                // Mirror the laziness onto the friendly-named field too, since native
-                // classes read `this.foo` directly instead of going through the map.
+                // native classes read this.foo directly instead of going through the map, field must stay lazy too
                 Object.defineProperty(this.object, varName, {
                     configurable: true,
                     get: () => {
@@ -142,9 +133,6 @@ class MapReflectable extends LazyPropertyMap {
                         return resolved;
                     },
                     set: (v: any) => {
-                        // A real value arrived before the lazy default was ever read (e.g. the
-                        // property was actually present in the file) - just store it, no need
-                        // to ever resolve the throwaway default.
                         super.set(key, v);
                         Object.defineProperty(this.object, varName, { value: v, writable: true, enumerable: true, configurable: true });
                     }
@@ -195,11 +183,7 @@ abstract class UObject implements C.ISerializable {
 
     protected pkg: APackage;
     // public readonly propertyDict = new Map<string, any>();
-    /**
-     * Materialized on first use instead of per construction - most objects created in
-     * hot paths (math structs via .make()) never touch it. The class defaults template
-     * is attached so reads fall through to it (see LazyPropertyMap.layout).
-     */
+    // materialized on first use, objects created in hot paths (math structs via .make()) never touch it
     public get propertyDict(): LazyPropertyMap {
         const dict = UObject.ALLOW_EDITING ? new LazyPropertyMap() : new MapReflectable(this);
         const layout = (this.constructor as any)._classLayout as Map<string, any>;
@@ -223,11 +207,9 @@ abstract class UObject implements C.ISerializable {
 
     public static getUnserializedProperties(): C.UnserializedProperty_T[] { return []; }
 
-    // Cache for collectUnserializedProperties to avoid repeated prototype traversal
     private static unserializedPropsCache = new Map<Function, C.UnserializedProperty_T[]>();
 
     public static collectUnserializedProperties(): C.UnserializedProperty_T[] {
-        // Check cache first
         const cached = UObject.unserializedPropsCache.get(this);
         if (cached) return cached;
 
@@ -336,11 +318,7 @@ abstract class UObject implements C.ISerializable {
         const layout = ctor._classLayout as Map<string, any>;
 
         if (ctor.plainStructFields && layout) {
-            /*
-             * Math structs (FVector & co) keep their values in plain fields - writing
-             * them directly skips materializing a per-object propertyDict on the
-             * hottest deserialization path. copy() mirrors this.
-             */
+            // math structs (FVector & co) keep values in plain fields, skips materializing propertyDict on the hottest path
             const propMap = ctor._propertyMapCache as Record<string, string>;
 
             for (const propName of layout.keys()) {
@@ -373,7 +351,7 @@ abstract class UObject implements C.ISerializable {
         const ctor = this.constructor as any;
 
         if (ctor.plainStructFields && ctor._propertyMapCache) {
-            /* plain-field structs keep values in fields, not the dict (see loadNative) */
+            // plain-field structs keep values in fields, not the dict (see loadNative)
             for (const varName of Object.values(ctor._propertyMapCache as Record<string, string>))
                 (this as any)[varName] = deepClone((other as any)[varName]);
 

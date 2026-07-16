@@ -213,7 +213,8 @@ abstract class UEncodedFile implements IEncodedFile {
 
         // console.log(`%cStarted loading package: %c${this.path}`, "color: blue", "color: gray");
 
-        return this.handle.promiseDecoding = this.promiseDecoding = new Promise(async resolve => {
+        // async IIFE because a throw inside new Promise(async resolve => ...) never rejects, it just hangs
+        return this.handle.promiseDecoding = this.promiseDecoding = (async () => {
             this.buffer = await this.readArrayBuffer();
 
             const signature = this.read(new BufferValue(BufferValue.uint32));
@@ -273,12 +274,12 @@ abstract class UEncodedFile implements IEncodedFile {
                 //     console.log(`'${this.path}' loaded in ${(performance.now() - tStart).toFixed(3)} ms (${sizeString})`);
 
                 this.signature = signature.value;
-                resolve(signature);
+                return signature;
             } else {
                 throw new Error(`unknown signature: ${signature}`);
             }
-          
-        });
+
+        })();
     }
 
     public abstract toBuffer(): ArrayBuffer;

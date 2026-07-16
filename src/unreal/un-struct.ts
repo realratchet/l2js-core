@@ -272,8 +272,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
         const clsExtendedPropertyEntries = Object.entries(clsExtendedProperties);
 
-        // ue name comparisons are case-insensitive, old packages may serialize
-        // property names with different casing
+        // ue name comparisons are case-insensitive, old packages may serialize property names with different casing
         const clsPropertyNamesByLower: Record<string, string> = {};
 
         for (const key of Object.keys(clsExtendedProperties))
@@ -322,14 +321,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
             }
         }[this.friendlyName];
 
-        /**
-         * Runs once per dynamic class, on first construction. Bakes everything makeLayout
-         * used to redo per instance: the defaults template (consumed lazily through
-         * LazyPropertyMap.layout) and the friendly-name defaults, which move to the class
-         * prototype - immutable ones as plain data properties, mutable/pending ones as
-         * accessors that resolve through the propertyDict and cache themselves as own
-         * data properties on first read.
-         */
+        // runs once per dynamic class, bakes the defaults template and moves friendly-name defaults onto the prototype
         const buildClassLayout = (ctor: any, instance: UObject) => {
             let propNames = ctor._propertyMapCache as Record<string, string>;
 
@@ -373,7 +365,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 } else Object.defineProperty(proto, varName, { value: defaultValue, writable: true, enumerable: true, configurable: true });
             }
 
-            proto.isConstructed = true; // instances no longer flag themselves in makeLayout
+            proto.isConstructed = true;
 
             ctor._classLayout = layout;
         };
@@ -739,16 +731,16 @@ class UStruct<Class extends UObject = UObject> extends UField {
 export default UStruct;
 export { UStruct };
 
-// The default value for a struct-typed property (Location, Rotation, ...) with no explicit
-// class default. Constructing it eagerly is wasted work whenever the actor's real serialized
-// value gets read moments later (readValue() always builds its own fresh struct and overwrites
-// this), so it's deferred until something actually reads the property.
+// struct-typed property default with no explicit class default, deferred because readValue() usually overwrites it anyway
 class PendingStructDefault<T extends UObject = UObject> extends LazyPropertyValue<T> {
-    public constructor(
-        private readonly property: C.UStructProperty,
-        private readonly pkgNative: C.ANativePackage
-    ) {
+    protected readonly property: C.UStructProperty;
+    protected readonly pkgNative: C.ANativePackage;
+
+    public constructor(property: C.UStructProperty, pkgNative: C.ANativePackage) {
         super();
+
+        this.property = property;
+        this.pkgNative = pkgNative;
     }
 
     public resolve(): T {
@@ -756,17 +748,18 @@ class PendingStructDefault<T extends UObject = UObject> extends LazyPropertyValu
     }
 }
 
-// A mutable class default (fixed-size array, struct/object clone). Sharing one across
-// instances would let one object's writes leak into another (readProperty mutates
-// fixed-size array defaults in place), so a fresh copy is produced per instance on
-// first read instead.
+// mutable class default (fixed-size array, struct/object clone), shared copies would leak writes between instances
 class PerInstanceDefault<T = any> extends LazyPropertyValue<T> {
-    public constructor(
-        private readonly propName: string,
-        private readonly property: UnProperties.UProperty,
-        private readonly defaultNamedProperties: Record<string, any>
-    ) {
+    protected readonly propName: string;
+    protected readonly property: UnProperties.UProperty;
+    protected readonly defaultNamedProperties: Record<string, any>;
+
+    public constructor(propName: string, property: UnProperties.UProperty, defaultNamedProperties: Record<string, any>) {
         super();
+
+        this.propName = propName;
+        this.property = property;
+        this.defaultNamedProperties = defaultNamedProperties;
     }
 
     public resolve(): T {

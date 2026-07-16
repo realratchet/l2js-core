@@ -411,10 +411,7 @@ class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_
     }
 }
 
-// map/filter/slice results are data, not deserializers - keep them plain Arrays so
-// FArray fields don't leak through structured clone. defineProperty because an in-class
-// accessor trips TS2611 and a loose static field compiles to an assignment that throws
-// on Array's getter-only Symbol.species.
+// Symbol.species stays Array so map/filter results don't leak FArray through structured clone, defineProperty because an in-class accessor trips TS2611
 for (const ArrayClass of [FArray, FObjectArray, FNameArray])
     Object.defineProperty(ArrayClass, Symbol.species, { value: Array });
 
