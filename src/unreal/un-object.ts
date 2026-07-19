@@ -402,7 +402,15 @@ abstract class UObject implements C.ISerializable {
         }
 
         if (property.type !== tag.type) {
-            // older data can serialize a property under a different type (e.g. Int vs Bool)
+            // older data can serialize a bool as an int (UBOOL is 4 bytes natively) - read it instead of dropping it
+            if (property.type === UNP_PropertyTypes.UNP_BoolProperty && tag.type === UNP_PropertyTypes.UNP_IntProperty) {
+                console.assert(tag.dataSize === 4, `IntProperty '${tag.name}' has dataSize ${tag.dataSize}, expected 4`);
+
+                this.propertyDict.set(tag.name, pkg.read("int32") !== 0);
+                pkg.seek(offEnd, "set");
+                return;
+            }
+
             console.warn(`Property '${tag.name}' type mismatch got '${tag.getTypeName()}' expected '${property.getTypeName()}', skipping`);
             pkg.seek(offEnd, "set");
             return;
