@@ -411,6 +411,12 @@ abstract class UObject implements C.ISerializable {
                 return;
             }
 
+            if (property.type === UNP_PropertyTypes.UNP_ArrayProperty && tag.type === UNP_PropertyTypes.UNP_NameProperty) {
+                this.propertyDict.set(tag.name, [pkg.nameTable[pkg.read("compat32") as number].name]);
+                pkg.seek(offEnd, "set");
+                return;
+            }
+
             console.warn(`Property '${tag.name}' type mismatch got '${tag.getTypeName()}' expected '${property.getTypeName()}', skipping`);
             pkg.seek(offEnd, "set");
             return;

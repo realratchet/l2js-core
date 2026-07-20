@@ -1,6 +1,6 @@
 import BufferValue from "../../buffer-value";
 import { flagBitsToDict } from "../../utils/flags";
-import FArray, { FObjectArray, FPrimitiveArray } from "../un-array";
+import FArray, { FNameArray, FObjectArray, FPrimitiveArray } from "../un-array";
 import UClass from "../un-class";
 import UField from "../un-field";
 import UObject from "../un-object";
@@ -367,7 +367,7 @@ class UByteProperty extends UBaseExportProperty<C.UEnum, BufferValue<"uint8">, n
     }
 }
 
-type ArrayType = FArray<any> | FPrimitiveArray<any> | FObjectArray<any>;
+type ArrayType = FArray<any> | FPrimitiveArray<any> | FObjectArray<any> | FNameArray;
 
 class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>, ArrayType, ArrayType> {
     public readonly type = UNP_PropertyTypes.UNP_ArrayProperty;
@@ -391,6 +391,8 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
             return new FPrimitiveArray(BufferValue.float).load(pkg, tag);
         } else if (type instanceof UByteProperty) {
             return new FPrimitiveArray(BufferValue.uint8).load(pkg, tag);
+        } else if (type instanceof UNameProperty) {
+            return new FNameArray().load(pkg, tag);
         } else if (type instanceof UClass) {
             return new FArray(type.buildClass(pkg.loader.getNativePackage())).load(pkg, tag);
         } else {
