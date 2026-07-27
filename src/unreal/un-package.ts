@@ -14,6 +14,7 @@ import UStruct from "./un-struct";
 import UConst from "./un-const";
 import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
+import FString from "./un-string";
 import { flagBitsToDict } from "../utils/flags";
 import { pathToPkgName } from "../asset-loader";
 
@@ -212,12 +213,10 @@ abstract class APackage extends UEncodedFile {
         const nameTable: UName[] = [];
         const nameHash = new Map<string, number>();
 
-        const char = new BufferValue<"char">(BufferValue.char);
-
         for (let i = 0, nc = header.nameCount; i < nc; i++) {
             const uname = new UName();
 
-            uname.name = this.read(char).string;
+            uname.name = new FString().load(this).value;
             uname.flags = this.read("uint32");
 
             nameTable.push(uname);

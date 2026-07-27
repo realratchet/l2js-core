@@ -1,15 +1,25 @@
-let decoder: TextDecoder = null;
+const decoderAnsi = new TextDecoder("windows-1252");
+const decoderUTF16 = new TextDecoder("utf-16le");
 
 class FString implements IConstructable {
     public value: string;
 
     public load(pkg: C.APackage): this {
         const bufLen = pkg.read("compat32");
-        const buf = pkg.read(bufLen);
+        const isUnicode = bufLen < 0;
+        const byteLength = isUnicode ? -bufLen * 2 : bufLen;
 
-        decoder = decoder ?? new TextDecoder("ascii");
+        if (byteLength === 0) {
+            this.value = "";
 
-        this.value = decoder.decode(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength - 1));
+            return this;
+        }
+
+        const buf = pkg.read(byteLength);
+        const delimiterSize = isUnicode ? 2 : 1;
+        const bytes = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength - delimiterSize);
+
+        this.value = (isUnicode ? decoderUTF16 : decoderAnsi).decode(bytes);
 
         return this;
     }
