@@ -276,7 +276,11 @@ abstract class UEncodedFile implements IEncodedFile {
                 this.signature = signature.value;
                 return signature;
             } else {
-                throw new Error(`unknown signature: ${signature}`);
+                // no encoding
+                this.contentOffset = 0;
+                this.signature = signature.value;
+
+                return signature;
             }
 
         })();
