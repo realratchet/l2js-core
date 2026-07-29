@@ -8,7 +8,7 @@ const DecodersRSA: Readonly<{
     decryptEncdec: decryptRSA.bind(undefined, ...rsaKeys.encdec)
 });
 
-function decryptModulo(array: Uint8Array, key: number) {
+function decryptModulo(array: Uint8Array, key: number): ArrayBuffer {
     return _decryptModulo(array, key);
 }
 

@@ -1,6 +1,6 @@
 import UField from "./un-field";
 import ObjectFlags_T from "./un-object-flags";
-import UObject from "./un-object";
+import UObject, { LazyPropertyValue } from "./un-object";
 import UNativeRegistry from "./un-native-registry";
 import APackage from "./un-package";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
@@ -61,8 +61,11 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
         const property = this.findValidProperty(varName);
 
-        if (!property)
-            throw new Error(`Cannot map property '${propName}' -> ${varName}`);
+        if (!property) {
+            console.warn(`Cannot map property '${propName}' -> '${varName}' for '${this.constructor.name}', skipping`);
+            pkg.seek(offEnd, "set");
+            return;
+        }
 
         if (!this.propertyDict.has(varName))
             this.propertyDict.set(varName, property.getDefaultValue());
@@ -267,6 +270,14 @@ class UStruct<Class extends UObject = UObject> extends UField {
             clsExtendedProperties[propertyName] = property;
         }
 
+        const clsExtendedPropertyEntries = Object.entries(clsExtendedProperties);
+
+        // ue name comparisons are case-insensitive, old packages may serialize property names with different casing
+        const clsPropertyNamesByLower: Record<string, string> = {};
+
+        for (const key of Object.keys(clsExtendedProperties))
+            clsPropertyNamesByLower[key.toLowerCase()] = key;
+
         // @ts-ignore
         const _clsBase = {
             [friendlyName]: class DynamicStruct extends Constructor {
@@ -278,83 +289,26 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 public static readonly inheritedProps = Object.freeze(clsInheritedProps);
 
                 public static _propertyMapCache: Record<string, string> = null;
+                public static _classLayout: Map<string, any> = null;
 
                 protected static getConstructorName(): string { return friendlyName; }
                 protected findPropReader<T1 = any, T2 = any>(propName: string): C.UProperty<T1, T2> {
-                    if (!(propName in clsExtendedProperties))
-                        throw new Error(`Property '${propName}' does not exist!`);
+                    if (propName in clsExtendedProperties)
+                        return clsExtendedProperties[propName];
 
-                    return clsExtendedProperties[propName];
-                }
+                    const canonical = clsPropertyNamesByLower[propName.toLowerCase()];
 
-                protected initialize(): this {
-                    for (const [propName, property] of Object.entries(clsExtendedProperties)) {
-                        if (property.type !== UNP_PropertyTypes.UNP_StructProperty) continue;
-                        if (this.propertyDict.get(propName) !== null) continue;
+                    if (canonical !== undefined)
+                        return clsExtendedProperties[canonical];
 
-                        const struct = (property as C.UStructProperty).initializeDefault(pkgNative);
-
-                        this.propertyDict.set(propName, struct);
-
-                    }
-
-                    return this;
+                    return null; // unknown property - callers skip it via the tag size
                 }
 
                 protected makeLayout() {
-                    let propNames = (this.constructor as any)._propertyMapCache;
-                    if (!propNames) {
-                        propNames = this.getPropertyMap();
-                        (this.constructor as any)._propertyMapCache = propNames;
-                    }
+                    const ctor = this.constructor as any;
 
-                    for (const [propName, property] of Object.entries(clsExtendedProperties)) {
-                        const defaultValue = getDefaultValue(propName, property, defaultNamedProperties)
-
-                        this.propertyDict.set(propName, defaultValue);
-
-                        if (propName in propNames) {
-                            // Attach proxies to varnames
-                            const varname = propNames[propName];
-
-                            if (UStruct.ALLOW_EDITING) {
-                                if (Object.hasOwn(this, varname))
-                                    throw new Error(`Variable name '${varname}' already used, cannot assign proxy for '${propName}' property!`);
-
-                                Object.defineProperty(this, varname, {
-                                    get: () => {
-
-                                        // if (property.arrayDimensions !== 1)
-                                        //     return new FixedArrayContainer(property);
-
-                                        return this.propertyDict.get(propName);//.getPropertyValue();
-                                    },
-                                    set: (v: any) => {
-                                        this.propertyDict.set(propName, v);
-                                        // if (property.arrayDimensions !== 1)
-                                        //     throw new Error(`Not implemented`);
-
-                                        // const value = property.propertyValue[0];
-
-                                        // if (value instanceof BufferValue || value instanceof UnProperties.BooleanValue)
-                                        //     value.value = v;
-                                        // else if (property instanceof UnProperties.UArrayProperty)
-                                        //     property.propertyValue[0] = v;
-                                        // else if (property instanceof UnProperties.UStructProperty)
-                                        //     property.propertyValue[0] = v;
-                                        // else {
-                                        //     debugger;
-                                        //     throw new Error(`Not implemented`);
-                                        // }
-                                    }
-                                });
-                            }
-                        }
-                    }
-
-                    this.isConstructed = true;
-
-                    this.initialize();
+                    if (!ctor._classLayout)
+                        buildClassLayout(ctor, this);
                 }
 
                 public toString() { return Constructor === UObject ? dynamicTag : Constructor.prototype.toString.call(this); }
@@ -366,6 +320,55 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 // }
             }
         }[this.friendlyName];
+
+        // runs once per dynamic class, bakes the defaults template and moves friendly-name defaults onto the prototype
+        const buildClassLayout = (ctor: any, instance: UObject) => {
+            let propNames = ctor._propertyMapCache as Record<string, string>;
+
+            if (!propNames)
+                propNames = ctor._propertyMapCache = (instance as any).getPropertyMap();
+
+            const layout = new Map<string, any>();
+
+            for (const [propName, property] of clsExtendedPropertyEntries) {
+                let defaultValue = getDefaultValue(propName, property, defaultNamedProperties);
+
+                if (defaultValue === null && property.type === UNP_PropertyTypes.UNP_StructProperty)
+                    defaultValue = new PendingStructDefault(property as C.UStructProperty, pkgNative); // stateless - safe to share across instances
+                else if (defaultValue !== null && typeof defaultValue === "object" && !(defaultValue instanceof LazyPropertyValue))
+                    defaultValue = new PerInstanceDefault(propName, property, defaultNamedProperties); // mutable - must not be shared across instances
+
+                layout.set(propName, defaultValue);
+            }
+
+            const proto = ctor.prototype;
+
+            for (const [propName, varName] of Object.entries(propNames)) {
+                if (!layout.has(propName)) continue;
+
+                const defaultValue = layout.get(propName);
+
+                if (defaultValue instanceof LazyPropertyValue) {
+                    Object.defineProperty(proto, varName, {
+                        configurable: true,
+                        get() {
+                            const resolved = this.propertyDict.get(propName);
+
+                            Object.defineProperty(this, varName, { value: resolved, writable: true, enumerable: true, configurable: true });
+
+                            return resolved;
+                        },
+                        set(v: any) {
+                            Object.defineProperty(this, varName, { value: v, writable: true, enumerable: true, configurable: true });
+                        }
+                    });
+                } else Object.defineProperty(proto, varName, { value: defaultValue, writable: true, enumerable: true, configurable: true });
+            }
+
+            proto.isConstructed = true;
+
+            ctor._classLayout = layout;
+        };
 
         const clsNamedPropertiesKeys = Object.keys(clsNamedProperties);
         const cls = eval([
@@ -728,6 +731,42 @@ class UStruct<Class extends UObject = UObject> extends UField {
 export default UStruct;
 export { UStruct };
 
+// struct-typed property default with no explicit class default, deferred because readValue() usually overwrites it anyway
+class PendingStructDefault<T extends UObject = UObject> extends LazyPropertyValue<T> {
+    protected readonly property: C.UStructProperty;
+    protected readonly pkgNative: C.ANativePackage;
+
+    public constructor(property: C.UStructProperty, pkgNative: C.ANativePackage) {
+        super();
+
+        this.property = property;
+        this.pkgNative = pkgNative;
+    }
+
+    public resolve(): T {
+        return this.property.initializeDefault(this.pkgNative) as T;
+    }
+}
+
+// mutable class default (fixed-size array, struct/object clone), shared copies would leak writes between instances
+class PerInstanceDefault<T = any> extends LazyPropertyValue<T> {
+    protected readonly propName: string;
+    protected readonly property: UnProperties.UProperty;
+    protected readonly defaultNamedProperties: Record<string, any>;
+
+    public constructor(propName: string, property: UnProperties.UProperty, defaultNamedProperties: Record<string, any>) {
+        super();
+
+        this.propName = propName;
+        this.property = property;
+        this.defaultNamedProperties = defaultNamedProperties;
+    }
+
+    public resolve(): T {
+        return getDefaultValue(this.propName, this.property, this.defaultNamedProperties) as T;
+    }
+}
+
 function getUnsetDefaultValue(pkgNative: C.ANativePackage, property: UnProperties.UProperty) {
     switch (property.type) {
         case UNP_PropertyTypes.UNP_ByteProperty:
@@ -777,7 +816,7 @@ function getDefaultValue(propName: string, property: UnProperties.UProperty, def
             if (property.arrayDimensions > 1)
                 return defaultValue.map((x: UObject) => x?.nativeClone() ?? null);
 
-            return defaultValue.nativeClone();
+            return defaultValue?.nativeClone() ?? null; // defaultproperties can set None
         default:
             debugger;
             throw new Error(`Property type '${property.getTypeName()}' not yet implemented.`)

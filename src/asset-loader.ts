@@ -8,6 +8,7 @@ abstract class AAssetLoader<
     TNativePackage extends C.ANativePackage = C.ANativePackage
 > {
     private packages = new Map<string, Map<C.SupportedExtensions_T, TPackage | TCorePackage | TEnginePackage | TNativePackage>>();
+    protected pkgDependencies = new Map<string, string[]>();
 
     protected abstract createPackage(UPackage: C.APackageConstructor | C.ACorePackageConstructor | C.AEnginePackageConstructor, downloadPath: string): TPackage;
     protected abstract createNativePackage(UNativePackage: C.ANativePackageConstructor): TNativePackage;
@@ -80,7 +81,33 @@ abstract class AAssetLoader<
     }
 
     public hasPackage(pkgName: string, impType: string) {
+        if (!this.packages.has(pkgName.toLowerCase())) return false;
+
         return getPackage(this.packages, pkgName, impType) !== null;
+    }
+
+    public getDependencies<T extends TPackage = TPackage>(pkg: T): string[] {
+        if (!this.pkgDependencies.has(pkg.path)) {
+            throw new Error(`${pkg.path} dependencies never built`);
+        }
+
+        const deps = this.pkgDependencies.get(pkg.path).slice();
+        const depsToCheck = deps.slice();
+        
+        deps.unshift(pkg.path);
+        
+        while (depsToCheck.length > 0) {
+            const dep = depsToCheck.shift();
+
+            for (const other of this.pkgDependencies.get(dep)) {
+                if (deps.includes(other)) continue;
+
+                deps.push(other);
+                depsToCheck.push(other);
+            }
+        }
+
+        return deps;
     }
 
     public async load<T extends TPackage = TPackage>(pkg: T): Promise<T> {
@@ -93,6 +120,11 @@ abstract class AAssetLoader<
 
             await pkg.decode();
 
+            if (!this.pkgDependencies.has(pkg.path))
+                this.pkgDependencies.set(pkg.path, []);
+
+            const pkgDeps = this.pkgDependencies.get(pkg.path);
+
             for (const entry of pkg.imports.filter(imp => imp.className !== "Package")) {
                 let entrypackage = pkg.getImportEntry(entry.idPackage);
 
@@ -102,10 +134,16 @@ abstract class AAssetLoader<
                 const packageName = entrypackage.objectName;
                 const className = entry.className;
 
-                if (!this.hasPackage(packageName, className))
-                    throw new Error(`Package '${packageName}' for type '${className}' does not exist.`);
+                if (!this.hasPackage(packageName, className)) {
+                    // only fatal if something actually fetches the import later
+                    console.warn(`Package '${packageName}' for type '${className}' does not exist, skipping dependency.`);
+                    continue;
+                }
 
                 const dependency = this.getPackage(packageName, className);
+
+                if (!pkgDeps.includes(dependency.path))
+                    pkgDeps.push(dependency.path)
 
                 if (!dependency)
                     debugger;
@@ -145,7 +183,7 @@ function addImpExtension(ext: C.SupportedExtensions_T, ...classList: string[]) {
 }
 
 addImpExtension("UNR", "Level");
-addImpExtension("UTX", "Texture", "TexOscillator", "Shader", "ColorModifier", "FinalBlend", "TexEnvMap", "Combiner", "TexCoordSource", "TexPanner");
+addImpExtension("UTX", "Texture", "TexOscillator", "Shader", "ColorModifier", "FinalBlend", "TexEnvMap", "Combiner", "TexCoordSource", "TexPanner", "WetTexture", "TexRotator", "FadeColor", "ConstantColor", "VertexColor", "Cubemap");
 addImpExtension("UAX", "Sound");
 addImpExtension("USX", "StaticMesh");
 addImpExtension("UKX", "Animation", "SkeletalMesh", "VertMesh");
@@ -160,7 +198,7 @@ function pathToPkgName(path: string): [string, C.SupportedExtensions_T] {
     if (!packageTypes.has(extUpper))
         throw new Error(`Unsupported package type '${ext}' for package '${_path.basename(path)}'`);
 
-    return [_path.basename(path, ext), extUpper];
+    return [_path.basename(path, ext).toLowerCase(), extUpper];
 }
 
 export { pathToPkgName };
@@ -168,6 +206,11 @@ export { pathToPkgName };
 function getPackage<T extends string | "native", TPackage, TCorePackage, TEnginePackage, TNativePackage>(allPackages: Map<string, Map<C.SupportedExtensions_T, TPackage | TNativePackage | TCorePackage | TEnginePackage>>, pkgName: T, impType: string): ReturnType<T, TPackage, TCorePackage, TEnginePackage, TNativePackage> {
     const packages = allPackages.get(pkgName.toLowerCase());
     const validExts = impToTypes.get(impType);
+
+    if (!validExts) {
+        console.warn(`Unknown import class type '${impType}' (package '${pkgName}')`);
+        return null;
+    }
 
     let pkg: TPackage | TNativePackage | TCorePackage | TEnginePackage = null;
 

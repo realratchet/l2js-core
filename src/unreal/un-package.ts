@@ -14,6 +14,7 @@ import UStruct from "./un-struct";
 import UConst from "./un-const";
 import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
+import FString from "./un-string";
 import { flagBitsToDict } from "../utils/flags";
 import { pathToPkgName } from "../asset-loader";
 
@@ -30,6 +31,10 @@ abstract class APackage extends UEncodedFile {
     public importGroups: Record<string, { import: UImport; index: number; }[]>;
 
     public nameHash = new Map<string, number>();
+
+    private exportsByName?: Map<string, UExport[]>;
+    private exportsByNameSource?: UExport[];
+    private exportsByNameCount: number = 0;
 
     public readonly isCore: boolean = false;
     public readonly isEngine: boolean = false;
@@ -58,6 +63,12 @@ abstract class APackage extends UEncodedFile {
 
         const readable = this.asReadable();
         const signature = await readable._doDecode();
+
+        if (readable.header) {
+            // was freed, no need to re-read header, but the fresh buffer must come off the readable or the package stays undecodable
+            Object.assign(this, readable, { isReadable: false });
+            return this;
+        }
 
         if (signature.value !== 0x9E2A83C1)
             throw new Error(`Invalid signature: '0x${signature.value.toString(16).toUpperCase()}' expected '0x9E2A83C1'`);
@@ -202,12 +213,10 @@ abstract class APackage extends UEncodedFile {
         const nameTable: UName[] = [];
         const nameHash = new Map<string, number>();
 
-        const char = new BufferValue<"char">(BufferValue.char);
-
         for (let i = 0, nc = header.nameCount; i < nc; i++) {
             const uname = new UName();
 
-            uname.name = this.read(char).string;
+            uname.name = new FString().load(this).value;
             uname.flags = this.read("uint32");
 
             nameTable.push(uname);
@@ -422,15 +431,10 @@ abstract class APackage extends UEncodedFile {
             let obj = pkg.fetchObjectByType(className, objectName, groupName);
 
             if (obj === null) {
-                console.log(pkg);
-                debugger;
-                throw new Error(`(${packageName}) [${className}, ${objectName}, ${groupName}] should not be null`);
+                // ue treats unresolvable references as None
+                console.warn(`(${packageName}) [${className}, ${objectName}, ${groupName}] could not be resolved, treating as None`);
+                return null;
             }
-
-            if (!obj && packageName == "UnrealI")
-                throw new Error("Not yet implemented");
-            else if (!obj && packageName == "UnrealShare")
-                throw new Error("Not yet implemented");
 
             return obj as T;
         }
@@ -447,8 +451,26 @@ abstract class APackage extends UEncodedFile {
     public findObjectRef(className: string, objectName: string, groupName: string = "None"): number {
         const isClass = className == "Class";
 
-        for (const exp of this.exports) {
-            if (exp.objectName !== objectName) continue;
+        if (!this.exportsByName || this.exportsByNameSource !== this.exports) {
+            this.exportsByName = new Map();
+            this.exportsByNameSource = this.exports;
+            this.exportsByNameCount = 0;
+        }
+
+        // exports can grow between calls (registerNativeClass pushes while resolving), only index the newly appended ones
+        for (let i = this.exportsByNameCount, len = this.exports.length; i < len; i++) {
+            const exp = this.exports[i];
+            const list = this.exportsByName.get(exp.objectName);
+
+            if (list) list.push(exp);
+            else this.exportsByName.set(exp.objectName, [exp]);
+        }
+
+        this.exportsByNameCount = this.exports.length;
+
+        const candidates = this.exportsByName.get(objectName) ?? [];
+
+        for (const exp of candidates) {
             if (groupName !== "None") {
                 if (exp.idPackage > 0) {
                     const pkg = this.exports[exp.idPackage - 1];
@@ -458,9 +480,14 @@ abstract class APackage extends UEncodedFile {
                     }
 
                 } else if (exp.idPackage < 0) {
-                    debugger;
+                    const outer = this.imports[-exp.idPackage - 1];
+
+                    if (outer && groupName !== outer.objectName) {
+                        continue;
+                    }
+
                 } else {
-                    debugger;
+                    continue;
                 }
             }
 

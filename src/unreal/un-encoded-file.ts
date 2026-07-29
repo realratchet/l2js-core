@@ -5,6 +5,8 @@ import * as modKeys from "../crypto/keys/modulo";
 
 let gmp: _gmp.GMPLib = null;
 
+const decoderUTF16 = new TextDecoder("utf-16");
+
 interface IEncodedFile {
     read(target: number | "guid"): DataView<ArrayBuffer>;
     read(target: "char" | "utf16"): string;
@@ -34,6 +36,8 @@ const buffInstances: Record<InstancedTypes, BufferValue<InstancedTypes>> = numbe
 //     compat32: new BufferValue(BufferValue.compat32)
 // }
 
+
+
 abstract class UEncodedFile implements IEncodedFile {
     public readonly path: string;
     public readonly isReadable = false;
@@ -50,6 +54,16 @@ abstract class UEncodedFile implements IEncodedFile {
 
     constructor(path: string) {
         this.path = path;
+    }
+
+    public free() {
+        this.signature = undefined;
+        this.moduloCryptKey = undefined;
+        this.version = undefined;
+        this.offset = 0;
+        this.contentOffset = 0;
+        this.buffer = null;
+        this.promiseDecoding = null;
     }
 
     public asReadable(): this {
@@ -199,7 +213,8 @@ abstract class UEncodedFile implements IEncodedFile {
 
         // console.log(`%cStarted loading package: %c${this.path}`, "color: blue", "color: gray");
 
-        return this.handle.promiseDecoding = this.promiseDecoding = new Promise(async resolve => {
+        // async IIFE because a throw inside new Promise(async resolve => ...) never rejects, it just hangs
+        return this.handle.promiseDecoding = this.promiseDecoding = (async () => {
             this.buffer = await this.readArrayBuffer();
 
             const signature = this.read(new BufferValue(BufferValue.uint32));
@@ -209,7 +224,8 @@ abstract class UEncodedFile implements IEncodedFile {
             if (signature.value === 0x0069004C) {
                 this.seek(HEADER_VER_OFFSET, "set");
 
-                const version = new TextDecoder("utf-16").decode(this.read(6));
+                const vv = this.read(6);
+                const version = decoderUTF16.decode(vv);
 
                 this.seek(HEADER_SIZE, "set");
 
@@ -230,11 +246,10 @@ abstract class UEncodedFile implements IEncodedFile {
 
                     tStart = performance.now();
 
-                    this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), this.moduloCryptKey) as ArrayBuffer;
+                    this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), this.moduloCryptKey);
 
                     this.read(signature);
                 } else if (version.startsWith("4")) {
-
                     if (gmp === null) {
                         gmp = await _gmp.init();
                     }
@@ -257,11 +272,18 @@ abstract class UEncodedFile implements IEncodedFile {
 
                 // if (size > 1024 * 1024)
                 //     console.log(`'${this.path}' loaded in ${(performance.now() - tStart).toFixed(3)} ms (${sizeString})`);
+
+                this.signature = signature.value;
+                return signature;
+            } else {
+                // no encoding
+                this.contentOffset = 0;
+                this.signature = signature.value;
+
+                return signature;
             }
 
-            this.signature = signature.value;
-            resolve(signature);
-        });
+        })();
     }
 
     public abstract toBuffer(): ArrayBuffer;

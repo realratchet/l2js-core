@@ -1,5 +1,6 @@
 export { AAssetLoader } from "./asset-loader";
 export { BufferValue } from "./buffer-value";
+export type { ILazyAssetHandle, IReadyAssetHandle } from "./asset-handle";
 
 export { UEncodedFile } from "./unreal/un-encoded-file";
 export { ObjectFlags_T } from "./unreal/un-object-flags";

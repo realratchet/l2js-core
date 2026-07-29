@@ -81,19 +81,51 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
 
     public nativeClone(): FArray<T> { return new this.constructor(this.Constructor).copy(this); }
     public toString() {
-        return `ArrayLazy<${this.Constructor?.name ?? undefined}>(len=${this.getElemCount()}, ...)`;
+        return `Array<${this.Constructor?.name ?? undefined}>(len=${this.getElemCount()}, ...)`;
     }
 }
 
 class FArrayLazy<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTypes_T> | IConstructable> extends FArray<T> {
-    public unkLazyInt: number;
+    protected posBegin: number;
+    protected posEnd: number;
+    protected isLoaded: boolean = false;
+
+    protected pkg: C.APackage;
+    protected tag?: C.PropertyTag
+
+
+    public get size() { return this.posEnd - this.posBegin; }
+
+
+
+    public getElem(idx: number): T {
+        if (!this.isLoaded) {
+            const offset = this.pkg.tell(); // in case we fuck up the cursor when it's reading
+
+            this.pkg.seek(this.posBegin, "set");
+
+            super.load(this.pkg, this.tag);
+
+            this.pkg.seek(offset, "set"); // move cursor back to
+            this.isLoaded = true;
+        }
+
+        return super.getElem(idx);
+    }
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
-        this.unkLazyInt = pkg.read("int32") as number;
+        this.pkg = pkg;
+        this.tag = tag;
 
-        super.load(pkg, tag);
+        this.posEnd = pkg.read("int32") as number;
+        this.posBegin = pkg.tell();
+        this.length = pkg.read("compat32");
 
-        console.assert((pkg.tell() - this.unkLazyInt) === 0);
+        pkg.seek(this.posEnd, "set");
+
+        // super.load(pkg, tag);
+
+        console.assert((pkg.tell() - this.posEnd) === 0);
 
         return this;
     }
@@ -102,13 +134,13 @@ class FArrayLazy<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.Strin
         if (!other)
             return this;
 
-        this.unkLazyInt = other.unkLazyInt;
+        this.posEnd = other.posEnd;
 
         return this;
     }
 
     public toString() {
-        return `ArrayLazy<${this.Constructor?.name ?? undefined}>(len=${this.getElemCount()}, ...)`;
+        return `ArrayLazy<${this.Constructor?.name ?? undefined}>(len=${this.getElemCount()}, bytes=${this.size}, ready=${this.isLoaded}, ...)`;
     }
 }
 
@@ -182,7 +214,7 @@ class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements 
 
     public loadSelf(): this {
         for (const obj of this)
-            obj.loadSelf();
+            obj?.loadSelf(); // null elements are legal - deleted objects serialize as None
 
         return this;
     }
@@ -207,6 +239,7 @@ class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements 
 }
 
 class FNameArray extends Array<string> implements IConstructable {
+
     protected indexArray = new FIndexArray();
 
     public load(pkg: C.APackage, tag?: C.PropertyTag): this {
@@ -377,6 +410,10 @@ class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_
         return `PrimitiveArrayLazy<${this.Constructor?.name ?? undefined}>(len=${this.getElemCount()}, ...)`;
     }
 }
+
+// Symbol.species stays Array so map/filter results don't leak FArray through structured clone, defineProperty because an in-class accessor trips TS2611
+for (const ArrayClass of [FArray, FObjectArray, FNameArray])
+    Object.defineProperty(ArrayClass, Symbol.species, { value: Array });
 
 export default FArray;
 export { FArray, FArrayLazy, FIndexArray, FStringArray, FNameArray, FPrimitiveArray, FObjectArray, FPrimitiveArrayLazy };
