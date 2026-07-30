@@ -95,6 +95,7 @@ declare global {
                 | "TerrainPrimitive"
                 | "LodMesh"
                 | "StaticMesh"
+                | "MeshAnimation"
                 | "SkeletalMesh"
                 | "Animation"
                 | "ConvexVolume"

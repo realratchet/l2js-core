@@ -186,7 +186,7 @@ addImpExtension("UNR", "Level");
 addImpExtension("UTX", "Texture", "TexOscillator", "Shader", "ColorModifier", "FinalBlend", "TexEnvMap", "Combiner", "TexCoordSource", "TexPanner", "WetTexture", "TexRotator", "FadeColor", "ConstantColor", "VertexColor", "Cubemap");
 addImpExtension("UAX", "Sound");
 addImpExtension("USX", "StaticMesh");
-addImpExtension("UKX", "Animation", "SkeletalMesh", "VertMesh");
+addImpExtension("UKX", "Animation", "MeshAnimation", "SkeletalMesh", "VertMesh");
 addImpExtension("USK", "Effect");
 addImpExtension("U", "Script", "State", "Class", "Struct", "Function", "Enum", ...impProperties, "Texture");
 addImpExtension("OGG", "Music");
