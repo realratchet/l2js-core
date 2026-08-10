@@ -33,6 +33,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     protected reader: T1;
 
     public getTypeName() { return getPropertyTypeName(this.type); }
+    public getPropertyFlags() { return this.flags; }
 
     public constructor(
         {

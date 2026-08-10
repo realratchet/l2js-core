@@ -26,6 +26,11 @@ abstract class UState<Class extends C.UObject = C.UObject> extends UStruct<Class
 
         this.labelTableOffset = pkg.read("uint16");
     }
+
+    public getProbeMask() { return this.probeMask; }
+    public getIgnoreMask() { return this.ignoreMask; }
+    public getStateFlags() { return this._stateFlags; }
+    public getLabelTableOffset() { return this.labelTableOffset; }
 }
 
 enum EStateFlags_T {

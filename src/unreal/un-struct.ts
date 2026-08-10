@@ -8,6 +8,7 @@ import * as UnProperties from "./un-property/un-properties";
 
 type MakeParams<T> = ConstructorParameters<{ new(): never } & T>;
 type GenericConstructorParameters<T> = ConstructorParameters<new (...args: any[]) => T>;
+type ScriptBytecodeEntry_T = { offset: number, type: string, value: any, tokenName?: string };
 
 class UStruct<Class extends UObject = UObject> extends UField {
     declare ["constructor"]: typeof UStruct;
@@ -398,10 +399,27 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
     public getDynamicTag(friendlyName: string) { return `[S*]${friendlyName}`; }
 
+    public getScriptSize() { return this.scriptSize; }
+    public getScriptBytecode(): readonly ScriptBytecodeEntry_T[] { return this.bytecode; }
+    public getScriptName(index: number) { return this.pkg.nameTable[index].name as string; }
+    public getScriptObjectPath(index: number) { return index === 0 ? null : this.pkg.getObjectPath(index); }
+
     protected bytecodePlainTextParts: string[] = [];
     protected bytecodePlainText = "";
-    protected bytecode: { type: string, value: any, tokenName?: string }[] = [];
+    protected bytecode: ScriptBytecodeEntry_T[] = [];
     protected bytecodeLength = 0;
+
+    protected readOptionalDebugInfo(native: C.ANativePackage, core: APackage, pkg: APackage, depth: number): void {
+        if (this.bytecodeLength >= this.scriptSize) return;
+
+        const pos = pkg.tell();
+        const token = pkg.read("uint8") as ExprToken_T;
+        const version = token === ExprToken_T.DebugInfo ? pkg.read("int32") as number : -1;
+
+        pkg.seek(pos, "set");
+
+        if (version === 100) this.readToken(native, core, pkg, depth);
+    }
 
     protected readToken(native: C.ANativePackage, core: APackage, pkg: APackage, depth: number): ExprToken_T {
         if (depth === 64) throw new Error("Too deep");
@@ -413,51 +431,69 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
         const tokenHex = `0x${tokenValue.toString(16)}`;
 
-        const isNativeFunc = UNativeRegistry.hasNativeFunc(tokenValue);
-        const tokenName = isNativeFunc ? UNativeRegistry.getNativeFuncName(tokenValue) : ExprToken_T[tokenValue];
+        const isNativeFunc = tokenValue >= ExprToken_T.ExtendedNative;
+        const tokenName = tokenValue >= ExprToken_T.FirstNative && UNativeRegistry.hasNativeFunc(tokenValue)
+            ? UNativeRegistry.getNativeFuncName(tokenValue)
+            : ExprToken_T[tokenValue] || (isNativeFunc ? `Native${tokenValue}` : null);
 
         if (!tokenName) throw new Error(`Unknown token name: ${tokenValue}`);
 
+        const tokenOffset = this.bytecodeLength;
+        const tokenIndex = this.bytecode.length;
+
         this.bytecodeLength = this.bytecodeLength + 1;
-        this.bytecode.push({ type: isNativeFunc ? "call" : "token", value: tokenValue, tokenName });
+        this.bytecode.push({ offset: tokenOffset, type: isNativeFunc ? "nativeCall" : "token", value: tokenValue, tokenName });
 
         let tokenDebug = new Array(depth - 1).fill("\t").join("");
 
         tokenDebug += tokenName + "\r\n";
         this.bytecodePlainTextParts.push(tokenDebug);
 
-        if (tokenValue < ExprToken_T.MaxConversion) {
+        if (tokenValue < ExprToken_T.ExtendedNative) {
             switch (tokenValue) {
                 case ExprToken_T.LocalVariable:
                 case ExprToken_T.InstanceVariable:
                 case ExprToken_T.DefaultVariable:
-                case ExprToken_T.ObjectConst:
                 case ExprToken_T.NativeParm: {
                     const objectIndex = pkg.read("compat32") as number;
 
-                    this.bytecode.push({ type: "compat", value: objectIndex });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "propertyRef", value: objectIndex });
+                    this.bytecodeLength = this.bytecodeLength + 4;
+                } return tokenValue2;
+                case ExprToken_T.ObjectConst: {
+                    const objectIndex = pkg.read("compat32") as number;
+
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "objectRef", value: objectIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
                 } return tokenValue2;
                 case ExprToken_T.Return:
                 case ExprToken_T.GotoLabel:
                 case ExprToken_T.EatString:
-                case ExprToken_T.UnkMember:
+                case ExprToken_T.DynArrayLength:
                     this.readToken(native, core, pkg, depth);
                     return tokenValue2;
                 case ExprToken_T.Switch:
-                case ExprToken_T.MinConversion:
-                    this.bytecode.push({ type: "byte", value: pkg.read("uint8") as number });
+                case ExprToken_T.PrimitiveCast:
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "byte", value: pkg.read("uint8") as number });
                     this.bytecodeLength = this.bytecodeLength + 1;
                     this.readToken(native, core, pkg, depth);
                     return tokenValue2;
                 case ExprToken_T.Jump:
-                    this.bytecode.push({ type: "uint16", value: pkg.read("uint16") as number });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "codeOffset", value: pkg.read("uint16") as number });
                     this.bytecodeLength = this.bytecodeLength + 2;
                     break;
                 case ExprToken_T.JumpIfNot:
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "codeOffset", value: pkg.read("uint16") as number });
+                    this.bytecodeLength = this.bytecodeLength + 2;
+                    this.readToken(native, core, pkg, depth);
+                    return tokenValue2;
                 case ExprToken_T.Assert:
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "line", value: pkg.read("uint16") as number });
+                    this.bytecodeLength = this.bytecodeLength + 2;
+                    this.readToken(native, core, pkg, depth);
+                    return tokenValue2;
                 case ExprToken_T.Skip:
-                    this.bytecode.push({ type: "uint16", value: pkg.read("uint16") as number });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "skipOffset", value: pkg.read("uint16") as number });
                     this.bytecodeLength = this.bytecodeLength + 2;
                     this.readToken(native, core, pkg, depth);
                     return tokenValue2;
@@ -470,14 +506,16 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 case ExprToken_T.True:
                 case ExprToken_T.False:
                 case ExprToken_T.NoObject:
-                case ExprToken_T.BoolVariable:
                 case ExprToken_T.IteratorPop:
                 case ExprToken_T.IteratorNext:
+                    return tokenValue2;
+                case ExprToken_T.BoolVariable:
+                    this.readToken(native, core, pkg, depth);
                     return tokenValue2;
                 case ExprToken_T.Case: {
                     const value = pkg.read("uint16") as number;
 
-                    this.bytecode.push({ type: "uint16", value });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "codeOffset", value });
                     this.bytecodeLength = this.bytecodeLength + 2;
 
                     if (value !== 0xffff)
@@ -493,7 +531,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
                     while (true) {
                         const label = new FLabelField().load(pkg);
 
-                        this.bytecode.push({ type: "label", value: label });
+                        this.bytecode.push({ offset: this.bytecodeLength, type: "label", value: label });
                         this.bytecodeLength += 8;
 
                         if (label.isNone()) break;
@@ -505,7 +543,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 case ExprToken_T.DynArrayElement:
                 case ExprToken_T.LetBool:
                 case ExprToken_T.ArrayElement:
-                case ExprToken_T.FloatToBool:
+                case ExprToken_T.LetDelegate:
                     this.readToken(native, core, pkg, depth);
                     this.readToken(native, core, pkg, depth);
                     break;
@@ -519,20 +557,28 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 case ExprToken_T.Context:
                     this.readToken(native, core, pkg, depth);
 
-                    this.bytecode.push({ type: "uint16", value: pkg.read("uint16") as number });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "contextSkipOffset", value: pkg.read("uint16") as number });
                     this.bytecodeLength = this.bytecodeLength + 2;
 
-                    this.bytecode.push({ type: "uint8", value: pkg.read("uint8") as number });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "uint8", value: pkg.read("uint8") as number });
                     this.bytecodeLength = this.bytecodeLength + 1;
 
                     this.readToken(native, core, pkg, depth);
                     return tokenValue2;
                 case ExprToken_T.MetaCast:
-                case ExprToken_T.DynamicCast:
+                case ExprToken_T.DynamicCast: {
+                    const objectIndex = pkg.read("compat32") as number;
+
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "classRef", value: objectIndex });
+                    this.bytecodeLength = this.bytecodeLength + 4;
+
+                    this.readToken(native, core, pkg, depth);
+
+                } return tokenValue2;
                 case ExprToken_T.StructMember: {
                     const objectIndex = pkg.read("compat32") as number;
 
-                    this.bytecode.push({ type: "compat", value: objectIndex });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "propertyRef", value: objectIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
 
                     this.readToken(native, core, pkg, depth);
@@ -540,52 +586,32 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 } return tokenValue2;
                 case ExprToken_T.VirtualFunction:
                 case ExprToken_T.GlobalFunction: {
-                    const objectIndex = pkg.read("compat32") as number;
+                    const nameIndex = pkg.read("compat32") as number;
 
-                    this.bytecode.push({ type: "compat", value: objectIndex });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "nameRef", value: nameIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
 
                     while (this.readToken(native, core, pkg, depth) !== ExprToken_T.EndFunctionParms);
 
-                    if (this.bytecodeLength < this.scriptSize) {
-                        const pos = pkg.tell();
-                        const token2 = pkg.read("uint8") as ExprToken_T;
-
-                        // this.bytecodeLength = this.bytecodeLength + 1;
-
-                        if (token2 === ExprToken_T.BoolToFloat) {
-                            debugger;
-                        }
-
-                        pkg.seek(pos, "set");
-                    }
+                    this.readOptionalDebugInfo(native, core, pkg, depth);
                 } return tokenValue2;
                 case ExprToken_T.FinalFunction: {
                     const objectIndex = pkg.read("compat32") as number;
 
-                    this.bytecode.push({ type: "compat", value: objectIndex });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "functionRef", value: objectIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
 
                     while (this.readToken(native, core, pkg, depth) !== ExprToken_T.EndFunctionParms);
 
-                    if (this.bytecodeLength < this.scriptSize) {
-                        const pos = pkg.tell();
-                        const token2 = pkg.read("uint8") as ExprToken_T;
-
-                        if (token2 === ExprToken_T.BoolToFloat) {
-                            debugger;
-                        }
-
-                        pkg.seek(pos, "set");
-                    }
+                    this.readOptionalDebugInfo(native, core, pkg, depth);
 
                 } return tokenValue2;
                 case ExprToken_T.IntConst:
-                    this.bytecode.push({ type: "uint32", value: pkg.read("uint32") as number });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "uint32", value: pkg.read("uint32") as number });
                     this.bytecodeLength = this.bytecodeLength + 4;
                     return tokenValue2;
                 case ExprToken_T.FloatConst:
-                    this.bytecode.push({ type: "float", value: pkg.read("float") as number });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "float", value: pkg.read("float") as number });
                     this.bytecodeLength = this.bytecodeLength + 4;
                     break;
                 case ExprToken_T.StringConst: {
@@ -600,40 +626,39 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
                     } while (true);
 
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "string", value: constant });
                     this.bytecodeLength = this.bytecodeLength + constant.length + 1;
-                    this.bytecode.push({ type: "string", value: constant });
 
                 } return tokenValue2;
-                case ExprToken_T.NameConst:
-                case ExprToken_T.FloatToInt: {
-                    const objectIndex = pkg.read("compat32") as number;
+                case ExprToken_T.NameConst: {
+                    const nameIndex = pkg.read("compat32") as number;
 
-                    this.bytecode.push({ type: "compat", value: objectIndex });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "nameRef", value: nameIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
                 } return tokenValue2;
                 case ExprToken_T.RotationConst: {
                     const struct = core.fetchObjectByType<UStruct>("Struct", "Rotator");
                     const FRotator = struct.buildClass(native);
 
-                    this.bytecode.push({ type: "rotator", value: new FRotator().load(pkg) });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "rotator", value: new FRotator().load(pkg) });
                     this.bytecodeLength = this.bytecodeLength + 4 * 3;
                 } return tokenValue2;
                 case ExprToken_T.VectorConst: {
                     const struct = core.fetchObjectByType<UStruct>("Struct", "Vector");
                     const FVector = struct.buildClass(native);
 
-                    this.bytecode.push({ type: "vector", value: new FVector().load(pkg) });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "vector", value: new FVector().load(pkg) });
 
                     this.bytecodeLength = this.bytecodeLength + 4 * 3;
                 } break;
                 case ExprToken_T.ByteConst:
                 case ExprToken_T.IntConstByte:
-                    this.bytecode.push({ type: "byte", value: pkg.read("uint8") as number });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "byte", value: pkg.read("uint8") as number });
                     this.bytecodeLength = this.bytecodeLength + 1;
                     break;
                 case ExprToken_T.Iterator:
                     this.readToken(native, core, pkg, depth);
-                    this.bytecode.push({ type: "uint16", value: pkg.read("uint16") as number });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "codeOffset", value: pkg.read("uint16") as number });
                     this.bytecodeLength = this.bytecodeLength + 2;
                     break;
                 case ExprToken_T.StructCmpEq:
@@ -644,82 +669,87 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
                     const objectIndex = pkg.read("compat32") as number;
 
-                    this.bytecode.push({ type: "compat", value: objectIndex });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "structRef", value: objectIndex });
                     this.bytecodeLength = this.bytecodeLength + 4;
 
                     this.readToken(native, core, pkg, depth);
                     this.readToken(native, core, pkg, depth);
                 } break;
-                case ExprToken_T.UnicodeStringConst:
-                    // do
-                    // {
-                    //     likelyReadUint16((int)v3, v9 + *likelyBytecodeLength);
-                    //     likelyBytecodeLength8 = *likelyBytecodeLength + 2;
-                    //     *likelyBytecodeLength = likelyBytecodeLength8;
-                    //     v9 = this[21];
-                    // }
-                    // while ( *(_BYTE *)(likelyBytecodeLength8 + v9 - 1) );
-                    debugger;
-                    throw new Error("do something here");
-                    break;
-                case ExprToken_T.BoolToByte:
-                case ExprToken_T.BoolToInt:
+                case ExprToken_T.UnicodeStringConst: {
+                    let constant = "";
+
+                    while (true) {
+                        const charCode = pkg.read("uint16") as number;
+
+                        this.bytecodeLength = this.bytecodeLength + 2;
+
+                        if (charCode === 0) break;
+
+                        constant = constant + String.fromCharCode(charCode);
+                    }
+
+                    this.bytecode.push({ offset: tokenOffset + 1, type: "string", value: constant });
+                } return tokenValue2;
+                case ExprToken_T.DynArrayInsert:
+                case ExprToken_T.DynArrayRemove:
                     this.readToken(native, core, pkg, depth);
                     this.readToken(native, core, pkg, depth);
                     this.readToken(native, core, pkg, depth);
                     break;
-                case ExprToken_T.BoolToFloat:
-                    // sub_10104296(v3, v11);
-                    // v28 = *likelyBytecodeLength + 4;
-                    // *likelyBytecodeLength = v28;
-                    // sub_10104296(v3, v28 + this[21]);
-                    // v29 = *likelyBytecodeLength + 4;
-                    // *likelyBytecodeLength = v29;
-                    // sub_10104296(v3, v29 + this[21]);
-                    // *likelyBytecodeLength += 4;
-                    // do
-                    // {
-                    //     likelyReadByte(v3, this[21] + *likelyBytecodeLength);
-                    //     v30 = *likelyBytecodeLength + 1;
-                    //     *likelyBytecodeLength = v30;
-                    // }
-                    // while ( *(_BYTE *)(v30 + this[21] - 1) );
-                    debugger;
-                    throw new Error("do something here");
-                    break;
-                case ExprToken_T.FloatToByte:
-                    // (*(void (__thiscall **)(_DWORD *, int))(*v3 + 24))(v3, v11);
-                    // likelyBytecodeLength5 = *likelyBytecodeLength + 4;
-                    // *likelyBytecodeLength = likelyBytecodeLength5;
-                    // (*(void (__thiscall **)(_DWORD *, int))(*v3 + 28))(v3, likelyBytecodeLength5 + this[21]);
-                    // *likelyBytecodeLength += 4;
-                    debugger;
-                    throw new Error("do something here");
-                    break;
+                case ExprToken_T.DebugInfo: {
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "int32", value: pkg.read("int32") as number });
+                    this.bytecodeLength = this.bytecodeLength + 4;
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "int32", value: pkg.read("int32") as number });
+                    this.bytecodeLength = this.bytecodeLength + 4;
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "int32", value: pkg.read("int32") as number });
+                    this.bytecodeLength = this.bytecodeLength + 4;
+
+                    let identifier = "";
+
+                    while (true) {
+                        const charCode = pkg.read("uint8") as number;
+
+                        this.bytecodeLength = this.bytecodeLength + 1;
+
+                        if (charCode === 0) break;
+
+                        identifier = identifier + String.fromCharCode(charCode);
+                    }
+
+                    this.bytecode.push({ offset: this.bytecodeLength - identifier.length - 1, type: "string", value: identifier });
+                } return tokenValue2;
+                case ExprToken_T.DelegateFunction: {
+                    const propertyIndex = pkg.read("compat32") as number;
+                    const nameIndex = pkg.read("compat32") as number;
+
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "propertyRef", value: propertyIndex });
+                    this.bytecodeLength = this.bytecodeLength + 4;
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "nameRef", value: nameIndex });
+                    this.bytecodeLength = this.bytecodeLength + 4;
+                } return tokenValue2;
+                case ExprToken_T.DelegateProperty: {
+                    const nameIndex = pkg.read("compat32") as number;
+
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "nameRef", value: nameIndex });
+                    this.bytecodeLength = this.bytecodeLength + 4;
+                } return tokenValue2;
                 default: debugger; throw new Error(`Bad token '${tokenHex}'`);
             }
         } else {
-            if (tokenValue >= ExprToken_T.MaxConversion && tokenValue < ExprToken_T.FirstNative) {
-                this.bytecode.push({ type: "uint8", value: pkg.read("uint8") as number });
+            if (tokenValue < ExprToken_T.FirstNative) {
+                const nativeIndex = (tokenValue - ExprToken_T.ExtendedNative) * 0x100 + pkg.read("uint8") as number;
+                const callEntry = this.bytecode[tokenIndex];
+
+                callEntry.value = nativeIndex;
+                callEntry.tokenName = UNativeRegistry.hasNativeFunc(nativeIndex) ? UNativeRegistry.getNativeFuncName(nativeIndex) : `Native${nativeIndex}`;
+
+                this.bytecode.push({ offset: this.bytecodeLength, type: "nativeIndex", value: nativeIndex });
                 this.bytecodeLength = this.bytecodeLength + 1;
             }
 
             while (this.readToken(native, core, pkg, depth) !== ExprToken_T.EndFunctionParms);
 
-            if (this.bytecodeLength < this.scriptSize) {
-                const pos = pkg.tell();
-                const token2 = pkg.read("uint8") as ExprToken_T;
-
-                // this.bytecode.push(token2);
-                // this.bytecodeLength++;
-
-                if (token2 === ExprToken_T.BoolToFloat) {
-                    debugger;
-                    throw new Error("do something here");
-                }
-
-                pkg.seek(pos, "set");
-            }
+            this.readOptionalDebugInfo(native, core, pkg, depth);
         }
 
         depth++;
@@ -729,7 +759,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
 }
 
 export default UStruct;
-export { UStruct };
+export { UStruct, ScriptBytecodeEntry_T };
 
 // struct-typed property default with no explicit class default, deferred because readValue() usually overwrites it anyway
 class PendingStructDefault<T extends UObject = UObject> extends LazyPropertyValue<T> {
@@ -904,54 +934,16 @@ enum ExprToken_T {
     UnicodeStringConst = 0x34, // Unicode string constant
     //
     StructMember = 0x36, // Struct member
-    UnkMember = 0x37,
-    //
+    DynArrayLength = 0x37,
     GlobalFunction = 0x38, // Call non-state version of a function
-
-    // Native conversions.
-    MinConversion = 0x39,    // Minimum conversion token
-    RotatorToVector = 0x39,
-    ByteToInt = 0x3A,
-    ByteToBool = 0x3B,
-    ByteToFloat = 0x3C,
-    IntToByte = 0x3D,
-    IntToBool = 0x3E,
-    IntToFloat = 0x3F,
-    BoolToByte = 0x40,
-    BoolToInt = 0x41,
-    BoolToFloat = 0x42,
-    FloatToByte = 0x43,
-    FloatToInt = 0x44,
-    FloatToBool = 0x45,
-    Unknown0x46 = 0x46,
-    ObjectToBool = 0x47,
-    NameToBool = 0x48,
-    StringToByte = 0x49,
-    StringToInt = 0x4A,
-    StringToBool = 0x4B,
-    StringToFloat = 0x4C,
-    StringToVector = 0x4D,
-    StringToRotator = 0x4E,
-    VectorToBool = 0x4F,
-    VectorToRotator = 0x50,
-    RotatorToBool = 0x51,
-    ByteToString = 0x52,
-    IntToString = 0x53,
-    BoolToString = 0x54,
-    FloatToString = 0x55,
-    ObjectToString = 0x56,
-    NameToString = 0x57,
-    VectorToString = 0x58,
-    RotatorToString = 0x59,
-    MaxConversion = 0x60,    // Maximum conversion token
+    PrimitiveCast = 0x39,
+    DynArrayInsert = 0x40,
+    DynArrayRemove = 0x41,
+    DebugInfo = 0x42,
+    DelegateFunction = 0x43,
+    DelegateProperty = 0x44,
+    LetDelegate = 0x45,
     ExtendedNative = 0x60,
-
-    UnkToken0x3f = 0x3f,
-
-    UnkToken0x61 = 0x61,
-    UnkToken0x62 = 0x62,
-    UnkToken0x6f = 0x6f,
-
     FirstNative = 0x70,
 };
 

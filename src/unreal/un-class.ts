@@ -56,6 +56,8 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
         return this;
     }
 
+    public getClassFlags() { return this._classFlags; }
+
     public getDynamicTag(friendlyName: string) { return `[C*]${friendlyName}`; }
 
     protected doLoad(pkg: C.APackage, exp: C.UExport<UObject>): void {

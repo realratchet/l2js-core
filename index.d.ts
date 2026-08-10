@@ -251,6 +251,7 @@ declare global {
 
             export type UField = import("./src/unreal/un-field").UField;
             export type UStruct<T extends UObject = UObject> = import("./src/unreal/un-struct").UStruct<T>;
+            export type ScriptBytecodeEntry_T = import("./src/unreal/un-struct").ScriptBytecodeEntry_T;
             export type UState<T extends UObject = UObject> = import("./src/unreal/un-state").UState<T>;
             export type UClass<T extends UObject = UObject> = import("./src/unreal/un-class").UClass<T>;
             export type UEnum = import("./src/unreal/un-enum").UEnum;

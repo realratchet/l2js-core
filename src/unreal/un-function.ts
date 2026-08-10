@@ -45,6 +45,11 @@ class UFunction extends UStruct {
         this.readHead = pkg.tell();
     }
 
+    public getNativeFuncIndex() { return this.nativeFuncIndex; }
+    public getOperatorPrecedence() { return this.operatorPrecendence; }
+    public getFunctionFlags() { return this._funcFlags; }
+    public getReplicationOffset() { return this.replicationOffset; }
+
     public toString() { return `Function[${this.friendlyName}]`; }
 }
 
@@ -79,4 +84,3 @@ enum FunctionFlags_T {
 
 export default UFunction;
 export { UFunction, FunctionFlags_T };
-
