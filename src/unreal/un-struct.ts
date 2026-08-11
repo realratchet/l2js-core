@@ -847,6 +847,8 @@ function getDefaultValue(propName: string, property: UnProperties.UProperty, def
                 return defaultValue.map((x: UObject) => x?.nativeClone() ?? null);
 
             return defaultValue?.nativeClone() ?? null; // defaultproperties can set None
+        case UNP_PropertyTypes.UNP_ArrayProperty:
+            return defaultValue?.nativeClone() ?? defaultValue?.slice() ?? null;
         default:
             debugger;
             throw new Error(`Property type '${property.getTypeName()}' not yet implemented.`)
