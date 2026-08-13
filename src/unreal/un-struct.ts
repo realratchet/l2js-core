@@ -5,6 +5,7 @@ import UNativeRegistry from "./un-native-registry";
 import APackage from "./un-package";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
 import * as UnProperties from "./un-property/un-properties";
+import { CastToken_T, ExprToken_T } from "./un-script-tokens";
 
 type MakeParams<T> = ConstructorParameters<{ new(): never } & T>;
 type GenericConstructorParameters<T> = ConstructorParameters<new (...args: any[]) => T>;
@@ -473,11 +474,17 @@ class UStruct<Class extends UObject = UObject> extends UField {
                     this.readToken(native, core, pkg, depth);
                     return tokenValue2;
                 case ExprToken_T.Switch:
-                case ExprToken_T.PrimitiveCast:
                     this.bytecode.push({ offset: this.bytecodeLength, type: "byte", value: pkg.read("uint8") as number });
                     this.bytecodeLength = this.bytecodeLength + 1;
                     this.readToken(native, core, pkg, depth);
                     return tokenValue2;
+                case ExprToken_T.PrimitiveCast: {
+                    const castToken = pkg.read("uint8") as CastToken_T;
+
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "byte", value: castToken, tokenName: CastToken_T[castToken] });
+                    this.bytecodeLength = this.bytecodeLength + 1;
+                    this.readToken(native, core, pkg, depth);
+                } return tokenValue2;
                 case ExprToken_T.Jump:
                     this.bytecode.push({ offset: this.bytecodeLength, type: "codeOffset", value: pkg.read("uint16") as number });
                     this.bytecodeLength = this.bytecodeLength + 2;
@@ -877,77 +884,6 @@ function addUnserializedProperty(pkg: C.AEnginePackage, propertyName: string, pr
 
     return new Property(parameters);
 }
-
-enum ExprToken_T {
-    // Variable references
-    LocalVariable = 0x00,    // A local variable
-    InstanceVariable = 0x01,    // An object variable
-    DefaultVariable = 0x02,    // Default variable for a concrete object
-
-    // Tokens
-    Return = 0x04,    // Return from function
-    Switch = 0x05,    // Switch
-    Jump = 0x06,    // Goto a local address in code
-    JumpIfNot = 0x07,    // Goto if not expression
-    Stop = 0x08,    // Stop executing state code
-    Assert = 0x09,    // Assertion
-    Case = 0x0A,    // Case
-    Nothing = 0x0B,    // No operation
-    LabelTable = 0x0C,    // Table of labels
-    GotoLabel = 0x0D,    // Goto a label
-    EatString = 0x0E, // Ignore a dynamic string
-    Let = 0x0F,    // Assign an arbitrary size value to a variable
-    DynArrayElement = 0x10, // Dynamic array element
-    New = 0x11, // New object allocation
-    ClassContext = 0x12, // Class default metaobject context
-    MetaCast = 0x13, // Metaclass cast
-    LetBool = 0x14, // Let boolean variable
-    Unknown0x15 = 0x15,
-    EndFunctionParms = 0x16,    // End of function call parameters
-    Self = 0x17,    // Self object
-    Skip = 0x18,    // Skippable expression
-    Context = 0x19,    // Call a function through an object context
-    ArrayElement = 0x1A,    // Array element
-    VirtualFunction = 0x1B,    // A function call with parameters
-    FinalFunction = 0x1C,    // A prebound function call with parameters
-    IntConst = 0x1D,    // Int constant
-    FloatConst = 0x1E,    // Floating point constant
-    StringConst = 0x1F,    // String constant
-    ObjectConst = 0x20,    // An object constant
-    NameConst = 0x21,    // A name constant
-    RotationConst = 0x22,    // A rotation constant
-    VectorConst = 0x23,    // A vector constant
-    ByteConst = 0x24,    // A byte constant
-    IntZero = 0x25,    // Zero
-    IntOne = 0x26,    // One
-    True = 0x27,    // Bool True
-    False = 0x28,    // Bool False
-    NativeParm = 0x29, // Native function parameter offset
-    NoObject = 0x2A,    // NoObject
-    Unknown0x2b = 0x2B,
-    IntConstByte = 0x2C,    // Int constant that requires 1 byte
-    BoolVariable = 0x2D,    // A bool variable which requires a bitmask
-    DynamicCast = 0x2E,    // Safe dynamic class casting
-    Iterator = 0x2F, // Begin an iterator operation
-    IteratorPop = 0x30, // Pop an iterator level
-    IteratorNext = 0x31, // Go to next iteration
-    StructCmpEq = 0x32,    // Struct binary compare-for-equal
-    StructCmpNe = 0x33,    // Struct binary compare-for-unequal
-    UnicodeStringConst = 0x34, // Unicode string constant
-    //
-    StructMember = 0x36, // Struct member
-    DynArrayLength = 0x37,
-    GlobalFunction = 0x38, // Call non-state version of a function
-    PrimitiveCast = 0x39,
-    DynArrayInsert = 0x40,
-    DynArrayRemove = 0x41,
-    DebugInfo = 0x42,
-    DelegateFunction = 0x43,
-    DelegateProperty = 0x44,
-    LetDelegate = 0x45,
-    ExtendedNative = 0x60,
-    FirstNative = 0x70,
-};
 
 class FLabelField implements IConstructable {
     public name: string = "None";

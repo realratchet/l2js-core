@@ -624,8 +624,6 @@ abstract class ANativePackage extends APackage {
 
         this.buffer = new ArrayBuffer(0);
 
-        console.log(`'${this.path}' loaded in ${performance.now() - tStart} ms`);
-
         return this;
     }
 
