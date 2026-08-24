@@ -766,7 +766,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
 }
 
 export default UStruct;
-export { UStruct, ScriptBytecodeEntry_T };
+export { UStruct, type ScriptBytecodeEntry_T };
 
 // struct-typed property default with no explicit class default, deferred because readValue() usually overwrites it anyway
 class PendingStructDefault<T extends UObject = UObject> extends LazyPropertyValue<T> {
@@ -848,8 +848,12 @@ function getDefaultValue(propName: string, property: UnProperties.UProperty, def
 
             return defaultValue;
         case UNP_PropertyTypes.UNP_ClassProperty:
-        case UNP_PropertyTypes.UNP_StructProperty:
         case UNP_PropertyTypes.UNP_ObjectProperty:
+            if (property.arrayDimensions > 1)
+                return defaultValue.slice();
+
+            return defaultValue ?? null;
+        case UNP_PropertyTypes.UNP_StructProperty:
             if (property.arrayDimensions > 1)
                 return defaultValue.map((x: UObject) => x?.nativeClone() ?? null);
 
