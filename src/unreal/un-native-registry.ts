@@ -1,9 +1,16 @@
 import registerNativeFuncs from "./un-operators";
 
+type NativeRegistry_T = {
+    getClass(className: string): any;
+    hasNativeFunc(nativeIndex: number | string): boolean;
+    registerNativeFunc(nativeIndex: number | string, func: Function): void;
+    getNativeFuncName(nativeIndex: number | string): string;
+};
+
 const NATIVE: Record<string, any> = {};
 const NATIVE_FUNCS: Record<string, Function> = {};
 
-const UNativeRegistry = new class UNativeRegistry implements INativeRegistry {
+const UNativeRegistry = new class UNativeRegistry implements NativeRegistry_T {
     public getClass(className: string) {
         const clsName = className.toLowerCase();
 
@@ -36,5 +43,4 @@ registerNativeFuncs(UNativeRegistry);
 
 export default UNativeRegistry;
 export { UNativeRegistry };
-
-type INativeRegistry = C.INativeRegistry;
+export type { NativeRegistry_T };

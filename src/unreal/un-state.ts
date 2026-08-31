@@ -1,20 +1,23 @@
 import UStruct from "./un-struct";
-import { flagBitsToDict } from "../utils/flags";
+import { flagBitsToDict, FlagDict_T } from "../utils/flags";
+import type UObject from "./un-object";
+import type APackage from "./un-package";
+import type UExport from "./un-export";
 
-abstract class UState<Class extends C.UObject = C.UObject> extends UStruct<Class> {
+abstract class UState<Class extends UObject = UObject> extends UStruct<Class> {
     protected probeMask: bigint;
     protected ignoreMask: bigint;
     protected _stateFlags: number;
     protected labelTableOffset: number;
     protected probes: string[];
-    protected stateFlags: C.FlagDict<EnumKeys.EStateFlags_T>;
+    protected stateFlags: FlagDict_T<keyof typeof EStateFlags_T>;
 
     public readonly isState = true;
 
     protected static getConstructorName() { return "State"; }
     public toString() { return `State[${this.friendlyName}]`; }
 
-    protected doLoad(pkg: C.APackage, exp: C.UExport<C.UObject>): void {
+    protected doLoad(pkg: APackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
         this.readHead = pkg.tell();

@@ -1,7 +1,8 @@
 import * as FlagUtils from "../utils/flags";
 import ObjectFlags_T from "./un-object-flags";
+import type UObject from "./un-object";
 
-class UExport<T extends C.UObject = C.UObject> {
+class UExport<T extends UObject = UObject> {
     public index: number;
 
     public idClass: number;
@@ -12,7 +13,7 @@ class UExport<T extends C.UObject = C.UObject> {
     public objectName: string = "None";
 
     public _flags: number;
-    public objectFlags: C.FlagDict<EnumKeys.ObjectFlags_T>;
+    public objectFlags: FlagUtils.FlagDict_T<keyof typeof ObjectFlags_T>;
 
     public size: number = 0;
     public offset: number;

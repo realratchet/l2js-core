@@ -2,10 +2,18 @@ import UField from "./un-field";
 import ObjectFlags_T from "./un-object-flags";
 import UObject, { LazyPropertyValue } from "./un-object";
 import UNativeRegistry from "./un-native-registry";
-import APackage from "./un-package";
+import APackage, { ANativePackage } from "./un-package";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
 import * as UnProperties from "./un-property/un-properties";
 import { CastToken_T, ExprToken_T } from "./un-script-tokens";
+import type UFunction from "./un-function";
+import type UEnum from "./un-enum";
+import type UConst from "./un-const";
+import type UState from "./un-state";
+import type UExport from "./un-export";
+import type { Constructable_T } from "./un-object-types";
+import type { EnginePackage_T, NativeTypes_T } from "./un-package-types";
+import type { PropertyExtraPars_T, PropertyTypes_T } from "./un-property/un-property-types";
 
 type MakeParams<T> = ConstructorParameters<{ new(): never } & T>;
 type GenericConstructorParameters<T> = ConstructorParameters<new (...args: any[]) => T>;
@@ -18,11 +26,11 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
     protected firstChildPropId: number;
     public readonly childPropFields = new Map<string, UnProperties.UProperty>();
-    public readonly childFunctions = new Array<C.UFunction>();
-    public readonly childEnums = new Array<C.UEnum>();
+    public readonly childFunctions = new Array<UFunction>();
+    public readonly childEnums = new Array<UEnum>();
     public readonly childStructs = new Array<UStruct>();
-    public readonly childConsts = new Array<C.UConst>();
-    public readonly childStates = new Array<C.UState>();
+    public readonly childConsts = new Array<UConst>();
+    public readonly childStates = new Array<UState>();
 
     public friendlyName: string;
     protected line: number;
@@ -126,7 +134,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
         throw new Error("Broken");
     }
 
-    protected doLoad(pkg: APackage, exp: C.UExport<UObject>): void {
+    protected doLoad(pkg: APackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
         this.readHead = pkg.tell();
@@ -166,11 +174,11 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 } else if (field instanceof UField) {
 
                     switch (field.constructor.getConstructorName()) {
-                        case "Function": this.childFunctions.push(field as C.UFunction); break;
-                        case "Enum": this.childEnums.push(field as C.UEnum); break;
-                        case "Struct": this.childStructs.push(field as C.UStruct); break;
-                        case "Const": this.childConsts.push(field as C.UConst); break;
-                        case "State": this.childStates.push(field as C.UState); break;
+                        case "Function": this.childFunctions.push(field as UFunction); break;
+                        case "Enum": this.childEnums.push(field as UEnum); break;
+                        case "Struct": this.childStructs.push(field as UStruct); break;
+                        case "Const": this.childConsts.push(field as UConst); break;
+                        case "State": this.childStates.push(field as UState); break;
                         default: debugger; break;
                     }
                 } else {
@@ -200,7 +208,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
     }
 
     // TODO: make sure constructor infers constructor parameters
-    public buildClass<T extends UObject = Class>(pkgNative: C.ANativePackage): new (...args: any) => T {
+    public buildClass<T extends UObject = Class>(pkgNative: ANativePackage): new (...args: any) => T {
         if (this.kls)
             return this.kls as any as new () => T;
 
@@ -247,7 +255,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
         const friendlyName = this.friendlyName;
         const hostClass = this;
         const Constructor = lastNative
-            ? pkgNative.getConstructor(lastNative.friendlyName as C.NativeTypes_T) as any as typeof UObject
+            ? pkgNative.getConstructor(lastNative.friendlyName as NativeTypes_T) as any as typeof UObject
             : pkgNative.getStructConstructor(this.friendlyName) as any as typeof UObject;
 
         const pkgEngine = pkgNative.loader.getEnginePackage();
@@ -294,7 +302,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 public static _classLayout: Map<string, any> = null;
 
                 protected static getConstructorName(): string { return friendlyName; }
-                protected findPropReader<T1 = any, T2 = any>(propName: string): C.UProperty<T1, T2> {
+                protected findPropReader<T1 = any, T2 = any>(propName: string): UnProperties.UProperty<T1, T2> {
                     if (propName in clsExtendedProperties)
                         return clsExtendedProperties[propName];
 
@@ -336,7 +344,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 let defaultValue = getDefaultValue(propName, property, defaultNamedProperties);
 
                 if (defaultValue === null && property.type === UNP_PropertyTypes.UNP_StructProperty)
-                    defaultValue = new PendingStructDefault(property as C.UStructProperty, pkgNative); // stateless - safe to share across instances
+                    defaultValue = new PendingStructDefault(property as UnProperties.UStructProperty, pkgNative); // stateless - safe to share across instances
                 else if (defaultValue !== null && typeof defaultValue === "object" && !(defaultValue instanceof LazyPropertyValue))
                     defaultValue = new PerInstanceDefault(propName, property, defaultNamedProperties); // mutable - must not be shared across instances
 
@@ -410,7 +418,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
     protected bytecode: ScriptBytecodeEntry_T[] = [];
     protected bytecodeLength = 0;
 
-    protected readOptionalDebugInfo(native: C.ANativePackage, core: APackage, pkg: APackage, depth: number): void {
+    protected readOptionalDebugInfo(native: ANativePackage, core: APackage, pkg: APackage, depth: number): void {
         if (this.bytecodeLength >= this.scriptSize) return;
 
         const pos = pkg.tell();
@@ -422,7 +430,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
         if (version === 100) this.readToken(native, core, pkg, depth);
     }
 
-    protected readToken(native: C.ANativePackage, core: APackage, pkg: APackage, depth: number): ExprToken_T {
+    protected readToken(native: ANativePackage, core: APackage, pkg: APackage, depth: number): ExprToken_T {
         if (depth === 64) throw new Error("Too deep");
 
         depth++;
@@ -770,10 +778,10 @@ export { UStruct, type ScriptBytecodeEntry_T };
 
 // struct-typed property default with no explicit class default, deferred because readValue() usually overwrites it anyway
 class PendingStructDefault<T extends UObject = UObject> extends LazyPropertyValue<T> {
-    protected readonly property: C.UStructProperty;
-    protected readonly pkgNative: C.ANativePackage;
+    protected readonly property: UnProperties.UStructProperty;
+    protected readonly pkgNative: ANativePackage;
 
-    public constructor(property: C.UStructProperty, pkgNative: C.ANativePackage) {
+    public constructor(property: UnProperties.UStructProperty, pkgNative: ANativePackage) {
         super();
 
         this.property = property;
@@ -804,7 +812,7 @@ class PerInstanceDefault<T = any> extends LazyPropertyValue<T> {
     }
 }
 
-function getUnsetDefaultValue(pkgNative: C.ANativePackage, property: UnProperties.UProperty) {
+function getUnsetDefaultValue(pkgNative: ANativePackage, property: UnProperties.UProperty) {
     switch (property.type) {
         case UNP_PropertyTypes.UNP_ByteProperty:
         case UNP_PropertyTypes.UNP_FloatProperty:
@@ -867,7 +875,7 @@ function getDefaultValue(propName: string, property: UnProperties.UProperty, def
 }
 
 
-function addUnserializedProperty(pkg: C.AEnginePackage, propertyName: string, properytType: C.PropertyTypes_T, propertySubType: ["Struct" | "Class", string], extraProps?: PropertyExtraPars_T): UnProperties.UProperty<any, any> {
+function addUnserializedProperty(pkg: EnginePackage_T, propertyName: string, properytType: PropertyTypes_T, propertySubType: ["Struct" | "Class", string], extraProps?: PropertyExtraPars_T): UnProperties.UProperty<any, any> {
     const parameters = Object.assign({}, extraProps, { propertyName, pkg });
 
     let Property: any;
@@ -889,7 +897,7 @@ function addUnserializedProperty(pkg: C.AEnginePackage, propertyName: string, pr
     return new Property(parameters);
 }
 
-class FLabelField implements IConstructable {
+class FLabelField implements Constructable_T {
     public name: string = "None";
     public offset: number;
 

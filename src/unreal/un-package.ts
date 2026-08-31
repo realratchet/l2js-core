@@ -16,11 +16,12 @@ import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
 import FString from "./un-string";
 import { flagBitsToDict } from "../utils/flags";
-import { pathToPkgName } from "../asset-loader";
+import { pathToPkgName, AAssetLoader } from "../asset-loader";
+import type { NativeTypes_T } from "./un-package-types";
 
 
 abstract class APackage extends UEncodedFile {
-    public readonly loader: C.AAssetLoader;
+    public readonly loader: AAssetLoader;
 
     public exports: UExport[];
     public imports: UImport[];
@@ -45,14 +46,14 @@ abstract class APackage extends UEncodedFile {
     public readonly name: string;
     private loadingStack: number[] = [];
 
-    public constructor(loader: C.AAssetLoader, path: string) {
+    public constructor(loader: AAssetLoader, path: string) {
         super(path);
 
         this.loader = loader;
         this.name = pathToPkgName(path)[0];
     }
 
-    protected addClassDependencies(nameTable: C.UName[], nameHash: Map<string, number>, imports: UImport[], exports: UExport<UObject>[]): void { }
+    protected addClassDependencies(nameTable: UName[], nameHash: Map<string, number>, imports: UImport[], exports: UExport<UObject>[]): void { }
 
     public async decode(): Promise<this> {
         if (this.buffer) return this;
@@ -543,7 +544,7 @@ abstract class APackage extends UEncodedFile {
     }
 
     protected registerNativeClasses() { }
-    protected registerNativeClass(className: C.NativeTypes_T, baseClass: C.NativeTypes_T | "None" = "None"): void {
+    protected registerNativeClass(className: NativeTypes_T, baseClass: NativeTypes_T | "None" = "None"): void {
         if (!this.nameHash.has(className)) {
             const name = new UName();
 
@@ -576,7 +577,7 @@ abstract class ANativePackage extends APackage {
     public readonly isEngine = false;
     public readonly isNative = true;
 
-    public constructor(loader: C.AAssetLoader) { super(loader, "__native__.u"); }
+    public constructor(loader: AAssetLoader) { super(loader, "__native__.u"); }
 
     protected readArrayBuffer(): Promise<ArrayBuffer> { throw new Error("Method not used by native package."); }
     public toBuffer(): ArrayBuffer { throw new Error("Method not used by native package."); }
@@ -628,9 +629,9 @@ abstract class ANativePackage extends APackage {
     }
 
     public getStructConstructor<T extends typeof UObject = typeof UObject>(constructorName: string): new () => T { return UObject as any; }
-    protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(constructorName: C.NativeTypes_T): new () => T { return UObject as any; }
+    protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T { return UObject as any; }
 
-    public getConstructor<T extends typeof UObject = typeof UObject>(constructorName: C.NativeTypes_T): new () => T {
+    public getConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T {
         let Constructor: any;
 
         switch (constructorName) {

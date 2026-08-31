@@ -1,4 +1,4 @@
-import BufferValue from "../buffer-value";
+import BufferValue, { PrimitiveNumberTypes_T, BigNumberTypes_T, ValueTypeNames_T, NumberTypes_T } from "../buffer-value";
 import * as decoders from "../crypto/decryption/decoders";
 import * as _gmp from "gmp-wasm";
 import * as modKeys from "../crypto/keys/modulo";
@@ -7,13 +7,15 @@ let gmp: _gmp.GMPLib = null;
 
 const decoderUTF16 = new TextDecoder("utf-16");
 
-interface IEncodedFile {
+type EncodedFile_T = {
     read(target: number | "guid"): DataView<ArrayBuffer>;
     read(target: "char" | "utf16"): string;
-    read<T extends C.PrimitiveNumberTypes_T | "compat32">(target: T): number;
-    read<T extends C.BigNumberTypes_T>(target: T): bigint;
-    read<T extends C.ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
+    read<T extends PrimitiveNumberTypes_T | "compat32">(target: T): number;
+    read<T extends BigNumberTypes_T>(target: T): bigint;
+    read<T extends ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
 };
+
+type Seek_T = "current" | "set";
 
 const numberTypes = [
     "int64", "uint64",
@@ -25,20 +27,20 @@ const numberTypes = [
     "guid", "char", "utf16"
 ] as const;
 
-type InstancedTypes = C.NumberTypes_T | "guid" | "char" | "utf16";
+type InstancedTypes = NumberTypes_T | "guid" | "char" | "utf16";
 const buffInstances: Record<InstancedTypes, BufferValue<InstancedTypes>> = numberTypes.reduce((acc, t) => {
     acc[t] = new BufferValue(BufferValue[t]);
     return acc;
 }, {} as any);
 
 
-// const instances: Record<C.NumberTypes_T, BufferValue<any>> = {
+// const instances: Record<NumberTypes_T, BufferValue<any>> = {
 //     compat32: new BufferValue(BufferValue.compat32)
 // }
 
 
 
-abstract class UEncodedFile implements IEncodedFile {
+abstract class UEncodedFile implements EncodedFile_T {
     public readonly path: string;
     public readonly isReadable = false;
 
@@ -84,7 +86,7 @@ abstract class UEncodedFile implements IEncodedFile {
             throw new Error("Stream is not readable!");
     }
 
-    public seek(offset: number, origin: C.Seek_T = "current") {
+    public seek(offset: number, origin: Seek_T = "current") {
         this.ensureReadable();
 
         switch (origin) {
@@ -100,15 +102,15 @@ abstract class UEncodedFile implements IEncodedFile {
 
     public read(target: number | "guid"): DataView<ArrayBuffer>;
     public read(target: "char" | "utf16"): string;
-    public read<T extends C.PrimitiveNumberTypes_T | "compat32">(target: T): number;
-    public read<T extends C.BigNumberTypes_T>(target: T): bigint;
-    public read<T extends C.ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
+    public read<T extends PrimitiveNumberTypes_T | "compat32">(target: T): number;
+    public read<T extends BigNumberTypes_T>(target: T): bigint;
+    public read<T extends ValueTypeNames_T>(target: BufferValue<T>): BufferValue<T>;
 
     public read(target: any) {
         this.ensureReadable();
 
         if (target in buffInstances) {
-            target = buffInstances[target as C.NumberTypes_T | "guid"];
+            target = buffInstances[target as NumberTypes_T | "guid"];
 
             this.offset += target.readValue(this.buffer, this.offset);
 
@@ -291,5 +293,6 @@ abstract class UEncodedFile implements IEncodedFile {
 
 export default UEncodedFile;
 export { UEncodedFile };
+export type { Seek_T };
 
 const szKB = 1024, szMB = szKB * 1024, szGB = szMB * 1024;

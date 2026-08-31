@@ -1,6 +1,8 @@
+import type { NativeRegistry_T } from "./un-native-registry";
+
 function fn_not_implemented(...args: any[]) { throw new Error(`Called non-implemented function with arguments: ${JSON.stringify(args, undefined, 4)}`) };
 
-function registerNativeFuncs(registry: C.INativeRegistry) {
+function registerNativeFuncs(registry: NativeRegistry_T) {
     const native = registry.registerNativeFunc.bind(registry);
 
     // boolean operators

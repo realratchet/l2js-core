@@ -1,17 +1,22 @@
 import * as _path from "path";
 import { SUPPORTED_EXTENSIONS } from "./supported-extensions";
+import APackage, { ANativePackage } from "./unreal/un-package";
+import type { CorePackage_T, EnginePackage_T, PackageConstructor_T, CorePackageConstructor_T, EnginePackageConstructor_T, NativePackageConstructor_T } from "./unreal/un-package-types";
+
+type AssetListInfo_T = Record<string, string>;
+type SupportedExtensions_T = "UNR" | "UTX" | "USX" | "UAX" | "U" | "UKX" | "USK" | "NATIVE" | "OGG" | "DAT" | "INT";
 
 abstract class AAssetLoader<
-    TPackage extends C.APackage = C.APackage,
-    TCorePackage extends C.ACorePackage = C.ACorePackage,
-    TEnginePackage extends C.AEnginePackage = C.AEnginePackage,
-    TNativePackage extends C.ANativePackage = C.ANativePackage
+    TPackage extends APackage = APackage,
+    TCorePackage extends CorePackage_T = CorePackage_T,
+    TEnginePackage extends EnginePackage_T = EnginePackage_T,
+    TNativePackage extends ANativePackage = ANativePackage
 > {
-    private packages = new Map<string, Map<C.SupportedExtensions_T, TPackage | TCorePackage | TEnginePackage | TNativePackage>>();
+    private packages = new Map<string, Map<SupportedExtensions_T, TPackage | TCorePackage | TEnginePackage | TNativePackage>>();
     protected pkgDependencies = new Map<string, string[]>();
 
-    protected abstract createPackage(UPackage: C.APackageConstructor | C.ACorePackageConstructor | C.AEnginePackageConstructor, downloadPath: string): TPackage;
-    protected abstract createNativePackage(UNativePackage: C.ANativePackageConstructor): TNativePackage;
+    protected abstract createPackage(UPackage: PackageConstructor_T | CorePackageConstructor_T | EnginePackageConstructor_T, downloadPath: string): TPackage;
+    protected abstract createNativePackage(UNativePackage: NativePackageConstructor_T): TNativePackage;
 
     protected constructor() { }
 
@@ -23,7 +28,7 @@ abstract class AAssetLoader<
     public getEnginePackage() { return this.pkgEngine; }
     public getNativePackage() { return this.pkgNative; }
 
-    protected init(assetList: L2JS.Core.IAssetListInfo, { UPackage, UCorePackage, UEnginePackage, UNativePackage }: InitParams_T) {
+    protected init(assetList: AssetListInfo_T, { UPackage, UCorePackage, UEnginePackage, UNativePackage }: InitParams_T) {
         this.packages.set("native", new Map([["U", this.createNativePackage(UNativePackage)]]))
 
         for (let [path, downloadPath] of Object.entries(assetList)) {
@@ -111,7 +116,7 @@ abstract class AAssetLoader<
     }
 
     public async load<T extends TPackage = TPackage>(pkg: T): Promise<T> {
-        const pkgsToLoad: Array<C.APackage> = [pkg];
+        const pkgsToLoad: Array<APackage> = [pkg];
 
         while (pkgsToLoad.length > 0) {
             const pkg = pkgsToLoad.shift();
@@ -160,16 +165,17 @@ abstract class AAssetLoader<
 
 export default AAssetLoader;
 export { AAssetLoader };
+export type { AssetListInfo_T, SupportedExtensions_T };
 
 const impProperties = ["ObjectProperty", "StructProperty", "ByteProperty", "BoolProperty", "NameProperty", "FloatProperty", "ArrayProperty", "IntProperty", "ClassProperty", "StrProperty"];
-const packageTypes = new Set<C.SupportedExtensions_T>(SUPPORTED_EXTENSIONS.slice().concat(["NATIVE"]));
-const extToTypes = new Map<C.SupportedExtensions_T, Set<string>>([...packageTypes].map(v => {
-    return [v, new Set<string>()] as [C.SupportedExtensions_T, Set<string>];
+const packageTypes = new Set<SupportedExtensions_T>(SUPPORTED_EXTENSIONS.slice().concat(["NATIVE"]));
+const extToTypes = new Map<SupportedExtensions_T, Set<string>>([...packageTypes].map(v => {
+    return [v, new Set<string>()] as [SupportedExtensions_T, Set<string>];
 }));
 
-const impToTypes = new Map<string, Set<C.SupportedExtensions_T>>();
+const impToTypes = new Map<string, Set<SupportedExtensions_T>>();
 
-function addImpExtension(ext: C.SupportedExtensions_T, ...classList: string[]) {
+function addImpExtension(ext: SupportedExtensions_T, ...classList: string[]) {
     for (const cls of classList) {
         const impName = cls as string;
 
@@ -191,9 +197,9 @@ addImpExtension("USK", "Effect");
 addImpExtension("U", "Script", "State", "Class", "Struct", "Function", "Enum", ...impProperties, "Texture");
 addImpExtension("OGG", "Music");
 
-function pathToPkgName(path: string): [string, C.SupportedExtensions_T] {
+function pathToPkgName(path: string): [string, SupportedExtensions_T] {
     const ext = _path.extname(path);
-    const extUpper = ext.slice(1).toUpperCase() as C.SupportedExtensions_T;
+    const extUpper = ext.slice(1).toUpperCase() as SupportedExtensions_T;
 
     if (!packageTypes.has(extUpper))
         throw new Error(`Unsupported package type '${ext}' for package '${_path.basename(path)}'`);
@@ -203,7 +209,7 @@ function pathToPkgName(path: string): [string, C.SupportedExtensions_T] {
 
 export { pathToPkgName };
 
-function getPackage<T extends string | "native", TPackage, TCorePackage, TEnginePackage, TNativePackage>(allPackages: Map<string, Map<C.SupportedExtensions_T, TPackage | TNativePackage | TCorePackage | TEnginePackage>>, pkgName: T, impType: string): ReturnType<T, TPackage, TCorePackage, TEnginePackage, TNativePackage> {
+function getPackage<T extends string | "native", TPackage, TCorePackage, TEnginePackage, TNativePackage>(allPackages: Map<string, Map<SupportedExtensions_T, TPackage | TNativePackage | TCorePackage | TEnginePackage>>, pkgName: T, impType: string): ReturnType<T, TPackage, TCorePackage, TEnginePackage, TNativePackage> {
     const packages = allPackages.get(pkgName.toLowerCase());
     const validExts = impToTypes.get(impType);
 
@@ -232,8 +238,8 @@ type ReturnType<T extends string | "native" | "core" | "engine", TPackage, TCore
     : TPackage;
 
 type InitParams_T = Record<string, any> | { // can contain anything but must contain at least these two packages
-    UPackage: C.APackageConstructor,
-    UCorePackage: C.ACorePackageConstructor,
-    UEnginePackage: C.ANativePackageConstructor,
-    UNativePackage: C.ANativePackageConstructor,
+    UPackage: PackageConstructor_T,
+    UCorePackage: CorePackageConstructor_T,
+    UEnginePackage: EnginePackageConstructor_T,
+    UNativePackage: NativePackageConstructor_T,
 };

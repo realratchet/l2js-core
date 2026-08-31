@@ -1,4 +1,4 @@
-import { allFlags, flagBitsToDict } from "../utils/flags";
+import { allFlags, flagBitsToDict, FlagDict_T } from "../utils/flags";
 import UExport from "./un-export";
 import UObject from "./un-object";
 import APackage from "./un-package";
@@ -12,7 +12,7 @@ class UFunction extends UStruct {
     protected returnValueOffset: number;
     protected _funcFlags: number;
     protected replicationOffset: number;
-    protected funcFlags: C.FlagDict<EnumKeys.FunctionFlags_T>;
+    protected funcFlags: FlagDict_T<keyof typeof FunctionFlags_T>;
 
     protected static getConstructorName() { return "Function"; }
 

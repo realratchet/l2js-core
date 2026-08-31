@@ -1,16 +1,19 @@
 import UState from "./un-state";
-import { flagBitsToDict } from "../utils/flags";
+import { flagBitsToDict, FlagDict_T } from "../utils/flags";
 import { FArray, FIndexArray } from "./un-array";
 import UObject from "./un-object";
+import type APackage from "./un-package";
+import type UExport from "./un-export";
+import type { Constructable_T } from "./un-object-types";
 
-class FDependencies implements IConstructable {
+class FDependencies implements Constructable_T {
     protected classId: number;
 
     public scriptTextCRC: number;
     public depth: number;
     public class: UClass;
 
-    public load(pkg: C.APackage): this {
+    public load(pkg: APackage): this {
         this.classId = pkg.read("compat32");
         this.depth = pkg.read("uint32");
         this.scriptTextCRC = pkg.read("int32");
@@ -23,7 +26,7 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
     declare ["constructor"]: typeof UClass;
 
     protected _classFlags: number;
-    public classFlags: C.FlagDict<EnumKeys.EClassFlags_T>;
+    public classFlags: FlagDict_T<keyof typeof EClassFlags_T>;
     protected classGuid: DataView;
     protected dependencies = new FArray(FDependencies);
     protected pkgImportIds = new FIndexArray();
@@ -60,7 +63,7 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
 
     public getDynamicTag(friendlyName: string) { return `[C*]${friendlyName}`; }
 
-    protected doLoad(pkg: C.APackage, exp: C.UExport<UObject>): void {
+    protected doLoad(pkg: APackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
         this.readHead = pkg.tell();

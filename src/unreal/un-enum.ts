@@ -1,6 +1,8 @@
 import UField from "./un-field";
 import { FNameArray } from "./un-array";
 import UExport from "./un-export";
+import type UObject from "./un-object";
+import type APackage from "./un-package";
 
 class UEnum extends UField {
     public readonly names = new FNameArray();
@@ -8,13 +10,13 @@ class UEnum extends UField {
 
     protected static getConstructorName() { return "Enum"; }
 
-    protected preLoad(pkg: C.APackage, exp: UExport<C.UObject>): void {
+    protected preLoad(pkg: APackage, exp: UExport<UObject>): void {
         super.preLoad(pkg, exp);
 
         this.friendlyName = exp.objectName;
     }
 
-    protected doLoad(pkg: C.APackage, exp: UExport<C.UObject>): void {
+    protected doLoad(pkg: APackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
         this.names.load(pkg);

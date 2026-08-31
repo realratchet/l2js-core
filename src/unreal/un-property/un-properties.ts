@@ -1,21 +1,24 @@
-import BufferValue from "../../buffer-value";
-import { flagBitsToDict } from "../../utils/flags";
+import BufferValue, { NumberTypes_T, StringTypes_T, ValueTypeNames_T, BigNumberTypes_T, ValidTypes_T } from "../../buffer-value";
+import { flagBitsToDict, FlagDict_T } from "../../utils/flags";
 import FArray, { FNameArray, FObjectArray, FPrimitiveArray } from "../un-array";
 import UClass from "../un-class";
 import UField from "../un-field";
 import UObject from "../un-object";
-import APackage from "../un-package";
+import APackage, { ANativePackage } from "../un-package";
 import PropertyTag, { UNP_PropertyTypes, getPropertyTypeName } from "./un-property-tag";
-import UExport from "src/unreal/un-export";
+import UExport from "../un-export";
+import type UStruct from "../un-struct";
+import type UEnum from "../un-enum";
+import type { PropertyExtraPars_T } from "./un-property-types";
 
 type PropertyConstructorParams_T = PropertyExtraPars_T & {
     propertyName?: string,
-    pkg?: C.APackage
+    pkg?: APackage
 };
 
 type ExportPropertyConstructorParams_T = PropertyExtraPars_T & {
     propertyName?: string,
-    pkg?: C.APackage,
+    pkg?: APackage,
     valueId?: number
 };
 
@@ -23,7 +26,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public abstract readonly type: UNP_PropertyTypes;
 
     public arrayDimensions: number;
-    public flagNames: C.FlagDict<EnumKeys.PropertyFlags_T>;
+    public flagNames: FlagDict_T<keyof typeof PropertyFlags_T>;
     public propertyName: string;
 
     protected flags: number;
@@ -59,7 +62,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
         this.reader = this.makeReader();
     }
 
-    protected doLoad(pkg: APackage, exp: C.UExport): void {
+    protected doLoad(pkg: APackage, exp: UExport): void {
         super.doLoad(pkg, exp);
 
         this.readHead = pkg.tell();
@@ -147,7 +150,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
 abstract class UBaseExportProperty<T1 extends UObject, T2 = T1, T3 = T2> extends UProperty<T2, T3> {
     public valueId: number;
-    public _value: C.UStruct;
+    public _value: UStruct;
 
     constructor({ valueId = 0 } = {} as ExportPropertyConstructorParams_T) {
         super(...arguments);
@@ -162,7 +165,7 @@ abstract class UBaseExportProperty<T1 extends UObject, T2 = T1, T3 = T2> extends
         return this._value;
     }
 
-    protected doLoad(pkg: APackage, exp: C.UExport<UObject>): void {
+    protected doLoad(pkg: APackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
         this.valueId = pkg.read("compat32");
@@ -203,7 +206,7 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
     public readValue(pkg: APackage): UClass { return pkg.fetchObject(pkg.read(this.reader).value); }
     protected makeDefaultValue(): UClass { return null; }
 
-    protected doLoad(pkg: APackage, exp: C.UExport<UObject>): void {
+    protected doLoad(pkg: APackage, exp: UExport<UObject>): void {
         super.doLoad(pkg, exp);
 
         this.metaClassId = pkg.read("compat32");
@@ -232,11 +235,11 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
     }
 }
 
-class UStructProperty<T extends UObject = UObject> extends UBaseExportProperty<C.UStruct, T, T> {
+class UStructProperty<T extends UObject = UObject> extends UBaseExportProperty<UStruct, T, T> {
     public readonly type = UNP_PropertyTypes.UNP_StructProperty;
 
     protected makeDefaultValue(): T { return null; }
-    public initializeDefault(pkgNative: C.ANativePackage): T {
+    public initializeDefault(pkgNative: ANativePackage): T {
         const Constructor = this.value.loadSelf().buildClass<T>(pkgNative)
 
         return new Constructor();
@@ -263,8 +266,8 @@ class UStructProperty<T extends UObject = UObject> extends UBaseExportProperty<C
     }
 }
 
-abstract class UNumericProperty<T extends C.NumberTypes_T | C.StringTypes_T> extends UProperty<BufferValue<T>, ReturnType<T>> implements IBufferValueProperty<T> {
-    declare ["constructor"]: typeof UNumericProperty & { dtype: C.ValidTypes_T<T> };
+abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends UProperty<BufferValue<T>, ReturnType<T>> {
+    declare ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<T> };
 
     public toString() { return super.toString(this.constructor.name, undefined); }
 
@@ -340,8 +343,8 @@ class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
 
 }
 
-class UByteProperty extends UBaseExportProperty<C.UEnum, BufferValue<"uint8">, number> {
-    declare ["constructor"]: typeof UNumericProperty & { dtype: C.ValidTypes_T<"uint8"> };
+class UByteProperty extends UBaseExportProperty<UEnum, BufferValue<"uint8">, number> {
+    declare ["constructor"]: typeof UNumericProperty & { dtype: ValidTypes_T<"uint8"> };
 
     public readonly type = UNP_PropertyTypes.UNP_ByteProperty;
 
@@ -480,8 +483,6 @@ export {
     PropertyFlags_T
 };
 
-type ReturnType<T extends C.ValueTypeNames_T> = T extends C.NumberTypes_T
-    ? T extends C.BigNumberTypes_T ? bigint : number
-    : T extends C.StringTypes_T ? string : DataView;
-
-type IBufferValueProperty<T extends C.ValueTypeNames_T = C.ValueTypeNames_T> = C.IBufferValueProperty<T>;
+type ReturnType<T extends ValueTypeNames_T> = T extends NumberTypes_T
+    ? T extends BigNumberTypes_T ? bigint : number
+    : T extends StringTypes_T ? string : DataView;

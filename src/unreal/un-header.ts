@@ -1,11 +1,13 @@
 import BufferValue from "../buffer-value";
+import type { FlagDict_T } from "../utils/flags";
+import type { PackageFlags_T } from "./un-package";
 
 type UGeneration = import("./un-generation").UGeneration;
 
 class UHeader {
     public version: number;
     public _packageFlags: number;
-    public packageFlags: C.FlagDict<EnumKeys.PackageFlags_T>;
+    public packageFlags: FlagDict_T<keyof typeof PackageFlags_T>;
 
     public nameCount: number;
     public nameOffset: number;
