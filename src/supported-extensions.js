@@ -1,5 +1,5 @@
 /**
- * @type {SupportedExtensions_T[]}
+ * @type {import("./asset-loader").SupportedExtensions_T[]}
  */
 const SUPPORTED_EXTENSIONS = ["UNR", "UTX", "USX", "UAX", "U", "UKX", "USK", "U", "OGG", "DAT", "INT"];
 
