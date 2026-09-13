@@ -450,7 +450,11 @@ abstract class APackage extends UEncodedFile {
     }
 
     public findObjectRef(className: string, objectName: string, groupName: string = "None"): number {
-        const isClass = className == "Class";
+        className = className.toLowerCase();
+        objectName = objectName.toLowerCase();
+        groupName = groupName.toLowerCase();
+
+        const isClass = className == "class";
 
         if (!this.exportsByName || this.exportsByNameSource !== this.exports) {
             this.exportsByName = new Map();
@@ -461,10 +465,11 @@ abstract class APackage extends UEncodedFile {
         // exports can grow between calls (registerNativeClass pushes while resolving), only index the newly appended ones
         for (let i = this.exportsByNameCount, len = this.exports.length; i < len; i++) {
             const exp = this.exports[i];
-            const list = this.exportsByName.get(exp.objectName);
+            const name = exp.objectName.toLowerCase();
+            const list = this.exportsByName.get(name);
 
             if (list) list.push(exp);
-            else this.exportsByName.set(exp.objectName, [exp]);
+            else this.exportsByName.set(name, [exp]);
         }
 
         this.exportsByNameCount = this.exports.length;
@@ -472,18 +477,18 @@ abstract class APackage extends UEncodedFile {
         const candidates = this.exportsByName.get(objectName) ?? [];
 
         for (const exp of candidates) {
-            if (groupName !== "None") {
+            if (groupName !== "none") {
                 if (exp.idPackage > 0) {
                     const pkg = this.exports[exp.idPackage - 1];
 
-                    if (pkg && groupName !== pkg.objectName) {
+                    if (pkg && groupName !== pkg.objectName.toLowerCase()) {
                         continue;
                     }
 
                 } else if (exp.idPackage < 0) {
                     const outer = this.imports[-exp.idPackage - 1];
 
-                    if (outer && groupName !== outer.objectName) {
+                    if (outer && groupName !== outer.objectName.toLowerCase()) {
                         continue;
                     }
 
@@ -496,14 +501,14 @@ abstract class APackage extends UEncodedFile {
                 if (exp.idClass > 0) {
                     const other = this.exports[exp.idClass + 1];
 
-                    if (other && className === other.objectName)
+                    if (other && className === other.objectName.toLowerCase())
                         return exp.index + 1;
 
                     debugger;
                 } else if (exp.idClass < 0) {
                     const clsImport = this.imports[-exp.idClass - 1];
 
-                    if (clsImport && objectName === clsImport.objectName) {
+                    if (clsImport && objectName === clsImport.objectName.toLowerCase()) {
                         if (clsImport.classPackage === "Native")
                             return -(clsImport.index + 1);
 
@@ -521,7 +526,7 @@ abstract class APackage extends UEncodedFile {
                     if (!inheritenceChain)
                         debugger;
 
-                    if (inheritenceChain.includes(className))
+                    if (inheritenceChain.some(name => name.toLowerCase() === className))
                         return exp.index + 1;
                 }
             }
