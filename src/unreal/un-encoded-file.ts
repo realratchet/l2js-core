@@ -68,17 +68,19 @@ abstract class UEncodedFile implements EncodedFile_T {
         this.promiseDecoding = null;
     }
 
+    // a readable is only a cursor, the binary and tables are read through the handle so free() applies to every reader
     public asReadable(): this {
 
         // if (this.isReadable)
         //     throw new Error("Already readable!");
 
-        const readable = new class Readable { }
+        const readable = Object.create(this);
 
-        Object.setPrototypeOf(readable, this);
-        Object.assign(readable, this, { isReadable: true, handle: this });
+        readable.isReadable = true;
+        readable.handle = this;
+        readable.offset = this.offset;
 
-        return readable as this;
+        return readable;
     }
 
     public ensureReadable() {

@@ -3,6 +3,7 @@ import UClass from "./un-class";
 import UEncodedFile from "./un-encoded-file";
 import UEnum from "./un-enum";
 import UExport from "./un-export";
+import UField from "./un-field";
 import UFunction from "./un-function";
 import UGeneration from "./un-generation";
 import UHeader from "./un-header";
@@ -357,7 +358,11 @@ abstract class APackage extends UEncodedFile {
                 throw Error("Could not find the object class for " + objname);
             }
 
-            const object = entry.object = this.newObject(objclass) as UObject;
+            const object = this.newObject(objclass) as UObject;
+
+            // data objects are held weakly so a decode's meshes and textures get collected, script structure stays pinned
+            if (object instanceof UField) entry.object = object;
+            else entry.weakObject = new WeakRef(object);
 
             object.setExport(this, entry);
 
@@ -399,11 +404,13 @@ abstract class APackage extends UEncodedFile {
                 throw new Error("Invalid object reference");
 
             const entry = this.exports[index];
+            const object = entry.object || (entry.weakObject && entry.weakObject.deref());
 
-            if (!entry.object)
-                this.loadExportObject(index);
+            if (object) return object as T;
 
-            return entry.object as T;
+            this.loadExportObject(index);
+
+            return (entry.object || entry.weakObject.deref()) as T;
         } else if (objref < 0) {    // Import table object
 
             const entry = this.getImportEntry(objref);

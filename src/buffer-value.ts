@@ -124,7 +124,10 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
             byteOffset = byteOffset - 1;
         }
 
-        this.bytes = new DataView(buffer, offset, this.type.bytes);
+        // a guid outlives the package buffer it was read from (UHeader survives free)
+        this.bytes = this.type.name === "guid"
+            ? new DataView(buffer.slice(offset, offset + this.type.bytes))
+            : new DataView(buffer, offset, this.type.bytes);
 
         // debugger;
 
