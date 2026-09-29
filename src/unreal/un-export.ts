@@ -19,7 +19,6 @@ class UExport<T extends UObject = UObject> {
     public offset: number;
 
     public object: T = null;
-    public weakObject: WeakRef<T> = null;
     public isFake = false;
 
     public allFlags(flags: ObjectFlags_T): boolean { return FlagUtils.allFlags(this.flags, flags); }

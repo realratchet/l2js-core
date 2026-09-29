@@ -45,7 +45,7 @@ const crypto = Object.freeze({ encoders, decoders });
 
 export { crypto };
 
-import UObject from "./unreal/un-object";
+import UObject, { LazyPropertyValue } from "./unreal/un-object";
 
-export { UObject };
+export { UObject, LazyPropertyValue };
 export default UObject;
