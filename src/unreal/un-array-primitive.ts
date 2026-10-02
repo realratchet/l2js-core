@@ -1,22 +1,23 @@
-import BufferValue from "../buffer-value";
+import BufferValue, { NumberTypes_T, StringTypes_T, ValidTypes_T, PrimitiveNumberTypes_T, BigNumberTypes_T } from "../buffer-value";
+import type APackage from "./un-package";
 
-type PrimitiveArrayTypes_T = C.NumberTypes_T | C.StringTypes_T;
+type PrimitiveArrayTypes_T = NumberTypes_T | StringTypes_T;
 
 class FArrayPrimitive<T extends PrimitiveArrayTypes_T> {
-    protected readonly type: C.ValidTypes_T<T>;
+    protected readonly type: ValidTypes_T<T>;
     public value: ReturnType<T>;
 
-    private constructor(dtype: C.ValidTypes_T<T>) {
+    private constructor(dtype: ValidTypes_T<T>) {
         this.type = dtype;
     }
 
-    public load(pkg: C.APackage): this {
+    public load(pkg: APackage): this {
         this.value = pkg.read(new BufferValue<PrimitiveArrayTypes_T>(this.type)).value as ReturnType<T>;
 
         return this;
     }
 
-    public static forType<T extends PrimitiveArrayTypes_T>(dtype: C.ValidTypes_T<T>): new (...params: any) => FArrayPrimitive<T> {
+    public static forType<T extends PrimitiveArrayTypes_T>(dtype: ValidTypes_T<T>): new (...params: any) => FArrayPrimitive<T> {
         class FArrayPrimitiveExt extends FArrayPrimitive<T> {
             constructor() { super(dtype); }
         }
@@ -29,7 +30,7 @@ export default FArrayPrimitive;
 export { FArrayPrimitive };
 
 type ReturnType<T extends PrimitiveArrayTypes_T> =
-    | T extends C.PrimitiveNumberTypes_T | "compat32" ? number
-    : T extends C.BigNumberTypes_T ? bigint
-    : T extends C.StringTypes_T ? string
+    | T extends PrimitiveNumberTypes_T | "compat32" ? number
+    : T extends BigNumberTypes_T ? bigint
+    : T extends StringTypes_T ? string
     : never;

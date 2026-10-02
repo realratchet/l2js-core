@@ -1,10 +1,13 @@
+import type APackage from "./un-package";
+import type { Constructable_T } from "./un-object-types";
+
 const decoderAnsi = new TextDecoder("windows-1252");
 const decoderUTF16 = new TextDecoder("utf-16le");
 
-class FString implements IConstructable {
+class FString implements Constructable_T {
     public value: string;
 
-    public load(pkg: C.APackage): this {
+    public load(pkg: APackage): this {
         const bufLen = pkg.read("compat32");
         const isUnicode = bufLen < 0;
         const byteLength = isUnicode ? -bufLen * 2 : bufLen;

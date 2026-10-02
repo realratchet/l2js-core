@@ -1,3 +1,5 @@
+type FlagDict_T<T extends string> = Record<T, boolean>;
+
 function allFlags(flags: number, matchFlags: number): boolean { return (flags & matchFlags) === flags; }
 function anyFlags(flags: number, matchFlags: number): boolean { return (flags & matchFlags) !== 0; }
 
@@ -14,7 +16,7 @@ function flagBitsToDict<T extends string>(flags: number, enum_: Record<T, number
         }
 
         return acc;
-    }, {} as C.FlagDict<T>);
+    }, {} as FlagDict_T<T>);
 
     if (flags !== 0) {
         const unknownFlags = flags & ~knownFlags;
@@ -32,3 +34,4 @@ function flagBitsToDict<T extends string>(flags: number, enum_: Record<T, number
 }
 
 export { anyFlags, allFlags, flagBitsToDict }
+export type { FlagDict_T };

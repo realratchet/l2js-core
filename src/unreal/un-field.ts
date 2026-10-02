@@ -1,6 +1,7 @@
-import UExport from "src/unreal/un-export";
-import APackage from "src/unreal/un-package";
+import UExport from "./un-export";
+import APackage from "./un-package";
 import UObject from "./un-object";
+import type UClass from "./un-class";
 
 abstract class UField extends UObject {
     public superFieldId: number = 0;
@@ -11,7 +12,7 @@ abstract class UField extends UObject {
     public readonly isField = true;
     protected static getConstructorName() { return "Field"; }
 
-    protected doLoad(pkg: C.APackage, exp: C.UExport): void {
+    protected doLoad(pkg: APackage, exp: UExport): void {
         if (this.constructor.name !== "UClass")
             super.doLoad(pkg, exp);
 
@@ -56,7 +57,7 @@ abstract class UField extends UObject {
             else
                 this._superField = null;
 
-            lastBase = lastBase._superField?.loadSelf() as C.UClass;
+            lastBase = lastBase._superField?.loadSelf() as UClass;
         } while (lastBase);
 
         return this._superField;
@@ -74,7 +75,7 @@ abstract class UField extends UObject {
             else
                 this._nextField = null;
 
-            lastBase = lastBase._nextField?.loadSelf() as C.UClass;
+            lastBase = lastBase._nextField?.loadSelf() as UClass;
         } while (lastBase);
 
         return this._nextField;

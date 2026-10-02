@@ -1,3 +1,5 @@
+import type APackage from "../un-package";
+
 class PropertyTag {
     protected constructor() { }
 
@@ -28,7 +30,7 @@ class PropertyTag {
         return PropertyTag.maxPoolSize;
     }
 
-    static from(pkg: C.APackage, offset: number): PropertyTag {
+    static from(pkg: APackage, offset: number): PropertyTag {
         // Try to get from pool first
         let tag: PropertyTag;
         if (PropertyTag.poolSize > 0) {
@@ -58,7 +60,7 @@ class PropertyTag {
 
     public isValid() { return this.name && this.name !== "None"; }
 
-    protected load(pkg: C.APackage, offset: number) {
+    protected load(pkg: APackage, offset: number) {
         pkg.seek(offset, "set");
 
         const nameIndex = pkg.read("compat32") as number;

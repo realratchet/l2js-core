@@ -1,8 +1,12 @@
-import BufferValue from "../buffer-value";
+import BufferValue, { NumberTypes_T, StringTypes_T, AllPrimitiveNumberTypes_T, PrimitiveNumberTypes_T, BigNumberTypes_T, ValidTypes_T } from "../buffer-value";
 import UExport from "./un-export";
 import FArrayPrimitive from "./un-array-primitive";
+import type UObject from "./un-object";
+import type APackage from "./un-package";
+import type PropertyTag from "./un-property/un-property-tag";
+import type { Constructable_T } from "./un-object-types";
 
-class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTypes_T> | IConstructable> extends Array<T> implements IConstructable {
+class FArray<T extends UObject | FArrayPrimitive<NumberTypes_T | StringTypes_T> | Constructable_T> extends Array<T> implements Constructable_T {
     declare ["constructor"]: typeof FArray;
 
     protected Constructor: { new(...pars: any): T };
@@ -22,7 +26,7 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
 
     public map<T2>(fnMap: (value: T, index: number, array: T[]) => T2): T2[] { return [...this].map(fnMap); }
 
-    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
+    public load(pkg: APackage, tag?: PropertyTag): this {
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
         const count = pkg.read("compat32");
@@ -85,13 +89,13 @@ class FArray<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTyp
     }
 }
 
-class FArrayLazy<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.StringTypes_T> | IConstructable> extends FArray<T> {
+class FArrayLazy<T extends UObject | FArrayPrimitive<NumberTypes_T | StringTypes_T> | Constructable_T> extends FArray<T> {
     protected posBegin: number;
     protected posEnd: number;
     protected isLoaded: boolean = false;
 
-    protected pkg: C.APackage;
-    protected tag?: C.PropertyTag
+    protected pkg: APackage;
+    protected tag?: PropertyTag
 
 
     public get size() { return this.posEnd - this.posBegin; }
@@ -113,7 +117,7 @@ class FArrayLazy<T extends C.UObject | FArrayPrimitive<C.NumberTypes_T | C.Strin
         return super.getElem(idx);
     }
 
-    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
+    public load(pkg: APackage, tag?: PropertyTag): this {
         this.pkg = pkg;
         this.tag = tag;
 
@@ -149,7 +153,7 @@ class FIndexArray extends FArray<FArrayPrimitive<"compat32">> {
         super(FArrayPrimitive.forType(BufferValue.compat32), len);
     }
 
-    public static loadOfSize(pkg: C.APackage, size: number): FIndexArray {
+    public static loadOfSize(pkg: APackage, size: number): FIndexArray {
         const indexArray = new FIndexArray();
         const Constructor = FArrayPrimitive.forType(BufferValue.compat32);
 
@@ -174,10 +178,10 @@ class FStringArray extends FArray<FArrayPrimitive<"char">> {
     }
 }
 
-class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements IConstructable {
+class FObjectArray<T extends UObject = UObject> extends Array<T> implements Constructable_T {
     protected indexArray = new FIndexArray();
 
-    public static loadOfIndex<T extends C.UObject = C.UObject>(indexArray: FIndexArray, pkg: C.APackage, tag?: C.PropertyTag): FObjectArray<T> {
+    public static loadOfIndex<T extends UObject = UObject>(indexArray: FIndexArray, pkg: APackage, tag?: PropertyTag): FObjectArray<T> {
         const objectArray = new FObjectArray<T>();
         objectArray.indexArray = indexArray;
 
@@ -188,7 +192,7 @@ class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements 
         return objectArray;
     }
 
-    public static loadOfSize<T extends C.UObject = C.UObject>(size: number, pkg: C.APackage, tag?: C.PropertyTag): FObjectArray<T> {
+    public static loadOfSize<T extends UObject = UObject>(size: number, pkg: APackage, tag?: PropertyTag): FObjectArray<T> {
         const objectArray = new FObjectArray<T>();
         objectArray.indexArray = FIndexArray.loadOfSize(pkg, size);
 
@@ -199,7 +203,7 @@ class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements 
         return objectArray;
     }
 
-    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
+    public load(pkg: APackage, tag?: PropertyTag): this {
         this.indexArray.load(pkg, tag);
 
         let i = 0;
@@ -238,11 +242,11 @@ class FObjectArray<T extends C.UObject = C.UObject> extends Array<T> implements 
     }
 }
 
-class FNameArray extends Array<string> implements IConstructable {
+class FNameArray extends Array<string> implements Constructable_T {
 
     protected indexArray = new FIndexArray();
 
-    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
+    public load(pkg: APackage, tag?: PropertyTag): this {
         this.indexArray.load(pkg, tag);
 
         let i = 0;
@@ -275,11 +279,11 @@ class FNameArray extends Array<string> implements IConstructable {
     }
 }
 
-class FPrimitiveArray<T extends C.AllPrimitiveNumberTypes_T> implements IConstructable {
+class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructable_T {
     declare ["constructor"]: typeof FPrimitiveArray;
 
     protected array = new DataView(new ArrayBuffer(0));
-    protected Constructor: C.ValidTypes_T<T>;
+    protected Constructor: ValidTypes_T<T>;
 
     public toString() {
         return `PrimitiveArray<${this.Constructor?.name ?? undefined}>(len=${this.getElemCount()}, ...)`;
@@ -308,7 +312,7 @@ class FPrimitiveArray<T extends C.AllPrimitiveNumberTypes_T> implements IConstru
 
     }
 
-    public constructor(constr: C.ValidTypes_T<T>) { this.Constructor = constr; }
+    public constructor(constr: ValidTypes_T<T>) { this.Constructor = constr; }
 
     public *iter(): Generator<number, null, unknown> {
         for (let i = 0, len = this.getElemCount(); i < len; i++)
@@ -319,7 +323,7 @@ class FPrimitiveArray<T extends C.AllPrimitiveNumberTypes_T> implements IConstru
 
     public map<T>(fnMap: (value: any, index: number, array: any[]) => T): T[] { return [...(this as any as Array<T>)].map(fnMap); }
 
-    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
+    public load(pkg: APackage, tag?: PropertyTag): this {
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
         const elementCount = pkg.read("compat32") as number;
@@ -371,7 +375,7 @@ class FPrimitiveArray<T extends C.AllPrimitiveNumberTypes_T> implements IConstru
     }
 }
 
-type ReturnType<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> =
+type ReturnType<T extends PrimitiveNumberTypes_T | BigNumberTypes_T> =
     | T extends "uint8" ? Uint8Array
     : T extends "int8" ? Int8Array
     : T extends "uint16" ? Uint16Array
@@ -382,10 +386,10 @@ type ReturnType<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> =
     : T extends "int64" ? BigInt64Array
     : never;
 
-class FPrimitiveArrayLazy<T extends C.PrimitiveNumberTypes_T | C.BigNumberTypes_T> extends FPrimitiveArray<T> {
+class FPrimitiveArrayLazy<T extends PrimitiveNumberTypes_T | BigNumberTypes_T> extends FPrimitiveArray<T> {
     public unkLazyInt: number;
 
-    public load(pkg: C.APackage, tag?: C.PropertyTag): this {
+    public load(pkg: APackage, tag?: PropertyTag): this {
 
         this.unkLazyInt = pkg.read("int32") as number;
 

@@ -5,6 +5,9 @@ import BufferValue from "../buffer-value";
 import { FPrimitiveArray } from "./un-array";
 import ObjectFlags_T from "./un-object-flags";
 import PropertyTag, { UNP_PropertyTypes } from "./un-property/un-property-tag";
+import type { Serializable_T } from "./un-object-types";
+import type { UProperty } from "./un-property/un-properties";
+import type { UnserializedProperty_T } from "./un-property/un-property-types";
 
 // deferred value, LazyPropertyMap resolves on first read and caches the result back into the map
 abstract class LazyPropertyValue<T = any> {
@@ -151,7 +154,7 @@ class MapReflectable extends LazyPropertyMap {
     }
 }
 
-abstract class UObject implements C.ISerializable {
+abstract class UObject implements Serializable_T {
     declare public ["constructor"]: typeof UObject & { friendlyName?: string };
 
     public static readonly LAZY_CLONE_ON_USE = true;
@@ -182,8 +185,6 @@ abstract class UObject implements C.ISerializable {
     declare protected isReady: boolean;
 
     protected pkg: APackage;
-    // public readonly propertyDict = new Map<string, any>();
-    // materialized on first use, objects created in hot paths (math structs via .make()) never touch it
     public get propertyDict(): LazyPropertyMap {
         const dict = UObject.ALLOW_EDITING ? new LazyPropertyMap() : new MapReflectable(this);
         const layout = (this.constructor as any)._classLayout as Map<string, any>;
@@ -205,11 +206,11 @@ abstract class UObject implements C.ISerializable {
         this.onSuperConstructed();
     }
 
-    public static getUnserializedProperties(): C.UnserializedProperty_T[] { return []; }
+    public static getUnserializedProperties(): UnserializedProperty_T[] { return []; }
 
-    private static unserializedPropsCache = new Map<Function, C.UnserializedProperty_T[]>();
+    private static unserializedPropsCache = new Map<Function, UnserializedProperty_T[]>();
 
-    public static collectUnserializedProperties(): C.UnserializedProperty_T[] {
+    public static collectUnserializedProperties(): UnserializedProperty_T[] {
         const cached = UObject.unserializedPropsCache.get(this);
         if (cached) return cached;
 
@@ -217,7 +218,7 @@ abstract class UObject implements C.ISerializable {
             return this.getUnserializedProperties();
 
         let base = this as any;
-        const dependencyProps: Record<string, C.UnserializedProperty_T> = {};
+        const dependencyProps: Record<string, UnserializedProperty_T> = {};
 
         do {
             for (const prop of base.getUnserializedProperties()) {
@@ -235,7 +236,7 @@ abstract class UObject implements C.ISerializable {
 
     protected onSuperConstructed(): void { }
     protected makeLayout(): void { throw new Error(`Layout for '${this.constructor.name}' must be overloaded by the package, was this created via package?.`); }
-    protected findPropReader<T1 = any, T2 = any>(propName: string): C.UProperty<T1, T2> { { throw new Error(`Layout for '${this.constructor.name}' must be overloaded by the package, was this created via package?.`); } }
+    protected findPropReader<T1 = any, T2 = any>(propName: string): UProperty<T1, T2> { { throw new Error(`Layout for '${this.constructor.name}' must be overloaded by the package, was this created via package?.`); } }
 
     protected setReadPointers(exp: UExport) {
         this.readStart = this.readHead = exp.offset;
@@ -387,7 +388,7 @@ abstract class UObject implements C.ISerializable {
 
         //     if (propertyOrig === null) {
 
-        //         const defStruct = (propReader as C.UStructProperty).initializeDefault(pkg.loader.getNativePackage());
+        //         const defStruct = (propReader as UStructProperty).initializeDefault(pkg.loader.getNativePackage());
 
         //         this.propertyDict.set(varName, defStruct);
         //     }

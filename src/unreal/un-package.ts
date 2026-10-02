@@ -16,11 +16,12 @@ import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
 import FString from "./un-string";
 import { flagBitsToDict } from "../utils/flags";
-import { pathToPkgName } from "../asset-loader";
+import { pathToPkgName, AAssetLoader } from "../asset-loader";
+import type { NativeTypes_T } from "./un-package-types";
 
 
 abstract class APackage extends UEncodedFile {
-    public readonly loader: C.AAssetLoader;
+    public readonly loader: AAssetLoader;
 
     public exports: UExport[];
     public imports: UImport[];
@@ -45,14 +46,14 @@ abstract class APackage extends UEncodedFile {
     public readonly name: string;
     private loadingStack: number[] = [];
 
-    public constructor(loader: C.AAssetLoader, path: string) {
+    public constructor(loader: AAssetLoader, path: string) {
         super(path);
 
         this.loader = loader;
         this.name = pathToPkgName(path)[0];
     }
 
-    protected addClassDependencies(nameTable: C.UName[], nameHash: Map<string, number>, imports: UImport[], exports: UExport<UObject>[]): void { }
+    protected addClassDependencies(nameTable: UName[], nameHash: Map<string, number>, imports: UImport[], exports: UExport<UObject>[]): void { }
 
     public async decode(): Promise<this> {
         if (this.buffer) return this;
@@ -449,7 +450,11 @@ abstract class APackage extends UEncodedFile {
     }
 
     public findObjectRef(className: string, objectName: string, groupName: string = "None"): number {
-        const isClass = className == "Class";
+        className = className.toLowerCase();
+        objectName = objectName.toLowerCase();
+        groupName = groupName.toLowerCase();
+
+        const isClass = className == "class";
 
         if (!this.exportsByName || this.exportsByNameSource !== this.exports) {
             this.exportsByName = new Map();
@@ -460,10 +465,11 @@ abstract class APackage extends UEncodedFile {
         // exports can grow between calls (registerNativeClass pushes while resolving), only index the newly appended ones
         for (let i = this.exportsByNameCount, len = this.exports.length; i < len; i++) {
             const exp = this.exports[i];
-            const list = this.exportsByName.get(exp.objectName);
+            const name = exp.objectName.toLowerCase();
+            const list = this.exportsByName.get(name);
 
             if (list) list.push(exp);
-            else this.exportsByName.set(exp.objectName, [exp]);
+            else this.exportsByName.set(name, [exp]);
         }
 
         this.exportsByNameCount = this.exports.length;
@@ -471,18 +477,18 @@ abstract class APackage extends UEncodedFile {
         const candidates = this.exportsByName.get(objectName) ?? [];
 
         for (const exp of candidates) {
-            if (groupName !== "None") {
+            if (groupName !== "none") {
                 if (exp.idPackage > 0) {
                     const pkg = this.exports[exp.idPackage - 1];
 
-                    if (pkg && groupName !== pkg.objectName) {
+                    if (pkg && groupName !== pkg.objectName.toLowerCase()) {
                         continue;
                     }
 
                 } else if (exp.idPackage < 0) {
                     const outer = this.imports[-exp.idPackage - 1];
 
-                    if (outer && groupName !== outer.objectName) {
+                    if (outer && groupName !== outer.objectName.toLowerCase()) {
                         continue;
                     }
 
@@ -495,14 +501,14 @@ abstract class APackage extends UEncodedFile {
                 if (exp.idClass > 0) {
                     const other = this.exports[exp.idClass + 1];
 
-                    if (other && className === other.objectName)
+                    if (other && className === other.objectName.toLowerCase())
                         return exp.index + 1;
 
                     debugger;
                 } else if (exp.idClass < 0) {
                     const clsImport = this.imports[-exp.idClass - 1];
 
-                    if (clsImport && objectName === clsImport.objectName) {
+                    if (clsImport && objectName === clsImport.objectName.toLowerCase()) {
                         if (clsImport.classPackage === "Native")
                             return -(clsImport.index + 1);
 
@@ -520,7 +526,7 @@ abstract class APackage extends UEncodedFile {
                     if (!inheritenceChain)
                         debugger;
 
-                    if (inheritenceChain.includes(className))
+                    if (inheritenceChain.some(name => name.toLowerCase() === className))
                         return exp.index + 1;
                 }
             }
@@ -543,7 +549,7 @@ abstract class APackage extends UEncodedFile {
     }
 
     protected registerNativeClasses() { }
-    protected registerNativeClass(className: C.NativeTypes_T, baseClass: C.NativeTypes_T | "None" = "None"): void {
+    protected registerNativeClass(className: NativeTypes_T, baseClass: NativeTypes_T | "None" = "None"): void {
         if (!this.nameHash.has(className)) {
             const name = new UName();
 
@@ -576,7 +582,7 @@ abstract class ANativePackage extends APackage {
     public readonly isEngine = false;
     public readonly isNative = true;
 
-    public constructor(loader: C.AAssetLoader) { super(loader, "__native__.u"); }
+    public constructor(loader: AAssetLoader) { super(loader, "__native__.u"); }
 
     protected readArrayBuffer(): Promise<ArrayBuffer> { throw new Error("Method not used by native package."); }
     public toBuffer(): ArrayBuffer { throw new Error("Method not used by native package."); }
@@ -624,15 +630,13 @@ abstract class ANativePackage extends APackage {
 
         this.buffer = new ArrayBuffer(0);
 
-        console.log(`'${this.path}' loaded in ${performance.now() - tStart} ms`);
-
         return this;
     }
 
     public getStructConstructor<T extends typeof UObject = typeof UObject>(constructorName: string): new () => T { return UObject as any; }
-    protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(constructorName: C.NativeTypes_T): new () => T { return UObject as any; }
+    protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T { return UObject as any; }
 
-    public getConstructor<T extends typeof UObject = typeof UObject>(constructorName: C.NativeTypes_T): new () => T {
+    public getConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T {
         let Constructor: any;
 
         switch (constructorName) {

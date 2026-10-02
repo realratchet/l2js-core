@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
-    "typings": "index.d.ts",
+    "types": "src/index.ts",
     "scripts": {
         "start": "node_modules/.bin/webpack build --config configs/development.config.js --watch",
         "build-dev": "node_modules/.bin/webpack build --config configs/development.config.js"
