@@ -185,7 +185,7 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
     public readonly type = UNP_PropertyTypes.UNP_ObjectProperty;
 
     protected makeReader(): BufferValue<"compat32"> { return new BufferValue(BufferValue.compat32); }
-    public readValue(pkg: APackage): T { return pkg.fetchObject(pkg.read(this.reader).value); }
+    public readValue(pkg: APackage): T { return pkg.fetchObject(readPropertyScalar(pkg, this.reader)); }
     protected makeDefaultValue(): T { return null; }
 
     public toString() {
@@ -203,7 +203,7 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
     protected _metaClass: UClass;
 
     protected makeReader(): BufferValue<"compat32"> { return new BufferValue(BufferValue.compat32); }
-    public readValue(pkg: APackage): UClass { return pkg.fetchObject(pkg.read(this.reader).value); }
+    public readValue(pkg: APackage): UClass { return pkg.fetchObject(readPropertyScalar(pkg, this.reader)); }
     protected makeDefaultValue(): UClass { return null; }
 
     protected doLoad(pkg: APackage, exp: UExport<UObject>): void {
@@ -271,7 +271,7 @@ abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends
 
     public toString() { return super.toString(this.constructor.name, undefined); }
 
-    public readValue(pkg: APackage) { return pkg.read(this.reader).value; }
+    public readValue(pkg: APackage) { return readPropertyScalar(pkg, this.reader); }
     protected makeReader() { return new BufferValue<T>(this.constructor.dtype); }
 }
 
@@ -298,7 +298,7 @@ class UIntProperty extends UNumericProperty<"int32"> {
 class UStrProperty extends UProperty<BufferValue<"char">, string> {
     public readonly type = UNP_PropertyTypes.UNP_StrProperty;
 
-    public readValue(pkg: APackage) { return pkg.read(this.reader).value; }
+    public readValue(pkg: APackage) { return readPropertyScalar(pkg, this.reader); }
     protected makeReader(): BufferValue<"char"> { return new BufferValue(BufferValue.char); }
     protected makeDefaultValue(): string { return ""; }
 
@@ -335,7 +335,7 @@ class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
 
     protected makeDefaultValue(): string { return "None"; }
 
-    public readValue(pkg: APackage): string { return pkg.nameTable[pkg.read(this.reader).value].name; }
+    public readValue(pkg: APackage): string { return pkg.nameTable[readPropertyScalar(pkg, this.reader)].name; }
     protected makeReader(): BufferValue<"compat32"> { return new BufferValue(BufferValue.compat32); }
 
 
@@ -350,7 +350,7 @@ class UByteProperty extends UBaseExportProperty<UEnum, BufferValue<"uint8">, num
 
     public static dtype = BufferValue.uint8;
 
-    public readValue(pkg: APackage): number { return pkg.read(this.reader).value; }
+    public readValue(pkg: APackage): number { return readPropertyScalar(pkg, this.reader); }
     protected makeReader(): BufferValue<"uint8"> { return new BufferValue(BufferValue.uint8); }
     protected makeDefaultValue(): number { return 0; }
 
@@ -482,6 +482,21 @@ export {
     UArrayProperty,
     PropertyFlags_T
 };
+
+const cachePropertyBytes = new WeakMap<BufferValue<any>, DataView>();
+
+function readPropertyScalar(pkg: APackage, reader: BufferValue<any>): any {
+    const value = pkg.read(reader).value;
+    let bytes = cachePropertyBytes.get(reader);
+
+    if (!bytes || bytes.byteLength !== reader.bytes.byteLength)
+        cachePropertyBytes.set(reader, bytes = new DataView(new ArrayBuffer(reader.bytes.byteLength)));
+
+    new Uint8Array(bytes.buffer).set(new Uint8Array(reader.bytes.buffer, reader.bytes.byteOffset, reader.bytes.byteLength));
+    reader.bytes = bytes;
+
+    return value;
+}
 
 type ReturnType<T extends ValueTypeNames_T> = T extends NumberTypes_T
     ? T extends BigNumberTypes_T ? bigint : number

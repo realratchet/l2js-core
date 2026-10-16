@@ -297,6 +297,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
                 public static readonly nativeClass = lastNative;
                 public static readonly inheretenceChain = Object.freeze(inheretenceChain);
                 public static readonly inheritedProps = Object.freeze(clsInheritedProps);
+                public static readonly defaultNamedProperties = defaultNamedProperties;
 
                 public static _propertyMapCache: Record<string, string> = null;
                 public static _classLayout: Map<string, any> = null;
@@ -842,7 +843,9 @@ function getDefaultValue(propName: string, property: UnProperties.UProperty, def
     if (!(propName in defaultNamedProperties))
         return property.getDefaultValue(); //getUnsetDefaultValue(pkgNative, property);
 
-    const defaultValue = defaultNamedProperties[propName];
+    let defaultValue = defaultNamedProperties[propName];
+
+    if (defaultValue instanceof LazyPropertyValue) defaultValue = defaultValue.resolve();
 
     switch (property.type) {
         case UNP_PropertyTypes.UNP_ByteProperty:
@@ -867,7 +870,7 @@ function getDefaultValue(propName: string, property: UnProperties.UProperty, def
 
             return defaultValue?.nativeClone() ?? null; // defaultproperties can set None
         case UNP_PropertyTypes.UNP_ArrayProperty:
-            return defaultValue?.nativeClone() ?? defaultValue?.slice() ?? null;
+            return defaultValue?.nativeClone?.() ?? defaultValue?.slice() ?? null;
         default:
             debugger;
             throw new Error(`Property type '${property.getTypeName()}' not yet implemented.`)
