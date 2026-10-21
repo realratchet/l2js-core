@@ -623,7 +623,7 @@ class UStruct<Class extends UObject = UObject> extends UField {
 
                 } return tokenValue2;
                 case ExprToken_T.IntConst:
-                    this.bytecode.push({ offset: this.bytecodeLength, type: "uint32", value: pkg.read("uint32") as number });
+                    this.bytecode.push({ offset: this.bytecodeLength, type: "int32", value: pkg.read("int32") as number });
                     this.bytecodeLength = this.bytecodeLength + 4;
                     return tokenValue2;
                 case ExprToken_T.FloatConst:

@@ -16,7 +16,7 @@ export { UImport } from "./unreal/un-import";
 export { UField } from "./unreal/un-field";
 export { UStruct } from "./unreal/un-struct";
 export type { ScriptBytecodeEntry_T } from "./unreal/un-struct";
-export { UState } from "./unreal/un-state";
+export { UState, EStateFlags_T } from "./unreal/un-state";
 export { UClass } from "./unreal/un-class";
 export { UEnum } from "./unreal/un-enum";
 export { UFunction } from "./unreal/un-function";

@@ -24,10 +24,9 @@ abstract class UState<Class extends UObject = UObject> extends UStruct<Class> {
 
         this.probeMask = pkg.read("uint64");
         this.ignoreMask = pkg.read("uint64");
+        this.labelTableOffset = pkg.read("uint16");
         this._stateFlags = pkg.read("uint32");
         this.stateFlags = flagBitsToDict(this._stateFlags, EStateFlags_T);
-
-        this.labelTableOffset = pkg.read("uint16");
     }
 
     public getProbeMask() { return this.probeMask; }
