@@ -636,8 +636,7 @@ function deepClone<T = any>(value: T | T[]): T | T[] {
     }
 
     // Handle Unreal objects
-    if (value instanceof UObject) return value.nativeClone() as T;
-    if (value instanceof FPrimitiveArray) return value.nativeClone() as T;
+    if (typeof (value as any).nativeClone === "function") return (value as any).nativeClone() as T;
 
     debugger;
     throw new Error("not yet implemented");
