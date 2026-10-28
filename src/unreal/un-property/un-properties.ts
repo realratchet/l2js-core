@@ -9,6 +9,7 @@ import PropertyTag, { UNP_PropertyTypes, getPropertyTypeName } from "./un-proper
 import UExport from "../un-export";
 import type UStruct from "../un-struct";
 import type UEnum from "../un-enum";
+import type UFunction from "../un-function";
 import type { PropertyExtraPars_T } from "./un-property-types";
 
 type PropertyConstructorParams_T = PropertyExtraPars_T & {
@@ -217,7 +218,7 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
         if (this.metaClassId !== 0 && !this._metaClass)
             this._metaClass = this.pkg.fetchObject(this.metaClassId);
 
-        return this._value;
+        return this._metaClass;
     }
 
     public copy(other: UClassProperty): this {
@@ -305,17 +306,31 @@ class UStrProperty extends UProperty<BufferValue<"char">, string> {
     public toString() { return super.toString(this.constructor.name, undefined); }
 }
 
-class UDelegateProperty extends UProperty<any, any> {
-    protected makeDefaultValue(): any { return null; }
+class FScriptDelegate {
+    public readonly isScriptDelegate = true;
+    public object: UObject;
+    public functionName: string;
 
-    protected makeReader() {
-        throw new Error("Method not implemented.");
-    }
-    public readValue(pkg: APackage, tag: PropertyTag) {
-        throw new Error("Method not implemented.");
+    public constructor(object: UObject, functionName: string) {
+        this.object = object;
+        this.functionName = functionName;
     }
 
-    public readonly type: UNP_PropertyTypes = null;
+    public nativeClone(): FScriptDelegate { return new FScriptDelegate(this.object, this.functionName); }
+}
+
+class UDelegateProperty extends UBaseExportProperty<UFunction, null, FScriptDelegate> {
+    public readonly type = UNP_PropertyTypes.UNP_DelegateProperty;
+
+    protected makeDefaultValue(): FScriptDelegate { return null; }
+    protected makeReader(): null { return null; }
+
+    public readValue(pkg: APackage): FScriptDelegate {
+        const object = pkg.fetchObject(pkg.read("compat32"));
+        const functionName = pkg.nameTable[pkg.read("compat32")].name;
+
+        return new FScriptDelegate(object, functionName);
+    }
 }
 
 
@@ -386,7 +401,10 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
         const type = this.value.loadSelf();
 
         if (type instanceof UStructProperty || type instanceof UClassProperty) {
-            return new FArray(type.value.buildClass(pkg.loader.getNativePackage())).load(pkg, tag);
+            const struct = type.value.loadSelf();
+            const isNative = type instanceof UStructProperty && (["Vector", "Rotator", "Color"].includes(struct.friendlyName) || pkg.header.getArchiveFileVersion() < 0x76);
+
+            return new FArray(struct.buildClass(pkg.loader.getNativePackage())).load(pkg, tag, isNative);
         } else if (type instanceof UObjectProperty) {
             return new FObjectArray().load(pkg, tag);
         } else if (type instanceof UIntProperty) {

@@ -60,6 +60,7 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
     }
 
     public getClassFlags() { return this._classFlags; }
+    public getClassConfigName() { return this.classConfigName; }
 
     public getDynamicTag(friendlyName: string) { return `[C*]${friendlyName}`; }
 

@@ -136,7 +136,7 @@ function getPropertyTypeName(type: UNP_PropertyTypes) {
         case UNP_PropertyTypes.UNP_ObjectProperty: return "Object";
         case UNP_PropertyTypes.UNP_NameProperty: return "Name";
         case UNP_PropertyTypes.UNP_StrProperty: return "Str";
-        case UNP_PropertyTypes.UNP_StringProperty: return "String";
+        case UNP_PropertyTypes.UNP_DelegateProperty: return "Delegate";
         case UNP_PropertyTypes.UNP_ArrayProperty: return "Array";
         case UNP_PropertyTypes.UNP_ClassProperty: return "Class";
         case UNP_PropertyTypes.UNP_VectorProperty: return "Vector";
@@ -155,7 +155,7 @@ enum UNP_PropertyTypes {
     UNP_FloatProperty /*     */ = 0x4,
     UNP_ObjectProperty /*    */ = 0x5,
     UNP_NameProperty /*      */ = 0x6,
-    UNP_StringProperty /*    */ = 0x7,
+    UNP_DelegateProperty /*  */ = 0x7,
     UNP_ClassProperty /*     */ = 0x8,
     UNP_ArrayProperty /*     */ = 0x9,
     UNP_StructProperty /*    */ = 0xA,

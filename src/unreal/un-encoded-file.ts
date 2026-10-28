@@ -253,7 +253,9 @@ abstract class UEncodedFile implements EncodedFile_T {
         return this.handle.promiseDecoding = this.promiseDecoding = (async () => {
             this.buffer = await this.readArrayBuffer();
 
-            const signature = this.read(new BufferValue(BufferValue.uint32));
+            const signature = new BufferValue(BufferValue.uint32);
+
+            if ((this.source ? this.source.size : this.buffer.byteLength) >= signature.bytes.byteLength) this.read(signature);
             const HEADER_SIZE = 28;
             const HEADER_VER_OFFSET = 22;
 
