@@ -13,7 +13,7 @@ class UExport<T extends UObject = UObject> {
     public objectName: string = "None";
 
     public _flags: number;
-    public objectFlags: FlagUtils.FlagDict_T<keyof typeof ObjectFlags_T>;
+    public get objectFlags(): FlagUtils.FlagDict_T<keyof typeof ObjectFlags_T> { return FlagUtils.flagBitsToDict(this._flags, ObjectFlags_T); }
 
     public size: number = 0;
     public offset: number;
@@ -27,7 +27,6 @@ class UExport<T extends UObject = UObject> {
     get flags() { return this._flags; }
     set flags(flags: number) {
         this._flags = flags;
-        this.objectFlags = FlagUtils.flagBitsToDict(flags, ObjectFlags_T);
     }
 
     public toString() { return `${this.isFake ? '!' : ''}Export(id=${this.index + 1}, name=${this.objectName}, flags=[${Object.entries(this.objectFlags || {}).filter(([, v]) => v).map(([k,]) => k).join(",")}])`; }

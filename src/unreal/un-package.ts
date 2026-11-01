@@ -15,7 +15,6 @@ import UConst from "./un-const";
 import * as UnProperties from "./un-property/un-properties";
 import UState from "./un-state";
 import FString from "./un-string";
-import { flagBitsToDict } from "../utils/flags";
 import { pathToPkgName, AAssetLoader } from "../asset-loader";
 import type { NativeTypes_T } from "./un-package-types";
 
@@ -79,7 +78,6 @@ abstract class APackage extends UEncodedFile {
         header.version = readable.read("uint32");
 
         header._packageFlags = readable.read("uint32");
-        header.packageFlags = flagBitsToDict(header._packageFlags, PackageFlags_T);
 
         header.nameCount = readable.read("uint32");
         header.nameOffset = readable.read("uint32");

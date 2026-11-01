@@ -27,7 +27,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public abstract readonly type: UNP_PropertyTypes;
 
     public arrayDimensions: number;
-    public flagNames: FlagDict_T<keyof typeof PropertyFlags_T>;
+    public get flagNames(): FlagDict_T<keyof typeof PropertyFlags_T> { return flagBitsToDict(this.flags, PropertyFlags_T); }
     public propertyName: string;
 
     protected flags: number;
@@ -55,7 +55,6 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
         this.arrayDimensions = arrayDimensions;
         this.flags = flags;
 
-        this.flagNames = flagBitsToDict(this.flags, PropertyFlags_T);
         this.propertyName = propertyName;
 
         this.categoryNameId = categoryNameId;
@@ -70,7 +69,6 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
         this.arrayDimensions = pkg.read("uint32");
         this.flags = pkg.read("uint32");
-        this.flagNames = flagBitsToDict(this.flags, PropertyFlags_T);
 
         this.categoryNameId = pkg.read("compat32");
         this.categoryName = pkg.nameTable[this.categoryNameId].name;
@@ -91,7 +89,6 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
         this.arrayDimensions = other.arrayDimensions;
         this.flags = other.flags;
 
-        this.flagNames = other.flagNames;
         this.categoryNameId = other.categoryNameId;
         this.categoryName = other.categoryName;
         this.replicationOffset = other.replicationOffset;
@@ -501,19 +498,8 @@ export {
     PropertyFlags_T
 };
 
-const cachePropertyBytes = new WeakMap<BufferValue<any>, DataView>();
-
 function readPropertyScalar(pkg: APackage, reader: BufferValue<any>): any {
-    const value = pkg.read(reader).value;
-    let bytes = cachePropertyBytes.get(reader);
-
-    if (!bytes || bytes.byteLength !== reader.bytes.byteLength)
-        cachePropertyBytes.set(reader, bytes = new DataView(new ArrayBuffer(reader.bytes.byteLength)));
-
-    new Uint8Array(bytes.buffer).set(new Uint8Array(reader.bytes.buffer, reader.bytes.byteOffset, reader.bytes.byteLength));
-    reader.bytes = bytes;
-
-    return value;
+    return pkg.read(reader.getTypeName());
 }
 
 type ReturnType<T extends ValueTypeNames_T> = T extends NumberTypes_T

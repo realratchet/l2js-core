@@ -17,7 +17,8 @@ type EncodedFile_T = {
 
 type Seek_T = "current" | "set";
 
-type EncodedSource_T = { readonly size: number; read(offset: number, length: number): DataView; decrypt(key: number, offset: number): void; close(): void };
+type EncodedSourceWindow_T = { offset: number; view: DataView };
+type EncodedSource_T = { readonly size: number; readWindow?(offset: number, length: number): EncodedSourceWindow_T; read(offset: number, length: number): DataView; decrypt(key: number, offset: number): void; close(): void };
 
 const numberTypes = [
     "int64", "uint64",
@@ -137,8 +138,25 @@ abstract class UEncodedFile implements EncodedFile_T {
     public read(target: any) {
         this.ensureReadable();
 
-        if (target in buffInstances) {
-            target = buffInstances[target as NumberTypes_T | "guid"];
+        if (typeof target === "string" && target in buffInstances) {
+            const type = target;
+            target = buffInstances[type as InstancedTypes];
+            const source = this.source;
+
+            if (source && source.readWindow && type !== "char" && type !== "utf16" && type !== "guid") {
+                let length = type === "compat32" ? Math.min(5, source.size - this.offset) : BufferValue[type].bytes;
+                const window = source.readWindow(this.offset, length);
+                const offset = this.offset - window.offset;
+                let value: number | bigint;
+
+                if (type === "compat32") {
+                    length = target.readCompact(window.view, offset);
+                    value = target.value;
+                } else value = target.readNumber(window.view, offset);
+
+                this.offset += length;
+                return value;
+            }
 
             const view = this.source ? this.readSource(target, false) : null;
             this.offset += target.readValue(view ? view.buffer : this.buffer, view ? view.byteOffset : this.offset);

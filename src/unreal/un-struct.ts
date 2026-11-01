@@ -212,6 +212,10 @@ class UStruct<Class extends UObject = UObject> extends UField {
         if (this.kls)
             return this.kls as any as new () => T;
 
+        return this.createClass<T>(pkgNative);
+    }
+
+    protected createClass<T extends UObject = Class>(pkgNative: ANativePackage): new (...args: any) => T {
         // if (this.friendlyName === "Mover") debugger;
         // if (this.friendlyName === "L2Event") debugger;
 

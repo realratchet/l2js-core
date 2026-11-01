@@ -12,7 +12,7 @@ class UFunction extends UStruct {
     protected returnValueOffset: number;
     protected _funcFlags: number;
     protected replicationOffset: number;
-    protected funcFlags: FlagDict_T<keyof typeof FunctionFlags_T>;
+    protected get funcFlags(): FlagDict_T<keyof typeof FunctionFlags_T> { return flagBitsToDict(this._funcFlags, FunctionFlags_T); }
 
     protected static getConstructorName() { return "Function"; }
 
@@ -37,7 +37,6 @@ class UFunction extends UStruct {
             this.returnValueOffset = pkg.read("uint16");
 
         this._funcFlags = pkg.read("uint32");
-        this.funcFlags = flagBitsToDict(this._funcFlags, FunctionFlags_T);
 
         if (allFlags(this._funcFlags, FunctionFlags_T.FUNC_Net))
             this.replicationOffset = pkg.read("uint16");

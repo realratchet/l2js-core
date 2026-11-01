@@ -6,7 +6,7 @@ function anyFlags(flags: number, matchFlags: number): boolean { return (flags & 
 const regexp = /^(-)?\d+$/;
 
 function flagBitsToDict<T extends string>(flags: number, enum_: Record<T, number>) {
-    const flagNames = Object.keys(enum_).filter(x => !x.match(regexp));
+    const flagNames = Object.keys(enum_).filter(x => !regexp.test(x));
     let knownFlags = 0;
     const dict = flagNames.reduce((acc, name) => {
         const val = enum_[name as T];

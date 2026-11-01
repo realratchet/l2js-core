@@ -1,13 +1,13 @@
 import BufferValue from "../buffer-value";
-import type { FlagDict_T } from "../utils/flags";
-import type { PackageFlags_T } from "./un-package";
+import { flagBitsToDict, type FlagDict_T } from "../utils/flags";
+import { PackageFlags_T } from "./un-package";
 
 type UGeneration = import("./un-generation").UGeneration;
 
 class UHeader {
     public version: number;
     public _packageFlags: number;
-    public packageFlags: FlagDict_T<keyof typeof PackageFlags_T>;
+    public get packageFlags(): FlagDict_T<keyof typeof PackageFlags_T> { return flagBitsToDict(this._packageFlags, PackageFlags_T); }
 
     public nameCount: number;
     public nameOffset: number;
