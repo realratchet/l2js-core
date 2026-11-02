@@ -9,6 +9,7 @@ import UHeader from "./un-header";
 import UImport from "./un-import";
 import UName from "./un-name";
 import UObject from "./un-object";
+import UField from "./un-field";
 import ObjectFlags_T from "./un-object-flags";
 import UStruct from "./un-struct";
 import UConst from "./un-const";
@@ -632,12 +633,15 @@ abstract class ANativePackage extends APackage {
     }
 
     public getStructConstructor<T extends typeof UObject = typeof UObject>(constructorName: string): new () => T { return UObject as any; }
+    public getPrebuiltClass(struct: UStruct): any { return null; }
     protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T { return UObject as any; }
 
     public getConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T {
         let Constructor: any;
 
         switch (constructorName) {
+            case "Object": Constructor = UObject; break;
+            case "Field": Constructor = UField; break;
             case "Class": Constructor = UClass; break;
             case "Struct": Constructor = UStruct; break;
             case "Const": Constructor = UConst; break;

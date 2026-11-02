@@ -106,7 +106,8 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
     protected abstract makeDefaultValue(): T2;
     public getDefaultValue(): T2 | T2[] {
-        console.assert(this.arrayDimensions >= 1, `Invalid array dimensions: ${this.arrayDimensions}`);
+        if (!(this.arrayDimensions >= 1))
+            console.assert(false, `Invalid array dimensions: ${this.arrayDimensions}`);
 
         if (this.arrayDimensions === 1)
             return this.makeDefaultValue();

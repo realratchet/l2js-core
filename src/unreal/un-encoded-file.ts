@@ -167,12 +167,10 @@ abstract class UEncodedFile implements EncodedFile_T {
             return value;
 
         } else if (typeof target === "number") {
-            const _target = BufferValue.allocBytes(target);
+            const view = this.readPrimitive(this.offset - this.contentOffset, target);
+            this.offset += view.byteLength;
 
-            const view = this.source ? this.readSource(_target, true) : null;
-            this.offset += _target.readValue(view ? view.buffer : this.buffer, view ? view.byteOffset : this.offset);
-
-            return _target.value;
+            return view;
         } else if (target instanceof BufferValue) {
             const view = this.source ? this.readSource(target, true) : null;
             this.offset += target.readValue(view ? view.buffer : this.buffer, view ? view.byteOffset : this.offset);
