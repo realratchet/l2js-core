@@ -26,7 +26,7 @@ class FArray<T extends UObject | FArrayPrimitive<NumberTypes_T | StringTypes_T> 
 
     public map<T2>(fnMap: (value: T, index: number, array: T[]) => T2): T2[] { return [...this].map(fnMap); }
 
-    public load(pkg: APackage, tag?: PropertyTag): this {
+    public load(pkg: APackage, tag?: PropertyTag, isNative = false): this {
         const hasTag = tag !== null && tag !== undefined;
         const beginIndex = hasTag ? pkg.tell() : null;
         const count = pkg.read("compat32");
@@ -41,7 +41,7 @@ class FArray<T extends UObject | FArrayPrimitive<NumberTypes_T | StringTypes_T> 
         const elementSize = isFixedSize ? dataBytes / this.length : null;
 
         for (let i = 0, len = this.length; i < len; i++) {
-            const exp = hasTag ? (function () {
+            const exp = hasTag && !isNative ? (function () {
                 const exp = new UExport();
 
                 const elementOffset = pkg.tell();

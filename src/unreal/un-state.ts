@@ -10,7 +10,7 @@ abstract class UState<Class extends UObject = UObject> extends UStruct<Class> {
     protected _stateFlags: number;
     protected labelTableOffset: number;
     protected probes: string[];
-    protected stateFlags: FlagDict_T<keyof typeof EStateFlags_T>;
+    protected get stateFlags(): FlagDict_T<keyof typeof EStateFlags_T> { return flagBitsToDict(this._stateFlags, EStateFlags_T); }
 
     public readonly isState = true;
 
@@ -24,10 +24,8 @@ abstract class UState<Class extends UObject = UObject> extends UStruct<Class> {
 
         this.probeMask = pkg.read("uint64");
         this.ignoreMask = pkg.read("uint64");
-        this._stateFlags = pkg.read("uint32");
-        this.stateFlags = flagBitsToDict(this._stateFlags, EStateFlags_T);
-
         this.labelTableOffset = pkg.read("uint16");
+        this._stateFlags = pkg.read("uint32");
     }
 
     public getProbeMask() { return this.probeMask; }

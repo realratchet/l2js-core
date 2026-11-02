@@ -76,7 +76,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
     }
 
     public readValue(buffer: ArrayBuffer, offset: number) {
-        if (buffer.byteLength < offset + this.type.bytes)
+        if (this.type.name !== "char" && this.type.name !== "utf16" && this.type.name !== "compat32" && buffer.byteLength < offset + this.type.bytes)
             throw new Error("Out of bounds");
 
         let byteOffset = 0;
@@ -91,26 +91,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
             this.type.bytes = Math.max(length.value - 1, 0);
 
         } else if (this.type.name === "compat32") {
-            // Fast compat32 reading using direct DataView access
-            const view = new DataView(buffer, offset);
-            let b = view.getUint8(0);
-            const sign = b & 0x80; // sign bit
-            let shift = 6;
-            let r = b & 0x3f;
-            let bytesRead = 1;
-
-            if (b & 0x40) {  // has 2nd byte
-                do {
-                    if (bytesRead >= 5) break; // Prevent overflow
-                    b = view.getUint8(bytesRead++);
-                    r |= (b & 0x7F) << shift;
-                    shift += 7;
-                } while (b & 0x80); // has more bytes
-            }
-
-            r = sign ? -r : r;
-            this.bytes.setInt32(0, r, this.endianess === "little");
-            return bytesRead;
+            return this.readCompact(new DataView(buffer, offset), 0);
         } else if (this.type.name === "utf16") {
             const length = new BufferValue(uint32);
 
@@ -132,6 +113,28 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
         // debugger;
 
         return this.bytes.byteLength + byteOffset;
+    }
+
+    public readCompact(view: DataView, offset: number): number {
+        // Fast compat32 reading using direct DataView access
+        let b = view.getUint8(offset);
+        const sign = b & 0x80; // sign bit
+        let shift = 6;
+        let r = b & 0x3f;
+        let bytesRead = 1;
+
+        if (b & 0x40) {  // has 2nd byte
+            do {
+                if (bytesRead >= 5) break; // Prevent overflow
+                b = view.getUint8(offset + bytesRead++);
+                r |= (b & 0x7F) << shift;
+                shift += 7;
+            } while (b & 0x80); // has more bytes
+        }
+
+        r = sign ? -r : r;
+        this.bytes.setInt32(0, r, this.endianess === "little");
+        return bytesRead;
     }
 
     public get string(): string {
@@ -173,36 +176,35 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
         else throw new Error(`Invalid byte type '${typeof bytes}' expected 'number'`);
     }
 
-    public get value(): ReturnType<T> {
-        const buffer = this.bytes;
-        let funName: GetValueFun_T = null;
+    public readNumber(view: DataView, offset: number): number | bigint {
+        const littleEndian = this.endianess === "little";
 
         switch (this.type.name) {
-            case "int64": funName = "getBigInt64"; break;
-            case "uint64": funName = "getBigUint64"; break;
+            case "int64": return view.getBigInt64(offset, littleEndian);
+            case "uint64": return view.getBigUint64(offset, littleEndian);
             case "compat32":
-            case "int32":
-                funName = "getInt32";
-                break;
-            case "float": funName = "getFloat32"; break;
-            case "uint32": funName = "getUint32"; break;
-            case "int8": funName = "getInt8"; break;
-            case "uint8": funName = "getUint8"; break;
-            case "int16": funName = "getInt16"; break;
-            case "uint16": funName = "getUint16"; break;
-            case "guid":
-            case "char":
-            case "utf16":
-            case "buffer": break;
-            default: throw new Error(`Unknown type: ${this.type.name}`);
+            case "int32": return view.getInt32(offset, littleEndian);
+            case "float": return view.getFloat32(offset, littleEndian);
+            case "uint32": return view.getUint32(offset, littleEndian);
+            case "int8": return view.getInt8(offset);
+            case "uint8": return view.getUint8(offset);
+            case "int16": return view.getInt16(offset, littleEndian);
+            case "uint16": return view.getUint16(offset, littleEndian);
+            default: throw new Error(`Unknown numeric type: ${this.type.name}`);
         }
-
-        if (funName) return buffer[funName](0, this.endianess === "little") as ReturnType<T>;
-        else if (this.type.name === "guid") return this.bytes as DataView as ReturnType<T>;
-        else if (this.type.name === "char" || this.type.name === "utf16") return this.string as ReturnType<T>;
-
-        return this.bytes as ReturnType<T>;
     }
+
+    public get value(): ReturnType<T> {
+        switch (this.type.name) {
+            case "guid":
+            case "buffer": return this.bytes as ReturnType<T>;
+            case "char":
+            case "utf16": return this.string as ReturnType<T>;
+            default: return this.readNumber(this.bytes, 0) as ReturnType<T>;
+        }
+    }
+
+    public getTypeName(): T { return this.type.name; }
 
     public get hex(): string {
         if (this.type.name === "buffer" || this.type.name === "char") {

@@ -9,6 +9,7 @@ import PropertyTag, { UNP_PropertyTypes, getPropertyTypeName } from "./un-proper
 import UExport from "../un-export";
 import type UStruct from "../un-struct";
 import type UEnum from "../un-enum";
+import type UFunction from "../un-function";
 import type { PropertyExtraPars_T } from "./un-property-types";
 
 type PropertyConstructorParams_T = PropertyExtraPars_T & {
@@ -26,7 +27,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
     public abstract readonly type: UNP_PropertyTypes;
 
     public arrayDimensions: number;
-    public flagNames: FlagDict_T<keyof typeof PropertyFlags_T>;
+    public get flagNames(): FlagDict_T<keyof typeof PropertyFlags_T> { return flagBitsToDict(this.flags, PropertyFlags_T); }
     public propertyName: string;
 
     protected flags: number;
@@ -54,7 +55,6 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
         this.arrayDimensions = arrayDimensions;
         this.flags = flags;
 
-        this.flagNames = flagBitsToDict(this.flags, PropertyFlags_T);
         this.propertyName = propertyName;
 
         this.categoryNameId = categoryNameId;
@@ -69,7 +69,6 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
         this.arrayDimensions = pkg.read("uint32");
         this.flags = pkg.read("uint32");
-        this.flagNames = flagBitsToDict(this.flags, PropertyFlags_T);
 
         this.categoryNameId = pkg.read("compat32");
         this.categoryName = pkg.nameTable[this.categoryNameId].name;
@@ -90,7 +89,6 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
         this.arrayDimensions = other.arrayDimensions;
         this.flags = other.flags;
 
-        this.flagNames = other.flagNames;
         this.categoryNameId = other.categoryNameId;
         this.categoryName = other.categoryName;
         this.replicationOffset = other.replicationOffset;
@@ -185,7 +183,7 @@ class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<U
     public readonly type = UNP_PropertyTypes.UNP_ObjectProperty;
 
     protected makeReader(): BufferValue<"compat32"> { return new BufferValue(BufferValue.compat32); }
-    public readValue(pkg: APackage): T { return pkg.fetchObject(pkg.read(this.reader).value); }
+    public readValue(pkg: APackage): T { return pkg.fetchObject(readPropertyScalar(pkg, this.reader)); }
     protected makeDefaultValue(): T { return null; }
 
     public toString() {
@@ -203,7 +201,7 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
     protected _metaClass: UClass;
 
     protected makeReader(): BufferValue<"compat32"> { return new BufferValue(BufferValue.compat32); }
-    public readValue(pkg: APackage): UClass { return pkg.fetchObject(pkg.read(this.reader).value); }
+    public readValue(pkg: APackage): UClass { return pkg.fetchObject(readPropertyScalar(pkg, this.reader)); }
     protected makeDefaultValue(): UClass { return null; }
 
     protected doLoad(pkg: APackage, exp: UExport<UObject>): void {
@@ -217,7 +215,7 @@ class UClassProperty extends UBaseExportProperty<UClass, BufferValue<"compat32">
         if (this.metaClassId !== 0 && !this._metaClass)
             this._metaClass = this.pkg.fetchObject(this.metaClassId);
 
-        return this._value;
+        return this._metaClass;
     }
 
     public copy(other: UClassProperty): this {
@@ -271,7 +269,7 @@ abstract class UNumericProperty<T extends NumberTypes_T | StringTypes_T> extends
 
     public toString() { return super.toString(this.constructor.name, undefined); }
 
-    public readValue(pkg: APackage) { return pkg.read(this.reader).value; }
+    public readValue(pkg: APackage) { return readPropertyScalar(pkg, this.reader); }
     protected makeReader() { return new BufferValue<T>(this.constructor.dtype); }
 }
 
@@ -298,24 +296,38 @@ class UIntProperty extends UNumericProperty<"int32"> {
 class UStrProperty extends UProperty<BufferValue<"char">, string> {
     public readonly type = UNP_PropertyTypes.UNP_StrProperty;
 
-    public readValue(pkg: APackage) { return pkg.read(this.reader).value; }
+    public readValue(pkg: APackage) { return readPropertyScalar(pkg, this.reader); }
     protected makeReader(): BufferValue<"char"> { return new BufferValue(BufferValue.char); }
     protected makeDefaultValue(): string { return ""; }
 
     public toString() { return super.toString(this.constructor.name, undefined); }
 }
 
-class UDelegateProperty extends UProperty<any, any> {
-    protected makeDefaultValue(): any { return null; }
+class FScriptDelegate {
+    public readonly isScriptDelegate = true;
+    public object: UObject;
+    public functionName: string;
 
-    protected makeReader() {
-        throw new Error("Method not implemented.");
-    }
-    public readValue(pkg: APackage, tag: PropertyTag) {
-        throw new Error("Method not implemented.");
+    public constructor(object: UObject, functionName: string) {
+        this.object = object;
+        this.functionName = functionName;
     }
 
-    public readonly type: UNP_PropertyTypes = null;
+    public nativeClone(): FScriptDelegate { return new FScriptDelegate(this.object, this.functionName); }
+}
+
+class UDelegateProperty extends UBaseExportProperty<UFunction, null, FScriptDelegate> {
+    public readonly type = UNP_PropertyTypes.UNP_DelegateProperty;
+
+    protected makeDefaultValue(): FScriptDelegate { return null; }
+    protected makeReader(): null { return null; }
+
+    public readValue(pkg: APackage): FScriptDelegate {
+        const object = pkg.fetchObject(pkg.read("compat32"));
+        const functionName = pkg.nameTable[pkg.read("compat32")].name;
+
+        return new FScriptDelegate(object, functionName);
+    }
 }
 
 
@@ -335,7 +347,7 @@ class UNameProperty extends UProperty<BufferValue<"compat32">, string> {
 
     protected makeDefaultValue(): string { return "None"; }
 
-    public readValue(pkg: APackage): string { return pkg.nameTable[pkg.read(this.reader).value].name; }
+    public readValue(pkg: APackage): string { return pkg.nameTable[readPropertyScalar(pkg, this.reader)].name; }
     protected makeReader(): BufferValue<"compat32"> { return new BufferValue(BufferValue.compat32); }
 
 
@@ -350,7 +362,7 @@ class UByteProperty extends UBaseExportProperty<UEnum, BufferValue<"uint8">, num
 
     public static dtype = BufferValue.uint8;
 
-    public readValue(pkg: APackage): number { return pkg.read(this.reader).value; }
+    public readValue(pkg: APackage): number { return readPropertyScalar(pkg, this.reader); }
     protected makeReader(): BufferValue<"uint8"> { return new BufferValue(BufferValue.uint8); }
     protected makeDefaultValue(): number { return 0; }
 
@@ -386,7 +398,10 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
         const type = this.value.loadSelf();
 
         if (type instanceof UStructProperty || type instanceof UClassProperty) {
-            return new FArray(type.value.buildClass(pkg.loader.getNativePackage())).load(pkg, tag);
+            const struct = type.value.loadSelf();
+            const isNative = type instanceof UStructProperty && (["Vector", "Rotator", "Color"].includes(struct.friendlyName) || pkg.header.getArchiveFileVersion() < 0x76);
+
+            return new FArray(struct.buildClass(pkg.loader.getNativePackage())).load(pkg, tag, isNative);
         } else if (type instanceof UObjectProperty) {
             return new FObjectArray().load(pkg, tag);
         } else if (type instanceof UIntProperty) {
@@ -482,6 +497,10 @@ export {
     UArrayProperty,
     PropertyFlags_T
 };
+
+function readPropertyScalar(pkg: APackage, reader: BufferValue<any>): any {
+    return pkg.read(reader.getTypeName());
+}
 
 type ReturnType<T extends ValueTypeNames_T> = T extends NumberTypes_T
     ? T extends BigNumberTypes_T ? bigint : number

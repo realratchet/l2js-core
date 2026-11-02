@@ -17,6 +17,9 @@ type EncodedFile_T = {
 
 type Seek_T = "current" | "set";
 
+type EncodedSourceWindow_T = { offset: number; view: DataView };
+type EncodedSource_T = { readonly size: number; readWindow?(offset: number, length: number): EncodedSourceWindow_T; read(offset: number, length: number): DataView; decrypt(key: number, offset: number): void; close(): void };
+
 const numberTypes = [
     "int64", "uint64",
     "float",
@@ -32,6 +35,7 @@ const buffInstances: Record<InstancedTypes, BufferValue<InstancedTypes>> = numbe
     acc[t] = new BufferValue(BufferValue[t]);
     return acc;
 }, {} as any);
+const tmpReadBytes = new DataView(new ArrayBuffer(0));
 
 
 // const instances: Record<NumberTypes_T, BufferValue<any>> = {
@@ -50,6 +54,7 @@ abstract class UEncodedFile implements EncodedFile_T {
     protected handle: this = null;
     protected promiseDecoding: Promise<BufferValue>;
     protected buffer: ArrayBuffer = null;
+    protected source: EncodedSource_T = null;
     protected offset = 0;
     protected contentOffset = 0;
     protected version: string;
@@ -59,6 +64,8 @@ abstract class UEncodedFile implements EncodedFile_T {
     }
 
     public free() {
+        if (this.source) this.source.close();
+        this.source = null;
         this.signature = undefined;
         this.moduloCryptKey = undefined;
         this.version = undefined;
@@ -99,7 +106,27 @@ abstract class UEncodedFile implements EncodedFile_T {
     }
 
     public readPrimitive(byteOffset: number, byteLength: number) {
+        if (this.source) {
+            const view = this.source.read(byteOffset + this.contentOffset, byteLength);
+            return new DataView(view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength));
+        }
         return new DataView(this.buffer, byteOffset + this.contentOffset, byteLength)
+    }
+
+    protected readSource(target: BufferValue, copy: boolean): DataView {
+        const type = (target as any).type;
+        let length = type.bytes;
+
+        if (type.name === "char") {
+            const prefix = this.source.read(this.offset, Math.min(5, this.source.size - this.offset));
+            const count = buffInstances.compat32.readValue(prefix.buffer as ArrayBuffer, prefix.byteOffset);
+            length = count + Math.max(0, buffInstances.compat32.value as number);
+        } else if (type.name === "utf16") {
+            length = 4 + this.source.read(this.offset, 4).getUint32(0, true);
+        } else if (type.name === "compat32") length = Math.min(5, this.source.size - this.offset);
+
+        const view = this.source.read(this.offset, length);
+        return copy ? new DataView(view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength)) : view;
     }
 
     public read(target: number | "guid"): DataView<ArrayBuffer>;
@@ -111,21 +138,44 @@ abstract class UEncodedFile implements EncodedFile_T {
     public read(target: any) {
         this.ensureReadable();
 
-        if (target in buffInstances) {
-            target = buffInstances[target as NumberTypes_T | "guid"];
+        if (typeof target === "string" && target in buffInstances) {
+            const type = target;
+            target = buffInstances[type as InstancedTypes];
+            const source = this.source;
 
-            this.offset += target.readValue(this.buffer, this.offset);
+            if (source && source.readWindow && type !== "char" && type !== "utf16" && type !== "guid") {
+                let length = type === "compat32" ? Math.min(5, source.size - this.offset) : BufferValue[type].bytes;
+                const window = source.readWindow(this.offset, length);
+                const offset = this.offset - window.offset;
+                let value: number | bigint;
 
-            return target.value;
+                if (type === "compat32") {
+                    length = target.readCompact(window.view, offset);
+                    value = target.value;
+                } else value = target.readNumber(window.view, offset);
+
+                this.offset += length;
+                return value;
+            }
+
+            const view = this.source ? this.readSource(target, false) : null;
+            this.offset += target.readValue(view ? view.buffer : this.buffer, view ? view.byteOffset : this.offset);
+
+            const value = target.value;
+
+            if (target !== buffInstances.compat32) target.bytes = tmpReadBytes;
+            return value;
 
         } else if (typeof target === "number") {
             const _target = BufferValue.allocBytes(target);
 
-            this.offset += _target.readValue(this.buffer, this.offset);
+            const view = this.source ? this.readSource(_target, true) : null;
+            this.offset += _target.readValue(view ? view.buffer : this.buffer, view ? view.byteOffset : this.offset);
 
             return _target.value;
         } else if (target instanceof BufferValue) {
-            this.offset += target.readValue(this.buffer, this.offset);
+            const view = this.source ? this.readSource(target, true) : null;
+            this.offset += target.readValue(view ? view.buffer : this.buffer, view ? view.byteOffset : this.offset);
 
             return target;
         } else {
@@ -158,7 +208,7 @@ abstract class UEncodedFile implements EncodedFile_T {
         }
 
         for (let i = 0; i < lineCount; i++) {
-            const bytes = Math.min(this.buffer.byteLength - this.offset, 8);
+            const bytes = Math.min((this.source ? this.source.size : this.buffer.byteLength) - this.offset, 8);
             const groups = new Array(bytes).fill('.').map(() => this.read(buff));
 
             const string1 = groups.map(g => g.hex.slice(2)).join(" ");
@@ -221,7 +271,9 @@ abstract class UEncodedFile implements EncodedFile_T {
         return this.handle.promiseDecoding = this.promiseDecoding = (async () => {
             this.buffer = await this.readArrayBuffer();
 
-            const signature = this.read(new BufferValue(BufferValue.uint32));
+            const signature = new BufferValue(BufferValue.uint32);
+
+            if ((this.source ? this.source.size : this.buffer.byteLength) >= signature.bytes.byteLength) this.read(signature);
             const HEADER_SIZE = 28;
             const HEADER_VER_OFFSET = 22;
 
@@ -250,15 +302,22 @@ abstract class UEncodedFile implements EncodedFile_T {
 
                     tStart = performance.now();
 
-                    this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), this.moduloCryptKey);
+                    if (this.source) this.source.decrypt(this.moduloCryptKey, HEADER_SIZE);
+                    else this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), this.moduloCryptKey);
 
                     this.read(signature);
                 } else if (version.startsWith("4")) {
+                    if (this.source) {
+                        const view = this.source.read(0, this.source.size);
+                        this.buffer = view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength) as ArrayBuffer;
+                        this.source.close();
+                        this.handle.source = null;
+                    }
                     if (gmp === null) {
                         gmp = await _gmp.init();
                     }
 
-                    this.buffer = decoders.rsa.decryptEncdec(gmp, new Uint8Array(this.buffer, HEADER_SIZE));
+                    this.buffer = decoders.decryptRSA(gmp, new Uint8Array(this.buffer, HEADER_SIZE));
                     this.contentOffset = 0;
                     this.seek(0, "set");
 
@@ -266,7 +325,7 @@ abstract class UEncodedFile implements EncodedFile_T {
                     throw new Error(`Unsupported file version: ${version}`)
                 }
 
-                const size = this.buffer.byteLength;
+                const size = this.source ? this.source.size : this.buffer.byteLength;
                 let sizeString: string;
 
                 if (size >= szGB) sizeString = `${(size / szGB).toFixed(2)}GB`;

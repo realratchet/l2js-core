@@ -26,7 +26,7 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
     declare ["constructor"]: typeof UClass;
 
     protected _classFlags: number;
-    public classFlags: FlagDict_T<keyof typeof EClassFlags_T>;
+    public get classFlags(): FlagDict_T<keyof typeof EClassFlags_T> { return flagBitsToDict(this._classFlags, EClassFlags_T); }
     protected classGuid: DataView;
     protected dependencies = new FArray(FDependencies);
     protected pkgImportIds = new FIndexArray();
@@ -60,6 +60,7 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
     }
 
     public getClassFlags() { return this._classFlags; }
+    public getClassConfigName() { return this.classConfigName; }
 
     public getDynamicTag(friendlyName: string) { return `[C*]${friendlyName}`; }
 
@@ -71,7 +72,6 @@ class UClass<Class extends UObject = UObject> extends UState<Class> {
         const verArchive = pkg.header.getArchiveFileVersion();
 
         this._classFlags = pkg.read("uint32");
-        this.classFlags = flagBitsToDict(this._classFlags, EClassFlags_T);
         this.classGuid = pkg.read("guid");
 
 
