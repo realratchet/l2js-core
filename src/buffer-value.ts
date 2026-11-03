@@ -148,7 +148,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
         for (let i = 0, bc = this.bytes.byteLength; i < bc; i++) {
             const charCode = this.bytes.getUint8(i);
             const char = String.fromCharCode(charCode);
-            string += char.match(expIsPrintable) ? char : ".";
+            string += expIsPrintable.test(char) ? char : ".";
         }
 
         return string;

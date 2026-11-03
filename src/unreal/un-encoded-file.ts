@@ -4,6 +4,7 @@ import * as _gmp from "gmp-wasm";
 import * as modKeys from "../crypto/keys/modulo";
 
 let gmp: _gmp.GMPLib = null;
+let gmpLoading: Promise<_gmp.GMPLib> = null;
 
 const decoderUTF16 = new TextDecoder("utf-16");
 
@@ -150,8 +151,20 @@ abstract class UEncodedFile implements EncodedFile_T {
                 let value: number | bigint;
 
                 if (type === "compat32") {
-                    length = target.readCompact(window.view, offset);
-                    value = target.value;
+                    let byte = window.view.getUint8(offset);
+                    const sign = byte & 0x80;
+                    let shift = 6, result = byte & 0x3f;
+
+                    length = 1;
+                    if (byte & 0x40) {
+                        do {
+                            if (length >= 5) break;
+                            byte = window.view.getUint8(offset + length++);
+                            result |= (byte & 0x7f) << shift;
+                            shift += 7;
+                        } while (byte & 0x80);
+                    }
+                    value = (sign ? -result : result) | 0;
                 } else value = target.readNumber(window.view, offset);
 
                 this.offset += length;
@@ -312,7 +325,8 @@ abstract class UEncodedFile implements EncodedFile_T {
                         this.handle.source = null;
                     }
                     if (gmp === null) {
-                        gmp = await _gmp.init();
+                        if (!gmpLoading) gmpLoading = _gmp.init();
+                        gmp = await gmpLoading;
                     }
 
                     this.buffer = decoders.decryptRSA(gmp, new Uint8Array(this.buffer, HEADER_SIZE));

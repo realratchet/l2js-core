@@ -149,13 +149,15 @@ class FArrayLazy<T extends UObject | FArrayPrimitive<NumberTypes_T | StringTypes
 }
 
 class FIndexArray extends FArray<FArrayPrimitive<"compat32">> {
+    protected static readonly elementConstructor = FArrayPrimitive.forType(BufferValue.compat32);
+
     public constructor(len = 0) {
-        super(FArrayPrimitive.forType(BufferValue.compat32), len);
+        super(FIndexArray.elementConstructor, len);
     }
 
     public static loadOfSize(pkg: APackage, size: number): FIndexArray {
         const indexArray = new FIndexArray();
-        const Constructor = FArrayPrimitive.forType(BufferValue.compat32);
+        const Constructor = FIndexArray.elementConstructor;
 
         for (let i = 0; i < size; i++)
             indexArray.push(new Constructor().load(pkg));
@@ -169,8 +171,10 @@ class FIndexArray extends FArray<FArrayPrimitive<"compat32">> {
 }
 
 class FStringArray extends FArray<FArrayPrimitive<"char">> {
+    protected static readonly elementConstructor = FArrayPrimitive.forType(BufferValue.char);
+
     public constructor(len = 0) {
-        super(FArrayPrimitive.forType(BufferValue.char), len);
+        super(FStringArray.elementConstructor, len);
     }
 
     public toString() {
@@ -282,7 +286,7 @@ class FNameArray extends Array<string> implements Constructable_T {
 class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructable_T {
     declare ["constructor"]: typeof FPrimitiveArray;
 
-    protected array = new DataView(new ArrayBuffer(0));
+    protected array: DataView = null;
     protected Constructor: ValidTypes_T<T>;
 
     public toString() {
@@ -308,11 +312,16 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
             default: throw new Error(`Unknown type: ${this.Constructor.name}`);
         }
 
-        return (this.array as any)[funName](idx * this.Constructor.bytes, true);
+        return (this.getArray() as any)[funName](idx * this.Constructor.bytes, true);
 
     }
 
     public constructor(constr: ValidTypes_T<T>) { this.Constructor = constr; }
+
+    protected getArray(): DataView {
+        if (!this.array) this.array = new DataView(new ArrayBuffer(0));
+        return this.array;
+    }
 
     public *iter(): Generator<number, null, unknown> {
         for (let i = 0, len = this.getElemCount(); i < len; i++)
@@ -329,7 +338,7 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
         const elementCount = pkg.read("compat32") as number;
 
         if (elementCount === 0) {
-            this.array = new DataView(new ArrayBuffer(0));
+            this.array = null;
             return this;
         }
 
@@ -348,12 +357,13 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
     public getArrayBufferSlice() {
         // throw new Error("not implemented")
         // return this.array.buffer.slice(0, 0);
-        return this.array.buffer.slice(this.array.byteOffset, this.array.byteOffset + this.getByteLength());
+        return this.array ? this.array.buffer.slice(this.array.byteOffset, this.array.byteOffset + this.getByteLength()) : new ArrayBuffer(0);
     }
 
     public getTypedArray(): ReturnType<T> {
+        const array = this.getArray();
         try {
-            return new (this.Constructor.dtype as any)(this.array.buffer, this.array.byteOffset, this.getElemCount()) as any;
+            return new (this.Constructor.dtype as any)(array.buffer, array.byteOffset, this.getElemCount()) as any;
         } catch (e) {
             if (e.message.includes("should be a multiple of"))
                 return new this.Constructor.dtype(this.getArrayBufferSlice()) as any;
@@ -362,14 +372,16 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
         }
     }
 
-    public getByteLength() { return this.array.byteLength; }
+    public getByteLength() { return this.array ? this.array.byteLength : 0; }
 
     public nativeClone() { return new this.constructor(this.Constructor).copy(this); }
     public copy(other: FPrimitiveArray<T>): this {
         if (!other)
             return this;
 
-        this.array = new DataView(other.array.buffer, other.array.byteOffset, other.array.byteLength);
+        const array = other.getArray();
+
+        this.array = new DataView(array.buffer, array.byteOffset, array.byteLength);
 
         return this;
     }

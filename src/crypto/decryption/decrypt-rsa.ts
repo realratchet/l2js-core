@@ -7,7 +7,7 @@ const BLOCK_SIZE = 128;
 
 class RSADecoder {
     protected gmp: GMPLib;
-    protected buffer: Uint8Array;
+    protected buffer = new Uint8Array(BLOCK_SIZE);
     protected encodedBuffer: Uint8Array;
     protected startPosition = 0;
     protected position = 0;
@@ -16,15 +16,16 @@ class RSADecoder {
     protected rop: mpz_ptr;
     protected mod: mpz_ptr;
     protected base: mpz_ptr;
+    protected block: number;
     protected exp: number;
     protected archiveSize = 0;
 
-    constructor(gmp: GMPLib, modulus: string, exponent: number, buffer: Uint8Array) {
+    public constructor(gmp: GMPLib, modulus: string, exponent: number, buffer: Uint8Array) {
         this.gmp = gmp;
         this.encodedBuffer = buffer;
 
-        const rop = gmp.binding.mpq_t();
-        gmp.binding.mpq_init(rop);
+        const rop = gmp.binding.mpz_t();
+        gmp.binding.mpz_init(rop);
 
         const mod = gmp.binding.mpz_t();
         const ptrStrModulus = gmp.binding.malloc_cstr(modulus);
@@ -32,30 +33,29 @@ class RSADecoder {
         gmp.binding.free(ptrStrModulus);
 
         const base = gmp.binding.mpz_t();
+        gmp.binding.mpz_init(base);
 
         this.rop = rop;
         this.exp = exponent;
         this.mod = mod;
         this.base = base;
-
-        this.ensureFilled();
-        this.archiveSize = new DataView(this.buffer.buffer, this.startPosition).getUint32(0, true);
-        this.position = this.position + 4;
+        this.block = gmp.binding.malloc(BLOCK_SIZE);
     }
 
     public cleanup() {
+        this.gmp.binding.mpz_clear(this.rop);
+        this.gmp.binding.mpz_clear(this.mod);
+        this.gmp.binding.mpz_clear(this.base);
         this.gmp.binding.free(this.rop);
         this.gmp.binding.free(this.mod);
         this.gmp.binding.free(this.base);
+        this.gmp.binding.free(this.block);
     }
 
     protected *read() {
         while (this.ensureFilled()) {
-            const val = new Uint8Array(this.size - this.position);
-
-            for (let i = this.position, j = 0; i < this.size; i++, j++) {
-                val[j] = this.buffer[this.startPosition + this.position++] & 0xFF;
-            }
+            const val = this.buffer.subarray(this.startPosition + this.position, this.startPosition + this.size);
+            this.position = this.size;
 
             yield val;
         }
@@ -66,24 +66,19 @@ class RSADecoder {
         if (this.position !== this.size)
             return true;
 
-        const { gmp, rop, base, mod, exp } = this;
+        const { gmp, rop, base, mod, exp, block } = this;
 
         if (this.readOffset + BLOCK_SIZE >= this.encodedBuffer.length)
             return false;   // padding
 
-        const buffer = this.encodedBuffer.slice(this.readOffset, this.readOffset + BLOCK_SIZE);
-        const uint8arr = new Uint8Array(buffer);
-        const byteString = [...uint8arr].map(x => ("0" + x.toString(16)).slice(-2)).join("");
-
-        const gmpStrBase = gmp.binding.malloc_cstr(byteString);
-        gmp.binding.mpz_init_set_str(base, gmpStrBase, 16);
-
+        gmp.binding.mem.set(this.encodedBuffer.subarray(this.readOffset, this.readOffset + BLOCK_SIZE), block);
+        gmp.binding.mpz_import(base, BLOCK_SIZE, 1, 1, 1, 0, block);
         gmp.binding.mpz_powm_ui(rop, base, exp, mod);
 
-        gmp.binding.free(gmpStrBase);
-
-        const ropString = (new Array(byteString.length).fill("0").join("") + gmp.binding.mpz_to_string(rop, 16)).slice(-byteString.length);
-        this.buffer = new Uint8Array(ropString.match(/.{2}/g).map(x => parseInt(x, 16)));
+        const size = Math.ceil(gmp.binding.mpz_sizeinbase(rop, 2) / 8);
+        gmp.binding.mem.fill(0, block, block + BLOCK_SIZE);
+        gmp.binding.mpz_export(block + BLOCK_SIZE - size, 0, 1, 1, 1, 0, rop);
+        this.buffer.set(gmp.binding.mem.subarray(block, block + BLOCK_SIZE));
 
         this.size = this.buffer[3] & 0xff;
 
@@ -97,6 +92,10 @@ class RSADecoder {
     }
 
     public decode() {
+        this.ensureFilled();
+        this.archiveSize = new DataView(this.buffer.buffer, this.startPosition).getUint32(0, true);
+        this.position = this.position + 4;
+
         const inflator = new Inflate({ raw: false });
 
         for (let byte of this.read())
@@ -114,11 +113,11 @@ class RSADecoder {
 function decryptRSA(modulus: string, exponent: number, gmp: import("gmp-wasm").GMPLib, buffer: Uint8Array) {
     const rsa = new RSADecoder(gmp, modulus, exponent, buffer);
 
-    const decoded = rsa.decode();
-
-    rsa.cleanup();
-
-    return decoded;
+    try {
+        return rsa.decode();
+    } finally {
+        rsa.cleanup();
+    }
 }
 
 export default decryptRSA;
