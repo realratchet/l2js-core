@@ -15,7 +15,8 @@
         "noFallthroughCasesInSwitch": true,
         "declaration": true,
         "emitDeclarationOnly": true,
-        "isolatedModules": true
+        "isolatedModules": true,
+        "skipLibCheck": true
     },
     "exclude": [
         "node_modules",

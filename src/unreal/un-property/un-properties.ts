@@ -149,7 +149,7 @@ abstract class UProperty<T1 = any, T2 = T1> extends UField {
 
 abstract class UBaseExportProperty<T1 extends UObject, T2 = T1, T3 = T2> extends UProperty<T2, T3> {
     public valueId: number;
-    public _value: UStruct;
+    public _value: T1;
 
     constructor({ valueId = 0 } = {} as ExportPropertyConstructorParams_T) {
         super(...arguments);
@@ -180,7 +180,7 @@ abstract class UBaseExportProperty<T1 extends UObject, T2 = T1, T3 = T2> extends
     }
 }
 
-class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<UObject, BufferValue<"compat32">, T> {
+class UObjectProperty<T extends UObject = UObject> extends UBaseExportProperty<UClass, BufferValue<"compat32">, T> {
     public readonly type = UNP_PropertyTypes.UNP_ObjectProperty;
 
     protected makeReader(): BufferValue<"compat32"> { return new BufferValue(BufferValue.compat32); }
@@ -338,7 +338,7 @@ class UBoolProperty extends UProperty<boolean, boolean> {
 
     protected makeDefaultValue(): boolean { return false; }
     protected makeReader(): boolean { return null; }
-    public readValue(pkg: APackage, tag: PropertyTag): boolean { return tag.boolValue; }
+    public readValue(_pkg: APackage, tag: PropertyTag): boolean { return tag.boolValue; }
 
     public toString() { return super.toString("BoolProperty", undefined); }
 }
@@ -423,14 +423,14 @@ class UArrayProperty extends UBaseExportProperty<UProperty<ArrayType, ArrayType>
 
     public toString() {
         const type = this.value.loadSelf();
-        let value: string;
+        // let value: string;
 
         if (type instanceof UStructProperty || type instanceof UObjectProperty) {
-            value = type.valueId === 0 ? null : type._value?.friendlyName || "<eval>";
+            // value = type.valueId === 0 ? null : type._value?.friendlyName || "<eval>";
         } else if (type instanceof UIntProperty || type instanceof UFloatProperty) {
-            value = type.constructor.name;
+            // value = type.constructor.name;
         } else if (type instanceof UByteProperty) {
-            value = type.constructor.name;
+            // value = type.constructor.name;
         } else {
             debugger;
             throw new Error("Not yet implemented!");

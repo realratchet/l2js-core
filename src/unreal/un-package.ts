@@ -1,4 +1,3 @@
-import BufferValue from "../buffer-value";
 import UClass from "./un-class";
 import UEncodedFile from "./un-encoded-file";
 import UEnum from "./un-enum";
@@ -53,7 +52,7 @@ abstract class APackage extends UEncodedFile {
         this.name = pathToPkgName(path)[0];
     }
 
-    protected addClassDependencies(nameTable: UName[], nameHash: Map<string, number>, imports: UImport[], exports: UExport<UObject>[]): void { }
+    protected addClassDependencies(_nameTable: UName[], _nameHash: Map<string, number>, _imports: UImport[], _exports: UExport<UObject>[]): void { }
 
     public async decode(): Promise<this> {
         if (this.buffer) return this;
@@ -618,7 +617,7 @@ abstract class ANativePackage extends APackage {
     public async decode(): Promise<this> {
         if (this.buffer) return this;
 
-        const tStart = performance.now();
+        // const tStart = performance.now();
 
         this.imports = [];
         this.exports = [];
@@ -632,9 +631,9 @@ abstract class ANativePackage extends APackage {
         return this;
     }
 
-    public getStructConstructor<T extends typeof UObject = typeof UObject>(constructorName: string): new () => T { return UObject as any; }
-    public getPrebuiltClass(struct: UStruct): any { return null; }
-    protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T { return UObject as any; }
+    public getStructConstructor<T extends typeof UObject = typeof UObject>(_constructorName: string): new () => T { return UObject as any; }
+    public getPrebuiltClass(_struct: UStruct): any { return null; }
+    protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(_constructorName: NativeTypes_T): new () => T { return UObject as any; }
 
     public getConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T {
         let Constructor: any;

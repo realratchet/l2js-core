@@ -15,8 +15,8 @@ import type { Constructable_T } from "./un-object-types";
 import type { EnginePackage_T, NativeTypes_T } from "./un-package-types";
 import type { PropertyExtraPars_T, PropertyTypes_T } from "./un-property/un-property-types";
 
-type MakeParams<T> = ConstructorParameters<{ new(): never } & T>;
-type GenericConstructorParameters<T> = ConstructorParameters<new (...args: any[]) => T>;
+// type MakeParams<T> = ConstructorParameters<{ new(): never } & T>;
+// type GenericConstructorParameters<T> = ConstructorParameters<new (...args: any[]) => T>;
 type ScriptBytecodeEntry_T = { offset: number, type: string, value: any, tokenName?: string };
 
 const cachePropertyAccessors = new Map<string, Map<string, PropertyDescriptor>>();
@@ -814,7 +814,7 @@ function buildClassLayout(ctor: any, instance: UObject, clsExtendedPropertyEntri
     }
 
     const proto = ctor.prototype;
-    const descriptor = { value: undefined, writable: true, enumerable: true, configurable: true };
+    const descriptor: PropertyDescriptor = { value: undefined, writable: true, enumerable: true, configurable: true };
 
     for (const [propName, varName] of ctor._mappedProperties || Object.entries(propNames)) {
         if (!layout.has(propName)) continue;
@@ -842,7 +842,7 @@ function getPropertyAccessor(propName: string, varName: string): PropertyDescrip
     if (!descriptor) {
         descriptor = {
             configurable: true,
-            get() {
+            get(this: UObject) {
                 const resolved = this.propertyDict.get(propName);
 
                 Object.defineProperty(this, varName, { value: resolved, writable: true, enumerable: true, configurable: true });
@@ -895,31 +895,31 @@ class PerInstanceDefault<T = any> extends LazyPropertyValue<T> {
     }
 }
 
-function getUnsetDefaultValue(pkgNative: ANativePackage, property: UnProperties.UProperty) {
-    switch (property.type) {
-        case UNP_PropertyTypes.UNP_ByteProperty:
-        case UNP_PropertyTypes.UNP_FloatProperty:
-        case UNP_PropertyTypes.UNP_BoolProperty:
-        case UNP_PropertyTypes.UNP_IntProperty:
-        case UNP_PropertyTypes.UNP_StrProperty:
-        case UNP_PropertyTypes.UNP_ObjectProperty:
-        case UNP_PropertyTypes.UNP_NameProperty:
-        case UNP_PropertyTypes.UNP_ClassProperty:
-        case UNP_PropertyTypes.UNP_NameProperty:
-        case UNP_PropertyTypes.UNP_ArrayProperty:
-            return property.getDefaultValue();
-        // case UNP_PropertyTypes.UNP_ClassProperty:
-        // case UNP_PropertyTypes.UNP_StructProperty:
-        // case UNP_PropertyTypes.UNP_ObjectProperty:
-        //     if (property.arrayDimensions > 1)
-        //         return defaultValue.map((x: UObject) => x?.nativeClone() ?? null);
+// function getUnsetDefaultValue(pkgNative: ANativePackage, property: UnProperties.UProperty) {
+//     switch (property.type) {
+//         case UNP_PropertyTypes.UNP_ByteProperty:
+//         case UNP_PropertyTypes.UNP_FloatProperty:
+//         case UNP_PropertyTypes.UNP_BoolProperty:
+//         case UNP_PropertyTypes.UNP_IntProperty:
+//         case UNP_PropertyTypes.UNP_StrProperty:
+//         case UNP_PropertyTypes.UNP_ObjectProperty:
+//         case UNP_PropertyTypes.UNP_NameProperty:
+//         case UNP_PropertyTypes.UNP_ClassProperty:
+//         case UNP_PropertyTypes.UNP_NameProperty:
+//         case UNP_PropertyTypes.UNP_ArrayProperty:
+//             return property.getDefaultValue();
+//         // case UNP_PropertyTypes.UNP_ClassProperty:
+//         // case UNP_PropertyTypes.UNP_StructProperty:
+//         // case UNP_PropertyTypes.UNP_ObjectProperty:
+//         //     if (property.arrayDimensions > 1)
+//         //         return defaultValue.map((x: UObject) => x?.nativeClone() ?? null);
 
-        //     return defaultValue.nativeClone();
-        default:
-            debugger;
-            throw new Error(`Property type '${property.getTypeName()}' not yet implemented.`)
-    }
-}
+//         //     return defaultValue.nativeClone();
+//         default:
+//             debugger;
+//             throw new Error(`Property type '${property.getTypeName()}' not yet implemented.`)
+//     }
+// }
 
 function getDefaultValue(propName: string, property: UnProperties.UProperty, defaultNamedProperties: Record<string, any>) {
     if (!(propName in defaultNamedProperties))

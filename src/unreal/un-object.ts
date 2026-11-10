@@ -236,7 +236,7 @@ abstract class UObject implements Serializable_T {
 
     protected onSuperConstructed(): void { }
     protected makeLayout(): void { throw new Error(`Layout for '${this.constructor.name}' must be overloaded by the package, was this created via package?.`); }
-    protected findPropReader<T1 = any, T2 = any>(propName: string): UProperty<T1, T2> { { throw new Error(`Layout for '${this.constructor.name}' must be overloaded by the package, was this created via package?.`); } }
+    protected findPropReader<T1 = any, T2 = any>(_propName: string): UProperty<T1, T2> { { throw new Error(`Layout for '${this.constructor.name}' must be overloaded by the package, was this created via package?.`); } }
 
     protected setReadPointers(exp: UExport) {
         this.readStart = this.readHead = exp.offset;

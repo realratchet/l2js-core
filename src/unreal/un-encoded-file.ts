@@ -145,7 +145,7 @@ abstract class UEncodedFile implements EncodedFile_T {
             const source = this.source;
 
             if (source && source.readWindow && type !== "char" && type !== "utf16" && type !== "guid") {
-                let length = type === "compat32" ? Math.min(5, source.size - this.offset) : BufferValue[type].bytes;
+                let length = type === "compat32" ? Math.min(5, source.size - this.offset) : BufferValue[type as InstancedTypes].bytes;
                 const window = source.readWindow(this.offset, length);
                 const offset = this.offset - window.offset;
                 let value: number | bigint;
@@ -186,7 +186,7 @@ abstract class UEncodedFile implements EncodedFile_T {
             return view;
         } else if (target instanceof BufferValue) {
             const view = this.source ? this.readSource(target, true) : null;
-            this.offset += target.readValue(view ? view.buffer : this.buffer, view ? view.byteOffset : this.offset);
+            this.offset += target.readValue((view ? view.buffer : this.buffer) as ArrayBuffer, view ? view.byteOffset : this.offset);
 
             return target;
         } else {
@@ -296,7 +296,7 @@ abstract class UEncodedFile implements EncodedFile_T {
 
                 this.seek(HEADER_SIZE, "set");
 
-                let tStart;
+                // let tStart;
 
                 this.version = version;
 
@@ -311,7 +311,7 @@ abstract class UEncodedFile implements EncodedFile_T {
                     this.contentOffset = HEADER_SIZE;
                     this.seek(0, "set");
 
-                    tStart = performance.now();
+                    // tStart = performance.now();
 
                     if (this.source) this.source.decrypt(this.moduloCryptKey, HEADER_SIZE);
                     else this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), this.moduloCryptKey);
@@ -337,13 +337,13 @@ abstract class UEncodedFile implements EncodedFile_T {
                     throw new Error(`Unsupported file version: ${version}`)
                 }
 
-                const size = this.source ? this.source.size : this.buffer.byteLength;
-                let sizeString: string;
+                // const size = this.source ? this.source.size : this.buffer.byteLength;
+                // let sizeString: string;
 
-                if (size >= szGB) sizeString = `${(size / szGB).toFixed(2)}GB`;
-                else if (size >= szMB) sizeString = `${(size / szMB).toFixed(2)}MB`;
-                else if (size >= szKB) sizeString = `${(size / szKB).toFixed(2)}kB`;
-                else sizeString = `${size.toFixed(2)}B`;
+                // if (size >= szGB) sizeString = `${(size / szGB).toFixed(2)}GB`;
+                // else if (size >= szMB) sizeString = `${(size / szMB).toFixed(2)}MB`;
+                // else if (size >= szKB) sizeString = `${(size / szKB).toFixed(2)}kB`;
+                // else sizeString = `${size.toFixed(2)}B`;
 
                 // if (size > 1024 * 1024)
                 //     console.log(`'${this.path}' loaded in ${(performance.now() - tStart).toFixed(3)} ms (${sizeString})`);
@@ -368,4 +368,4 @@ export default UEncodedFile;
 export { UEncodedFile };
 export type { Seek_T };
 
-const szKB = 1024, szMB = szKB * 1024, szGB = szMB * 1024;
+// const szKB = 1024, szMB = szKB * 1024, szGB = szMB * 1024;

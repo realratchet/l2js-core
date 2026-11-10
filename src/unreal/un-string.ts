@@ -20,7 +20,7 @@ class FString implements Constructable_T {
 
         const buf = pkg.read(byteLength);
         const delimiterSize = isUnicode ? 2 : 1;
-        const bytes = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength - delimiterSize);
+        const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength - delimiterSize);
 
         this.value = (isUnicode ? decoderUTF16 : decoderAnsi).decode(bytes);
 

@@ -238,7 +238,7 @@ export { BufferValue };
 export type { BigNumberTypes_T, PrimitiveNumberTypes_T, AllPrimitiveNumberTypes_T, NumberTypes_T, StringTypes_T, ValueTypeNames_T, ValidTypes_T };
 
 type SetValueFun_T = "setBigInt64" | "setBigUint64" | "setInt32" | "setFloat32" | "setUint32" | "setInt16" | "setUint16" | "setInt8" | "setUint8";
-type GetValueFun_T = "getBigInt64" | "getBigUint64" | "getFloat32" | "getUint32" | "getInt32" | "getInt8" | "getUint8" | "getInt16" | "getUint16";
+// type GetValueFun_T = "getBigInt64" | "getBigUint64" | "getFloat32" | "getUint32" | "getInt32" | "getInt8" | "getUint8" | "getInt16" | "getUint16";
 type ReturnType<T extends ValueTypeNames_T> = T extends NumberTypes_T
     ? T extends BigNumberTypes_T ? bigint : number
     : T extends StringTypes_T ? string : DataView;

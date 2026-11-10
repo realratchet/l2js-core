@@ -185,7 +185,7 @@ class FStringArray extends FArray<FArrayPrimitive<"char">> {
 class FObjectArray<T extends UObject = UObject> extends Array<T> implements Constructable_T {
     protected indexArray = new FIndexArray();
 
-    public static loadOfIndex<T extends UObject = UObject>(indexArray: FIndexArray, pkg: APackage, tag?: PropertyTag): FObjectArray<T> {
+    public static loadOfIndex<T extends UObject = UObject>(indexArray: FIndexArray, pkg: APackage, _tag?: PropertyTag): FObjectArray<T> {
         const objectArray = new FObjectArray<T>();
         objectArray.indexArray = indexArray;
 
@@ -196,7 +196,7 @@ class FObjectArray<T extends UObject = UObject> extends Array<T> implements Cons
         return objectArray;
     }
 
-    public static loadOfSize<T extends UObject = UObject>(size: number, pkg: APackage, tag?: PropertyTag): FObjectArray<T> {
+    public static loadOfSize<T extends UObject = UObject>(size: number, pkg: APackage, _tag?: PropertyTag): FObjectArray<T> {
         const objectArray = new FObjectArray<T>();
         objectArray.indexArray = FIndexArray.loadOfSize(pkg, size);
 
@@ -366,7 +366,7 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
             return new (this.Constructor.dtype as any)(array.buffer, array.byteOffset, this.getElemCount()) as any;
         } catch (e) {
             if (e.message.includes("should be a multiple of"))
-                return new this.Constructor.dtype(this.getArrayBufferSlice()) as any;
+                return new (this.Constructor.dtype as TypedArrayConstructor_T)(this.getArrayBufferSlice()) as any;
 
             throw e;
         }
@@ -387,6 +387,7 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
     }
 }
 
+type TypedArrayConstructor_T = new (buffer: ArrayBufferLike, byteOffset?: number, length?: number) => ArrayBufferView;
 type ReturnType<T extends PrimitiveNumberTypes_T | BigNumberTypes_T> =
     | T extends "uint8" ? Uint8Array
     : T extends "int8" ? Int8Array

@@ -17,7 +17,7 @@ function decryptRSA(gmp: import("gmp-wasm").GMPLib, buffer: Uint8Array): ArrayBu
 
     if (!key) throw new Error(`No known RSA key decrypts this file.`);
 
-    return _decryptRSA(key[0], key[1], gmp, buffer);
+    return _decryptRSA(key[0], key[1], gmp, buffer) as ArrayBuffer;
 }
 
 function decryptModulo(array: Uint8Array, key: number): ArrayBuffer {
