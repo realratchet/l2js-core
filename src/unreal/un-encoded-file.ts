@@ -121,7 +121,9 @@ abstract class UEncodedFile implements EncodedFile_T {
         if (type.name === "char") {
             const prefix = this.source.read(this.offset, Math.min(5, this.source.size - this.offset));
             const count = buffInstances.compat32.readValue(prefix.buffer as ArrayBuffer, prefix.byteOffset);
-            length = count + Math.max(0, buffInstances.compat32.value as number);
+            const size = buffInstances.compat32.value as number;
+
+            length = count + (size < 0 ? -size * 2 : size);
         } else if (type.name === "utf16") {
             length = 4 + this.source.read(this.offset, 4).getUint32(0, true);
         } else if (type.name === "compat32") length = Math.min(5, this.source.size - this.offset);

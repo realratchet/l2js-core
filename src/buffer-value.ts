@@ -46,6 +46,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
     public bytes: DataView;
 
     private type: ValidTypes_T<T>;
+    protected isWide = false;
     public readonly endianess: "big" | "little" = "little";
 
     static allocBytes(bytes: number): BufferValue<"buffer"> {
@@ -62,6 +63,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
             throw new Error(`Type mismatch source type '${other.type.name}' but expected '${this.type.name}'.`);
 
         this.bytes = new DataView(other.bytes.buffer, other.bytes.byteOffset, other.bytes.byteLength);
+        this.isWide = other.isWide;
 
         return this;
     }
@@ -85,10 +87,13 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
             const length = new BufferValue(compat32);
             const readBytes = length.readValue(buffer, offset);
 
-            byteOffset = length.value > 0 ? readBytes + 1 : readBytes;  // add delimiter unless empty
-            offset = offset + byteOffset - readBytes;
+            const charBytes = length.value < 0 ? 2 : 1; // negative count is a UTF-16 string
 
-            this.type.bytes = Math.max(length.value - 1, 0);
+            byteOffset = length.value !== 0 ? readBytes + charBytes : readBytes;  // add delimiter unless empty
+            offset = offset + readBytes;
+
+            this.type.bytes = Math.max(Math.abs(length.value) - 1, 0) * charBytes;
+            this.isWide = length.value < 0;
 
         } else if (this.type.name === "compat32") {
             return this.readCompact(new DataView(buffer, offset), 0);
@@ -139,7 +144,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
 
     public get string(): string {
 
-        if (this.type.name === "utf16") {
+        if (this.type.name === "utf16" || this.isWide) {
             return decoderUTF16.decode(this.bytes);
         }
 
