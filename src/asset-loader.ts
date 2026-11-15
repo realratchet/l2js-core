@@ -72,6 +72,9 @@ abstract class AAssetLoader<
 
             const [_pkgName, _pkgExt] = pathToPkgName(pkgName);
             const potentialPkgs = this.packages.get(_pkgName);
+
+            if (!potentialPkgs) throw new Error(`Package '${pkgName}' not found!`);
+
             const pkg = potentialPkgs.get(_pkgExt);
 
             return pkg as ReturnType<T, TPackage, TCorePackage, TEnginePackage, TNativePackage>;
@@ -217,6 +220,8 @@ function getPackage<T extends string | "native", TPackage, TCorePackage, TEngine
         console.warn(`Unknown import class type '${impType}' (package '${pkgName}')`);
         return null;
     }
+
+    if (!packages) throw new Error(`Package '${pkgName}[${impType}]' not found!`);
 
     let pkg: TPackage | TNativePackage | TCorePackage | TEnginePackage = null;
 
