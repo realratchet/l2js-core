@@ -363,12 +363,16 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
     public getTypedArray(): ReturnType<T> {
         const array = this.getArray();
         try {
+            // Preserve the existing constructor expression on the common
+            // aligned path. Only inspect alignment after construction fails.
             return new (this.Constructor.dtype as any)(array.buffer, array.byteOffset, this.getElemCount()) as any;
-        } catch (e) {
-            if (e.message.includes("should be a multiple of"))
+        } catch (error) {
+            // Browser engines report unaligned package views with different
+            // RangeError messages, so check the offset rather than the text.
+            if (error instanceof RangeError && array.byteOffset % (this.Constructor.dtype as TypedArrayConstructor_T).BYTES_PER_ELEMENT !== 0)
                 return new (this.Constructor.dtype as TypedArrayConstructor_T)(this.getArrayBufferSlice()) as any;
 
-            throw e;
+            throw error;
         }
     }
 
@@ -387,7 +391,10 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
     }
 }
 
-type TypedArrayConstructor_T = new (buffer: ArrayBufferLike, byteOffset?: number, length?: number) => ArrayBufferView;
+type TypedArrayConstructor_T = {
+    new (buffer: ArrayBufferLike, byteOffset?: number, length?: number): ArrayBufferView;
+    readonly BYTES_PER_ELEMENT: number;
+};
 type ReturnType<T extends PrimitiveNumberTypes_T | BigNumberTypes_T> =
     | T extends "uint8" ? Uint8Array
     : T extends "int8" ? Int8Array
