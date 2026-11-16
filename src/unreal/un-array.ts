@@ -362,14 +362,11 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
 
     public getTypedArray(): ReturnType<T> {
         const array = this.getArray();
-        try {
-            return new (this.Constructor.dtype as any)(array.buffer, array.byteOffset, this.getElemCount()) as any;
-        } catch (e) {
-            if (e.message.includes("should be a multiple of"))
-                return new (this.Constructor.dtype as TypedArrayConstructor_T)(this.getArrayBufferSlice()) as any;
 
-            throw e;
-        }
+        if (array.byteOffset % this.Constructor.bytes !== 0)
+            return new (this.Constructor.dtype as TypedArrayConstructor_T)(this.getArrayBufferSlice()) as any;
+
+        return new (this.Constructor.dtype as any)(array.buffer, array.byteOffset, this.getElemCount()) as any;
     }
 
     public getByteLength() { return this.array ? this.array.byteLength : 0; }
