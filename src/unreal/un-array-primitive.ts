@@ -12,7 +12,7 @@ class FArrayPrimitive<T extends PrimitiveArrayTypes_T> {
     }
 
     public load(pkg: APackage): this {
-        this.value = this.type === BufferValue[this.type.name]
+        this.value = this.type === BufferValue[this.type.name as PrimitiveArrayTypes_T]
             ? pkg.read(this.type.name as any) as ReturnType<T>
             : pkg.read(new BufferValue<PrimitiveArrayTypes_T>(this.type)).value as ReturnType<T>;
 

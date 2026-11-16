@@ -46,6 +46,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
     public bytes: DataView;
 
     private type: ValidTypes_T<T>;
+    protected isWide = false;
     public readonly endianess: "big" | "little" = "little";
 
     static allocBytes(bytes: number): BufferValue<"buffer"> {
@@ -62,6 +63,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
             throw new Error(`Type mismatch source type '${other.type.name}' but expected '${this.type.name}'.`);
 
         this.bytes = new DataView(other.bytes.buffer, other.bytes.byteOffset, other.bytes.byteLength);
+        this.isWide = other.isWide;
 
         return this;
     }
@@ -85,10 +87,13 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
             const length = new BufferValue(compat32);
             const readBytes = length.readValue(buffer, offset);
 
-            byteOffset = length.value > 0 ? readBytes + 1 : readBytes;  // add delimiter unless empty
-            offset = offset + byteOffset - readBytes;
+            const charBytes = length.value < 0 ? 2 : 1; // negative count is a UTF-16 string
 
-            this.type.bytes = Math.max(length.value - 1, 0);
+            byteOffset = length.value !== 0 ? readBytes + charBytes : readBytes;  // add delimiter unless empty
+            offset = offset + readBytes;
+
+            this.type.bytes = Math.max(Math.abs(length.value) - 1, 0) * charBytes;
+            this.isWide = length.value < 0;
 
         } else if (this.type.name === "compat32") {
             return this.readCompact(new DataView(buffer, offset), 0);
@@ -139,7 +144,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
 
     public get string(): string {
 
-        if (this.type.name === "utf16") {
+        if (this.type.name === "utf16" || this.isWide) {
             return decoderUTF16.decode(this.bytes);
         }
 
@@ -148,7 +153,7 @@ class BufferValue<T extends ValueTypeNames_T = ValueTypeNames_T> {
         for (let i = 0, bc = this.bytes.byteLength; i < bc; i++) {
             const charCode = this.bytes.getUint8(i);
             const char = String.fromCharCode(charCode);
-            string += char.match(expIsPrintable) ? char : ".";
+            string += expIsPrintable.test(char) ? char : ".";
         }
 
         return string;
@@ -238,7 +243,7 @@ export { BufferValue };
 export type { BigNumberTypes_T, PrimitiveNumberTypes_T, AllPrimitiveNumberTypes_T, NumberTypes_T, StringTypes_T, ValueTypeNames_T, ValidTypes_T };
 
 type SetValueFun_T = "setBigInt64" | "setBigUint64" | "setInt32" | "setFloat32" | "setUint32" | "setInt16" | "setUint16" | "setInt8" | "setUint8";
-type GetValueFun_T = "getBigInt64" | "getBigUint64" | "getFloat32" | "getUint32" | "getInt32" | "getInt8" | "getUint8" | "getInt16" | "getUint16";
+// type GetValueFun_T = "getBigInt64" | "getBigUint64" | "getFloat32" | "getUint32" | "getInt32" | "getInt8" | "getUint8" | "getInt16" | "getUint16";
 type ReturnType<T extends ValueTypeNames_T> = T extends NumberTypes_T
     ? T extends BigNumberTypes_T ? bigint : number
     : T extends StringTypes_T ? string : DataView;

@@ -1,4 +1,3 @@
-import BufferValue from "../buffer-value";
 import UClass from "./un-class";
 import UEncodedFile from "./un-encoded-file";
 import UEnum from "./un-enum";
@@ -9,6 +8,7 @@ import UHeader from "./un-header";
 import UImport from "./un-import";
 import UName from "./un-name";
 import UObject from "./un-object";
+import UField from "./un-field";
 import ObjectFlags_T from "./un-object-flags";
 import UStruct from "./un-struct";
 import UConst from "./un-const";
@@ -52,7 +52,7 @@ abstract class APackage extends UEncodedFile {
         this.name = pathToPkgName(path)[0];
     }
 
-    protected addClassDependencies(nameTable: UName[], nameHash: Map<string, number>, imports: UImport[], exports: UExport<UObject>[]): void { }
+    protected addClassDependencies(_nameTable: UName[], _nameHash: Map<string, number>, _imports: UImport[], _exports: UExport<UObject>[]): void { }
 
     public async decode(): Promise<this> {
         if (this.buffer) return this;
@@ -617,7 +617,7 @@ abstract class ANativePackage extends APackage {
     public async decode(): Promise<this> {
         if (this.buffer) return this;
 
-        const tStart = performance.now();
+        // const tStart = performance.now();
 
         this.imports = [];
         this.exports = [];
@@ -631,13 +631,16 @@ abstract class ANativePackage extends APackage {
         return this;
     }
 
-    public getStructConstructor<T extends typeof UObject = typeof UObject>(constructorName: string): new () => T { return UObject as any; }
-    protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T { return UObject as any; }
+    public getStructConstructor<T extends typeof UObject = typeof UObject>(_constructorName: string): new () => T { return UObject as any; }
+    public getPrebuiltClass(_struct: UStruct): any { return null; }
+    protected getNonNativeConstructor<T extends typeof UObject = typeof UObject>(_constructorName: NativeTypes_T): new () => T { return UObject as any; }
 
     public getConstructor<T extends typeof UObject = typeof UObject>(constructorName: NativeTypes_T): new () => T {
         let Constructor: any;
 
         switch (constructorName) {
+            case "Object": Constructor = UObject; break;
+            case "Field": Constructor = UField; break;
             case "Class": Constructor = UClass; break;
             case "Struct": Constructor = UStruct; break;
             case "Const": Constructor = UConst; break;

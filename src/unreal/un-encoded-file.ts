@@ -4,6 +4,7 @@ import * as _gmp from "gmp-wasm";
 import * as modKeys from "../crypto/keys/modulo";
 
 let gmp: _gmp.GMPLib = null;
+let gmpLoading: Promise<_gmp.GMPLib> = null;
 
 const decoderUTF16 = new TextDecoder("utf-16");
 
@@ -120,7 +121,9 @@ abstract class UEncodedFile implements EncodedFile_T {
         if (type.name === "char") {
             const prefix = this.source.read(this.offset, Math.min(5, this.source.size - this.offset));
             const count = buffInstances.compat32.readValue(prefix.buffer as ArrayBuffer, prefix.byteOffset);
-            length = count + Math.max(0, buffInstances.compat32.value as number);
+            const size = buffInstances.compat32.value as number;
+
+            length = count + (size < 0 ? -size * 2 : size);
         } else if (type.name === "utf16") {
             length = 4 + this.source.read(this.offset, 4).getUint32(0, true);
         } else if (type.name === "compat32") length = Math.min(5, this.source.size - this.offset);
@@ -144,14 +147,26 @@ abstract class UEncodedFile implements EncodedFile_T {
             const source = this.source;
 
             if (source && source.readWindow && type !== "char" && type !== "utf16" && type !== "guid") {
-                let length = type === "compat32" ? Math.min(5, source.size - this.offset) : BufferValue[type].bytes;
+                let length = type === "compat32" ? Math.min(5, source.size - this.offset) : BufferValue[type as InstancedTypes].bytes;
                 const window = source.readWindow(this.offset, length);
                 const offset = this.offset - window.offset;
                 let value: number | bigint;
 
                 if (type === "compat32") {
-                    length = target.readCompact(window.view, offset);
-                    value = target.value;
+                    let byte = window.view.getUint8(offset);
+                    const sign = byte & 0x80;
+                    let shift = 6, result = byte & 0x3f;
+
+                    length = 1;
+                    if (byte & 0x40) {
+                        do {
+                            if (length >= 5) break;
+                            byte = window.view.getUint8(offset + length++);
+                            result |= (byte & 0x7f) << shift;
+                            shift += 7;
+                        } while (byte & 0x80);
+                    }
+                    value = (sign ? -result : result) | 0;
                 } else value = target.readNumber(window.view, offset);
 
                 this.offset += length;
@@ -167,15 +182,13 @@ abstract class UEncodedFile implements EncodedFile_T {
             return value;
 
         } else if (typeof target === "number") {
-            const _target = BufferValue.allocBytes(target);
+            const view = this.readPrimitive(this.offset - this.contentOffset, target);
+            this.offset += view.byteLength;
 
-            const view = this.source ? this.readSource(_target, true) : null;
-            this.offset += _target.readValue(view ? view.buffer : this.buffer, view ? view.byteOffset : this.offset);
-
-            return _target.value;
+            return view;
         } else if (target instanceof BufferValue) {
             const view = this.source ? this.readSource(target, true) : null;
-            this.offset += target.readValue(view ? view.buffer : this.buffer, view ? view.byteOffset : this.offset);
+            this.offset += target.readValue((view ? view.buffer : this.buffer) as ArrayBuffer, view ? view.byteOffset : this.offset);
 
             return target;
         } else {
@@ -285,7 +298,7 @@ abstract class UEncodedFile implements EncodedFile_T {
 
                 this.seek(HEADER_SIZE, "set");
 
-                let tStart;
+                // let tStart;
 
                 this.version = version;
 
@@ -300,7 +313,7 @@ abstract class UEncodedFile implements EncodedFile_T {
                     this.contentOffset = HEADER_SIZE;
                     this.seek(0, "set");
 
-                    tStart = performance.now();
+                    // tStart = performance.now();
 
                     if (this.source) this.source.decrypt(this.moduloCryptKey, HEADER_SIZE);
                     else this.buffer = decoders.decryptModulo(new Uint8Array(this.buffer, HEADER_SIZE), this.moduloCryptKey);
@@ -314,7 +327,8 @@ abstract class UEncodedFile implements EncodedFile_T {
                         this.handle.source = null;
                     }
                     if (gmp === null) {
-                        gmp = await _gmp.init();
+                        if (!gmpLoading) gmpLoading = _gmp.init();
+                        gmp = await gmpLoading;
                     }
 
                     this.buffer = decoders.decryptRSA(gmp, new Uint8Array(this.buffer, HEADER_SIZE));
@@ -325,13 +339,13 @@ abstract class UEncodedFile implements EncodedFile_T {
                     throw new Error(`Unsupported file version: ${version}`)
                 }
 
-                const size = this.source ? this.source.size : this.buffer.byteLength;
-                let sizeString: string;
+                // const size = this.source ? this.source.size : this.buffer.byteLength;
+                // let sizeString: string;
 
-                if (size >= szGB) sizeString = `${(size / szGB).toFixed(2)}GB`;
-                else if (size >= szMB) sizeString = `${(size / szMB).toFixed(2)}MB`;
-                else if (size >= szKB) sizeString = `${(size / szKB).toFixed(2)}kB`;
-                else sizeString = `${size.toFixed(2)}B`;
+                // if (size >= szGB) sizeString = `${(size / szGB).toFixed(2)}GB`;
+                // else if (size >= szMB) sizeString = `${(size / szMB).toFixed(2)}MB`;
+                // else if (size >= szKB) sizeString = `${(size / szKB).toFixed(2)}kB`;
+                // else sizeString = `${size.toFixed(2)}B`;
 
                 // if (size > 1024 * 1024)
                 //     console.log(`'${this.path}' loaded in ${(performance.now() - tStart).toFixed(3)} ms (${sizeString})`);
@@ -356,4 +370,4 @@ export default UEncodedFile;
 export { UEncodedFile };
 export type { Seek_T };
 
-const szKB = 1024, szMB = szKB * 1024, szGB = szMB * 1024;
+// const szKB = 1024, szMB = szKB * 1024, szGB = szMB * 1024;
